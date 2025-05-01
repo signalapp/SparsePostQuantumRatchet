@@ -1,0 +1,162 @@
+type dir.
+free a2b:dir.
+free b2a:dir.
+
+table SharedKeys(principal, principal, dir, nat, symkey). (*  a,b,dir,epoch,k: if dir is a2b then a as initiator esablished k at epoch ep with b using SPQR *)
+table RootKeys(principal, principal, dir, nat, symkey). (*  a <-> b: dir, epoch, rk *)
+table ChainKeys(principal, principal, dir, nat, nat, symkey). (* a <-> b: dir, epoch, ctr, ck *)
+table MsgKeys(principal, principal, dir, nat, nat, symkey). (*  a <-> b: dir, epoch, ctr, mk *)
+
+letfun max_epoch() = 3.
+letfun max_ctr() = 3.
+
+free root_key_label: bitstring.
+free send_chain_key_label: bitstring.
+free recv_chain_key_label: bitstring.
+
+event CompromisedSharedKey(principal, principal, dir, nat).
+
+let CKA_Key0(a:principal, b:principal) =
+   (new k:symkey;
+    insert SharedKeys(a, b, a2b, 0, k);
+    insert SharedKeys(b, a, b2a, 0, k))
+(* We should allow attacker to choose 2 different keys *)
+| (in (c, k:symkey);
+    event CompromisedSharedKey(a, b, a2b, 0);
+    insert SharedKeys(a, b, a2b, 0, k);
+    insert SharedKeys(b, a, b2a, 0, k)).
+
+let CKA_KeyN(a:principal, b:principal) =
+    get SharedKeys(=a, =b, =a2b, ep, oldk) in
+    if ep+1 <= max_epoch() then (
+      (new k:symkey;
+       insert SharedKeys(a, b, a2b, ep+1, k);
+       insert SharedKeys(b, a, b2a, ep+1, k))
+(* We should allow attacker to choose 2 different keys *)
+    | (in (c, k:symkey);
+       event CompromisedSharedKey(a, b, a2b, ep+1);
+       insert SharedKeys(a, b, a2b, ep+1, k);
+       insert SharedKeys(b, a, b2a, ep+1, k))).
+
+
+event RootKey(principal, principal, dir, nat, symkey).
+
+letfun SR_InitState(a:principal, b:principal, d:dir) =
+       get SharedKeys(=a, =b, =d, 0, k) in
+       let rk = kdf(k, root_key_label) in
+       let cks = kdf(k, send_chain_key_label) in
+       let ckr = kdf(k, recv_chain_key_label) in
+       event RootKey(a, b, d, 0, rk);
+       insert RootKeys(a, b, d, 0, rk);
+       if d = a2b then (
+          insert ChainKeys(a, b, a2b, 0, 0, cks);
+          insert ChainKeys(a, b, b2a, 0, 0, ckr);
+	  0)
+       else (
+          insert ChainKeys(a, b, a2b, 0, 0, ckr);
+          insert ChainKeys(a, b, b2a, 0, 0, cks);
+	  0).
+
+letfun SR_NextEpoch(a:principal, b:principal, ep_:nat) =
+       get RootKeys(=a, =b, d, ep, rk) in
+       get SharedKeys(=a, =b, =d, key_epoch, k) in
+       if ep + 1 = key_epoch && key_epoch <= max_epoch() then (
+          let nrk = kdf(rk, (k,root_key_label)) in
+ 	  let cks = kdf(rk, (k,send_chain_key_label)) in
+          let ckr = kdf(rk, (k,recv_chain_key_label)) in
+	  event RootKey(a, b, d, key_epoch, nrk);
+          insert RootKeys(a, b, d, key_epoch, nrk);
+          if d = a2b then (
+             insert ChainKeys(a, b, a2b, key_epoch, 0, cks);
+             insert ChainKeys(a, b, b2a, key_epoch, 0, ckr);
+	     0)
+          else (
+             insert ChainKeys(a, b, a2b, key_epoch, 0, ckr);
+             insert ChainKeys(a, b, b2a, key_epoch, 0, cks);
+	     0))
+       else 0.
+
+free chain_key_ratchet_label: bitstring.
+free msg_key_label: bitstring.
+
+event MsgKey(principal, principal, dir, nat, nat, symkey).
+
+letfun SR_NextCtr(a:principal, b:principal, d:dir, key_epoch:nat, ctr:nat) =
+       get ChainKeys(=a, =b, =d, =key_epoch, =ctr, ck) in
+       if ctr + 1 <= max_ctr() then (
+          let nck = kdf(ck, chain_key_ratchet_label) in
+          let mk = kdf(ck, msg_key_label) in
+          insert ChainKeys(a, b, d, key_epoch, ctr+1, nck);
+	  event MsgKey(a, b, d, key_epoch, ctr, mk);
+	  insert MsgKeys(a, b, d, key_epoch, ctr, mk);
+	  0)
+       else 0.
+
+let SR_Init(a:principal, b:principal, d:dir) =
+    let r = SR_InitState(a, b, d) in
+    0.
+
+let SR_AddEpoch(a:principal, b:principal) =
+    get RootKeys(=a, =b, d, ep, rk) in
+    let r = SR_NextEpoch(a, b, ep) in
+    0.
+
+let SR_NextKey(a:principal, b:principal) =
+    get ChainKeys(=a, =b, d, ep, ctr, ck) in
+    let s0 = SR_NextCtr(a, b, d, ep, ctr) in
+    0.
+
+event CompromisedRootKey(principal, principal, dir, nat, symkey).
+event CompromisedChainKey(principal, principal, dir, nat, nat, symkey).
+
+let CompromiseState(a:principal) =
+    (get RootKeys(=a, b, d, ep, rk) in
+     event CompromisedRootKey(a,b,d,ep,rk);
+     out (c,rk))
+  | (get ChainKeys(=a, b, d, ep, ctr, ck) in
+     event CompromisedChainKey(a,b,d,ep,ctr,ck);
+     out (c,ck)).
+
+free A:principal.
+free B:principal.
+
+(* Reachability Queries *)
+
+query a:principal, b:principal, ep:nat, ctr:nat, k:symkey;
+      event(MsgKey(a,b,a2b,0,0,k));
+      event(MsgKey(a,b,b2a,0,0,k));
+      event(MsgKey(a,b,a2b,2,2,k));
+      event(MsgKey(a,b,b2a,2,2,k)).
+
+(* Confidentiality Queries *)
+
+query a:principal, b:principal, ep:nat, ctr:nat, k:symkey, kk:symkey, ep_:nat;
+      event(MsgKey(a,b,a2b,0,0,k)) && attacker(k);
+      event(MsgKey(a,b,b2a,0,0,k)) && attacker(k);
+
+      (* Confidentiality for first epoch *)
+      (* Forward secrecy: Compromising later keys makes no difference *)
+      event(MsgKey(a,b,a2b,0,0,k)) && attacker(k) ==> 
+	(event(CompromisedSharedKey(a,b,a2b,0)) ||
+	 event(CompromisedSharedKey(b,a,a2b,0)));
+
+      (* Confidentiality for first epoch *)
+      (* Forward secrecy: Compromising later keys makes no difference *)
+      (* Post-Compromise Security: Compromising earlier keys makes no difference *)
+      event(MsgKey(a,b,a2b,ep+1,0,k)) && attacker(k) ==>
+	 (event(CompromisedSharedKey(a,b,a2b,ep+1)) ||
+	  event(CompromisedSharedKey(b,a,a2b,ep+1))).
+	 
+process
+   CKA_Key0(A,B) |
+   !CKA_KeyN(A,B) |
+   !SR_Init(A,B,a2b) |
+   !SR_Init(B,A,b2a) |
+   !SR_AddEpoch(A,B) |
+   !SR_AddEpoch(B,A) |
+   !SR_NextKey(A,B) |
+   !SR_NextKey(B,A) (* |
+   !CompromiseState(A) |
+   !CompromiseState(B) *)
+
+   

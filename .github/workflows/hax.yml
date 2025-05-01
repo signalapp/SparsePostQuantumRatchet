@@ -1,0 +1,26 @@
+name: hax
+
+on:
+  push:
+
+jobs:
+  fstar-type-checking:
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ⤵ Install and configure hax
+        uses: hacspec/hax-actions@main
+        with:
+          fstar: v2025.02.17
+
+      - run: sudo apt-get install protobuf-compiler
+
+      - name: 🏃 Extract F*
+        run: |
+          rm -f proofs/fstar/extraction/*.fst*
+          ./hax.py extract
+      - name: 🏃 Type-check extracted F*
+        run: ./hax.py prove
+

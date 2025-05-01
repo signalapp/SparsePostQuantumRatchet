@@ -1,0 +1,7 @@
+[build]
+pre-build = [
+  "apt-get install -y zip wget",
+  "wget https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protoc-29.3-linux-x86_64.zip",
+  "unzip protoc-29.3-linux-x86_64.zip -d protoc",
+  "mv protoc/bin/protoc /usr/bin",
+  ]

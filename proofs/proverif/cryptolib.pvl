@@ -1,0 +1,44 @@
+(* Minimal generic crypto library *)
+
+free c: channel.
+event Reachable.
+type principal.
+
+
+type symkey.
+fun aead_enc(symkey,bitstring,bitstring): bitstring.
+fun aead_dec(symkey,bitstring,bitstring): bitstring
+reduc forall k:symkey, m:bitstring, ad:bitstring;
+      aead_dec(k, aead_enc(k,m,ad), ad) = m.
+
+type seed.
+type enckey.
+type deckey.
+type ctsecret.
+fun dk2seed(deckey): seed.
+fun dk2enckey(deckey): enckey.
+fun pkenc1(ctsecret, seed, symkey): bitstring.
+fun pkenc2(ctsecret, enckey): bitstring.
+fun pkdec(deckey, bitstring, bitstring): symkey
+reduc forall dk:deckey, sk:symkey, r: ctsecret;
+      pkdec(dk, pkenc1(r, dk2seed(dk), sk), pkenc2(r, dk2enckey(dk))) = sk.
+
+fun extractsecret(ctsecret, bitstring): symkey
+reduc forall sk: symkey, s: seed, r: ctsecret;
+    extractsecret(r, pkenc1(r, s, sk)) = sk.
+
+letfun kem_keygen() =
+       new dk: deckey;
+       (dk, dk2seed(dk), dk2enckey(dk)).   
+       
+letfun kem_decap(dk: deckey, ct1: bitstring, ct2: bitstring) =
+       pkdec(dk, ct1, ct2).
+
+type authenticator.
+fun mac(authenticator, bitstring): bitstring.
+fun auth_update(authenticator, symkey): authenticator.
+
+(* hash function *)
+fun h(bitstring): bitstring.
+
+fun kdf(symkey, bitstring): symkey.

@@ -1,0 +1,208 @@
+// Copyright 2025 Signal Messenger, LLC.
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+
+package signal.proto.pq_ratchet;
+
+message PolynomialEncoder {
+  uint32 idx = 1;
+
+  // We'd like to use a oneof here, but proto3 doesn't allow
+  // a combination of `oneof` and `repeated`.  So, we just
+  // only set one of these values to non-empty:
+  repeated bytes pts = 2;
+  repeated bytes polys = 3;
+}
+
+message PolynomialDecoder {
+  uint32 pts_needed = 1;
+  uint32 polys = 2;
+  repeated bytes pts = 3;
+  bool is_complete = 4;
+}
+
+message PqRatchetState {
+  message VersionNegotiation {
+    bytes auth_key = 1;
+    bool alice = 2;
+    uint32 min_version = 3;
+  }
+  VersionNegotiation version_negotiation = 1;
+  Chain chain = 2;
+
+  oneof inner {
+    V1State v1 = 3;
+  }
+}
+
+message Chunk {
+  uint32 index = 1;
+  bytes data = 2;
+}
+
+message V1Msg {
+  uint64 epoch = 1;
+  uint32 index = 2;
+  oneof inner_msg {
+    // send_ek
+    Chunk hdr = 3;
+    Chunk ek = 4;
+    Chunk ek_ct1_ack = 5;
+    bool ct1_ack = 6;
+
+    // send_ct
+    Chunk ct1 = 7;
+    Chunk ct2 = 8;
+  }
+}
+
+message Authenticator {
+  bytes root_key = 1;
+  bytes mac_key = 2;
+}
+
+message V1State {
+  message Unchunked {
+    //// send_ek ////
+    message KeysUnsampled {
+      uint64 epoch = 1;
+      Authenticator auth = 2;
+    }
+    message HeaderSent {
+      uint64 epoch = 1;
+      Authenticator auth = 2;
+      bytes ek = 3;
+      bytes dk = 4;
+    }
+    message EkSent {
+      uint64 epoch = 1;
+      Authenticator auth = 2;
+      bytes dk = 3;
+    }
+    message EkSentCt1Received {
+      uint64 epoch = 1;
+      Authenticator auth = 2;
+      bytes dk = 3;
+      bytes ct1 = 4;
+    }
+
+    //// send_ct ////
+    message NoHeaderReceived {
+      uint64 epoch = 1;
+      Authenticator auth = 2;
+    }
+    message HeaderReceived {
+      uint64 epoch = 1;
+      Authenticator auth = 2;
+      bytes hdr = 3;
+    }
+    message EkReceived {
+      uint64 epoch = 1;
+      Authenticator auth = 2;
+      bytes hdr = 3;
+      bytes ek = 4;
+    }
+    message Ct1Sent {
+      uint64 epoch = 1;
+      Authenticator auth = 2;
+      bytes hdr = 3;
+      bytes es = 4;
+      bytes ct1 = 5;
+    }
+    message Ct1SentEkReceived {
+      uint64 epoch = 1;
+      Authenticator auth = 2;
+      bytes es = 3;
+      bytes ek = 4;
+      bytes ct1 = 5;
+    }
+    message Ct2Sent {
+      uint64 epoch = 1;
+      Authenticator auth = 2;
+    }
+  }
+  message Chunked {
+    //// send_ek ////
+    message KeysUnsampled {
+      Unchunked.KeysUnsampled uc = 1;
+    }
+    message KeysSampled {
+      Unchunked.HeaderSent uc = 1;
+      PolynomialEncoder sending_hdr = 2;
+    }
+    message HeaderSent {
+      Unchunked.EkSent uc = 1;
+      PolynomialEncoder sending_ek = 2;
+      PolynomialDecoder receiving_ct1 = 3;
+    }
+    message Ct1Received {
+      Unchunked.EkSentCt1Received uc = 1;
+      PolynomialEncoder sending_ek = 2;
+    }
+    message EkSentCt1Received {
+      Unchunked.EkSentCt1Received uc = 1;
+      PolynomialDecoder receiving_ct2 = 3;
+    }
+
+    //// send_ct ////
+    message NoHeaderReceived {
+      Unchunked.NoHeaderReceived uc = 1;
+      PolynomialDecoder receiving_hdr = 2;
+    }
+    message HeaderReceived {
+      Unchunked.HeaderReceived uc = 1;
+      PolynomialDecoder receiving_ek = 2;
+    }
+    message Ct1Sampled {
+      Unchunked.Ct1Sent uc = 1;
+      PolynomialEncoder sending_ct1 = 2;
+      PolynomialDecoder receiving_ek = 3;
+    }
+    message EkReceivedCt1Sampled {
+      Unchunked.Ct1SentEkReceived uc = 1;
+      PolynomialEncoder sending_ct1 = 2;
+    }
+    message Ct1Acknowledged {
+      Unchunked.Ct1Sent uc = 1;
+      PolynomialDecoder receiving_ek = 2;
+    }
+    message Ct2Sampled {
+      Unchunked.Ct2Sent uc = 1;
+      PolynomialEncoder sending_ct2 = 2;
+    }
+  }
+
+  oneof inner_state {
+    //// send_ek ////
+    Chunked.KeysUnsampled keys_unsampled = 1;
+    Chunked.KeysSampled keys_sampled = 2;
+    Chunked.HeaderSent header_sent = 3;
+    Chunked.Ct1Received ct1_received = 4;
+    Chunked.EkSentCt1Received ek_sent_ct1_received = 5;
+
+    //// send_ct ////
+    Chunked.NoHeaderReceived no_header_received = 6;
+    Chunked.HeaderReceived header_received = 7;
+    Chunked.Ct1Sampled ct1_sampled = 8;
+    Chunked.EkReceivedCt1Sampled ek_received_ct1_sampled = 9;
+    Chunked.Ct1Acknowledged ct1_acknowledged = 10;
+    Chunked.Ct2Sampled ct2_sampled = 11;
+  }
+}
+
+message Chain {
+  message Epoch {
+    message Direction {
+      uint32 ctr = 1;
+      bytes next = 2;
+      bytes prev = 3;
+    }
+    Direction send = 1;
+    Direction recv = 2;
+  }
+  bool a2b = 1;
+  uint64 current_epoch = 2;
+  repeated Epoch links = 3;
+  bytes next_root = 4;
+}

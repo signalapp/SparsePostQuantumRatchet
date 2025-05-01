@@ -1,0 +1,5 @@
+dep.graph
+*.fst
+*.fsti
+*.json
+.depend
