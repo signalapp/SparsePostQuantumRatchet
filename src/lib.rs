@@ -95,6 +95,8 @@ pub enum Error {
     KeyAlreadyRequested(u32),
     #[error("Erroneous data received from remote party")]
     ErroneousDataReceived,
+    #[error("Send key epoch decreased ({0} -> {1})")]
+    SendKeyEpochDecreased(u64, u64),
 }
 
 impl From<encoding::EncodingError> for Error {

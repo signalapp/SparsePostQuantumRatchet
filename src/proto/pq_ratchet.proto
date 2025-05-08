@@ -205,4 +205,5 @@ message Chain {
   uint64 current_epoch = 2;
   repeated Epoch links = 3;
   bytes next_root = 4;
+  uint64 send_epoch = 5;
 }

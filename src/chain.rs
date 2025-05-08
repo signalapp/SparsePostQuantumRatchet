@@ -33,6 +33,7 @@ struct ChainEpoch {
 pub struct Chain {
     dir: Direction,
     current_epoch: Epoch,
+    send_epoch: Epoch,
     // links.len() <= EPOCHS_TO_KEEP
     links: VecDeque<ChainEpoch>, // stores [link[current_epoch-N] .. link[current_epoch]]
     // next_root.len() == 32
@@ -149,6 +150,7 @@ impl ChainEpochDirection {
 
     fn next_key_internal(next: &mut [u8], ctr: &mut u32) -> (u32, [u8; 32]) {
         hax_lib::fstar!("admit()");
+        assert!(!next.is_empty());
         *ctr += 1;
         let mut gen = [0u8; 64];
         kdf::hkdf_to_slice(
@@ -217,6 +219,10 @@ impl ChainEpochDirection {
             prev: KeyHistory { data: pb.prev },
         })
     }
+
+    fn clear_next(&mut self) {
+        self.next.clear();
+    }
 }
 
 #[hax_lib::attributes]
@@ -241,6 +247,7 @@ impl Chain {
         Self {
             dir,
             current_epoch: 0,
+            send_epoch: 0,
             links: VecDeque::from([ChainEpoch {
                 send: Self::ced_for_direction(&gen, &dir),
                 recv: Self::ced_for_direction(&gen, &dir.switch()),
@@ -284,7 +291,16 @@ impl Chain {
 
     pub fn send_key(&mut self, epoch: Epoch) -> Result<(u32, Vec<u8>), Error> {
         hax_lib::fstar!("admit ()");
+        if epoch < self.send_epoch {
+            return Err(Error::SendKeyEpochDecreased(self.send_epoch, epoch));
+        }
         let epoch_index = self.epoch_idx(epoch)?;
+        if self.send_epoch != epoch {
+            self.send_epoch = epoch;
+            for i in 0..epoch_index {
+                self.links[i].send.clear_next();
+            }
+        }
         Ok(self.links[epoch_index].send.next_key())
     }
 
@@ -299,6 +315,7 @@ impl Chain {
         pqrpb::Chain {
             a2b: matches!(self.dir, Direction::A2B),
             current_epoch: self.current_epoch,
+            send_epoch: self.send_epoch,
             links: self
                 .links
                 .into_iter()
@@ -320,6 +337,7 @@ impl Chain {
                 Direction::B2A
             },
             current_epoch: pb.current_epoch,
+            send_epoch: pb.send_epoch,
             next_root: pb.next_root,
             links: pb
                 .links
@@ -402,5 +420,21 @@ mod test {
         for (idx, key) in keys {
             assert_eq!(b2a.recv_key(0, idx).unwrap(), key);
         }
+    }
+
+    #[test]
+    fn clear_old_send_keys() {
+        let mut a2b = Chain::new(b"1", Direction::A2B);
+        a2b.send_key(0).unwrap();
+        a2b.send_key(0).unwrap();
+        a2b.add_epoch(EpochSecret {
+            epoch: 1,
+            secret: vec![2],
+        });
+        a2b.send_key(1).unwrap();
+        assert!(matches!(
+            a2b.send_key(0).unwrap_err(),
+            Error::SendKeyEpochDecreased(1, 0)
+        ));
     }
 }
