@@ -77,12 +77,6 @@ pub enum Error {
     MacVerifyFailed,
     #[error("epoch not in valid range: {0}")]
     EpochOutOfRange(Epoch),
-    #[error("epoch failure")]
-    EpochFailure,
-    #[error("MAC should have key but doesn't")]
-    MacStateInvalid,
-    #[error("Underlying state machine in the wrong state")]
-    BaseStateInvalid,
     #[error("Encoding error: {0}")]
     EncodingDecoding(encoding::EncodingError),
     #[error("Serialization: {0}")]
