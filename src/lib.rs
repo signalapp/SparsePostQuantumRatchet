@@ -26,6 +26,10 @@ pub type MessageKey = Option<Vec<u8>>;
 pub type SerializedState = Vec<u8>;
 pub type SerializedMessage = Vec<u8>;
 
+pub fn empty_state() -> SerializedState {
+    SerializedState::new()
+}
+
 pub struct EpochSecret {
     pub epoch: Epoch,
     pub secret: Secret,
@@ -394,7 +398,7 @@ mod lib_test {
     use rand::TryRngCore;
     use rand_core::OsRng;
 
-    use crate::{recv, send, Error, Recv, Send, SerializedState, Version};
+    use crate::{empty_state, recv, send, Error, Recv, Send, SerializedState, Version};
 
     #[test]
     fn ratchet() -> Result<(), Error> {
@@ -560,5 +564,11 @@ mod lib_test {
         }
 
         Ok(())
+    }
+
+    #[test]
+    fn empty_constructor_for_state() {
+        let v = empty_state();
+        assert!(v.is_empty());
     }
 }
