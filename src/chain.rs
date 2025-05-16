@@ -4,8 +4,80 @@
 use super::{Direction, Epoch, EpochSecret, Error};
 use crate::kdf;
 use crate::proto::pq_ratchet as pqrpb;
+use crate::proto::pq_ratchet::ChainParams as ChainParamsPB;
 use std::cmp::Ordering;
 use std::collections::VecDeque;
+
+/// Parameters for controlling the behavior of PQR key chains.
+/// It's recommended to use the Default API for overriding values,
+/// as future values may be added to this struct, and Default allows
+/// them to be added in a backwards-compatible fashion.
+/// IE:  let params = ChainParams{max_jump: 10, ..Default::default()};
+#[derive(Clone, Copy)]
+pub struct ChainParams {
+    /// Disallow requesting a key that is more than MAX_JUMP ahead of `ctr`.
+    /// If zero, defaults to the current library-compiled default value.
+    pub max_jump: u32,
+    /// Keep around keys back to at least `ctr - MAX_OOO_KEYS`, in case an out-of-order
+    /// message comes in.  Messages older than this that arrive out-of-order
+    /// will not be able to be decrypted and will return Error::KeyTrimmed.
+    /// If zero, defaults to the current library-compiled default value.
+    pub max_ooo_keys: u32,
+}
+
+impl Default for ChainParams {
+    fn default() -> Self {
+        DEFAULT_CHAIN_PARAMS
+    }
+}
+
+const DEFAULT_CHAIN_PARAMS: ChainParams = ChainParams {
+    max_jump: 25_000,
+    max_ooo_keys: 2_000,
+};
+
+impl ChainParams {
+    pub fn into_pb(self) -> ChainParamsPB {
+        ChainParamsPB {
+            max_jump: if self.max_jump == DEFAULT_CHAIN_PARAMS.max_jump {
+                0
+            } else {
+                self.max_jump
+            },
+            max_ooo_keys: if self.max_ooo_keys == DEFAULT_CHAIN_PARAMS.max_ooo_keys {
+                0
+            } else {
+                self.max_ooo_keys
+            },
+        }
+    }
+}
+
+impl ChainParamsPB {
+    // The Default for protobufs is to have everything be zeros.  Therefore,
+    // we use some getter functions locally to apply sane defaults to values that
+    // are not explicitly set.
+
+    fn max_jump_or_default(&self) -> u32 {
+        if self.max_jump > 0 {
+            self.max_jump
+        } else {
+            DEFAULT_CHAIN_PARAMS.max_jump
+        }
+    }
+    fn max_ooo_keys_or_default(&self) -> u32 {
+        if self.max_ooo_keys > 0 {
+            self.max_ooo_keys
+        } else {
+            DEFAULT_CHAIN_PARAMS.max_ooo_keys
+        }
+    }
+    /// When the size of our key history exceeds this amount, we run a
+    /// garbage collection on it.
+    fn trim_size(&self) -> usize {
+        (self.max_ooo_keys_or_default() as usize) * 11 / 10 + 1
+    }
+}
 
 struct KeyHistory {
     // Keys are stored as [u8; 4][u8; 32], where the first is the index as a BE32
@@ -38,17 +110,9 @@ pub struct Chain {
     links: VecDeque<ChainEpoch>, // stores [link[current_epoch-N] .. link[current_epoch]]
     // next_root.len() == 32
     next_root: Vec<u8>,
+    params: pqrpb::ChainParams,
 }
 
-/// Disallow requesting a key that is more than MAX_JUMP ahead of `ctr`.
-pub const MAX_JUMP: usize = 25_000; // from libsignal/rust/protocol/src/consts.rs
-/// Keep around keys back to at least `ctr - MAX_OOO_KEYS`, in case an out-of-order
-/// message comes in.  Messages older than this that arrive out-of-order
-/// will not be able to be decrypted and will return Error::KeyTrimmed.
-pub(crate) const MAX_OOO_KEYS: usize = 2000;
-/// When the size of our key history exceeds this amount, we run a
-/// garbage collection on it.
-pub(crate) const TRIM_SIZE: usize = MAX_OOO_KEYS * 11 / 10;
 /// We keep around this many epochs (including the current one) for out-of-order
 /// messages.  Currently, since there's O(10s) of messages required to exit a
 /// single epoch and our MAX_OOO_KEYS is close to that number as well, we only
@@ -66,19 +130,19 @@ impl KeyHistory {
         }
     }
 
-    #[hax_lib::requires(self.data.len() <= KeyHistory::KEY_SIZE * TRIM_SIZE)]
-    fn add(&mut self, k: (u32, [u8; 32])) {
+    #[hax_lib::requires(self.data.len() <= KeyHistory::KEY_SIZE * _params.trim_size())]
+    fn add(&mut self, k: (u32, [u8; 32]), _params: &pqrpb::ChainParams) {
         self.data.extend_from_slice(&k.0.to_be_bytes()[..]);
         self.data.extend_from_slice(&k.1[..]);
     }
 
     #[hax_lib::opaque] // ordering of slices needed
-    fn gc(&mut self, current_key: u32) {
-        if self.data.len() >= TRIM_SIZE * Self::KEY_SIZE {
+    fn gc(&mut self, current_key: u32, params: &pqrpb::ChainParams) {
+        if self.data.len() >= params.trim_size() * Self::KEY_SIZE {
             // We assume that k.0 is the highest key index we've ever seen, and base
             // our trimming on that.
-            assert!(current_key >= MAX_OOO_KEYS as u32);
-            let trim_horizon = &(current_key - MAX_OOO_KEYS as u32).to_be_bytes()[..];
+            assert!(current_key >= params.max_ooo_keys_or_default());
+            let trim_horizon = &(current_key - params.max_ooo_keys_or_default()).to_be_bytes()[..];
 
             // This does a single O(n) pass over our list, dropping all keys less than
             // our computed trim horizon.
@@ -88,7 +152,7 @@ impl KeyHistory {
                     trim_horizon.cmp(&self.data[i..i + 4]),
                     std::cmp::Ordering::Greater
                 ) {
-                    self.remove(i);
+                    self.remove(i, params);
                     // Don't advance i here; we could have replaced the value there-in
                     // with another old key.
                 } else {
@@ -102,8 +166,8 @@ impl KeyHistory {
         self.data.clear();
     }
 
-    #[hax_lib::requires(my_array_index <= self.data.len() && self.data.len() <= KeyHistory::KEY_SIZE * TRIM_SIZE)]
-    fn remove(&mut self, mut my_array_index: usize) {
+    #[hax_lib::requires(my_array_index <= self.data.len() && self.data.len() <= KeyHistory::KEY_SIZE * _params.trim_size())]
+    fn remove(&mut self, mut my_array_index: usize, _params: &pqrpb::ChainParams) {
         if my_array_index + Self::KEY_SIZE < self.data.len() {
             let new_end = self.data.len() - Self::KEY_SIZE;
             self.data.copy_within(new_end.., my_array_index);
@@ -113,24 +177,28 @@ impl KeyHistory {
     }
 
     #[hax_lib::opaque] // needs a model of step_by loop with return
-    fn get(&mut self, at: u32, current_ctr: u32) -> Result<Vec<u8>, Error> {
+    fn get(
+        &mut self,
+        at: u32,
+        current_ctr: u32,
+        params: &pqrpb::ChainParams,
+    ) -> Result<Vec<u8>, Error> {
         assert_eq!(self.data.len() % Self::KEY_SIZE, 0);
+        if at + (params.max_ooo_keys_or_default()) < current_ctr {
+            // We've already discarded this because it's too old.
+            return Err(Error::KeyTrimmed(at));
+        }
         let want = at.to_be_bytes();
         for i in (0..self.data.len()).step_by(Self::KEY_SIZE) {
             if self.data[i..i + 4] == want {
                 let out = self.data[i + 4..i + Self::KEY_SIZE].to_vec();
-                self.remove(i);
+                self.remove(i, params);
                 return Ok(out);
             }
         }
-        if at + (MAX_OOO_KEYS as u32) < current_ctr {
-            // We've already discarded this because it's too old.
-            Err(Error::KeyTrimmed(at))
-        } else {
-            // This is a key we should have and we don't, so it must have already
-            // been requested.
-            Err(Error::KeyAlreadyRequested(at))
-        }
+        // This is a key we should have and we don't, so it must have already
+        // been requested.
+        Err(Error::KeyAlreadyRequested(at))
     }
 }
 
@@ -167,23 +235,23 @@ impl ChainEpochDirection {
         (*ctr, gen[32..].try_into().expect("correct size"))
     }
 
-    fn key(&mut self, at: u32) -> Result<Vec<u8>, Error> {
+    fn key(&mut self, at: u32, params: &pqrpb::ChainParams) -> Result<Vec<u8>, Error> {
         hax_lib::fstar!("admit()");
         match at.cmp(&self.ctr) {
             Ordering::Greater => {
-                if at - self.ctr > MAX_JUMP as u32 {
+                if at - self.ctr > params.max_jump_or_default() {
                     return Err(Error::KeyJump(self.ctr, at));
                 }
             }
             Ordering::Less => {
-                return self.prev.get(at, self.ctr);
+                return self.prev.get(at, self.ctr, params);
             }
             Ordering::Equal => {
                 // We've already returned this key once, we won't do it again.
                 return Err(Error::KeyAlreadyRequested(at));
             }
         }
-        if at > self.ctr + (MAX_OOO_KEYS as u32) {
+        if at > self.ctr + params.max_ooo_keys_or_default() {
             // We're about to make all currently-held keys obsolete - just remove
             // them all.
             self.prev.clear();
@@ -191,13 +259,13 @@ impl ChainEpochDirection {
         while at > self.ctr + 1 {
             let k = Self::next_key_internal(&mut self.next, &mut self.ctr);
             // Only add keys into our history if we're not going to immediately GC them.
-            if self.ctr + (MAX_OOO_KEYS as u32) >= at {
-                self.prev.add(k);
+            if self.ctr + params.max_ooo_keys_or_default() >= at {
+                self.prev.add(k, params);
             }
         }
         // After we've potentially added some new keys, see if there's any we
         // want to throw away.
-        self.prev.gc(self.ctr);
+        self.prev.gc(self.ctr, params);
 
         Ok(Self::next_key_internal(&mut self.next, &mut self.ctr)
             .1
@@ -235,7 +303,7 @@ impl Chain {
         })
     }
 
-    pub fn new(initial_key: &[u8], dir: Direction) -> Self {
+    pub fn new(initial_key: &[u8], dir: Direction, params: ChainParams) -> Result<Self, Error> {
         hax_lib::fstar!("admit ()");
         let mut gen = [0u8; 96];
         kdf::hkdf_to_slice(
@@ -244,7 +312,7 @@ impl Chain {
             b"Signal PQ Ratchet V1 Chain  Start",
             &mut gen,
         );
-        Self {
+        Ok(Self {
             dir,
             current_epoch: 0,
             send_epoch: 0,
@@ -253,7 +321,8 @@ impl Chain {
                 recv: Self::ced_for_direction(&gen, &dir.switch()),
             }]),
             next_root: gen[0..32].to_vec(),
-        }
+            params: params.into_pb(),
+        })
     }
 
     pub fn add_epoch(&mut self, epoch_secret: EpochSecret) {
@@ -307,13 +376,13 @@ impl Chain {
     pub fn recv_key(&mut self, epoch: Epoch, index: u32) -> Result<Vec<u8>, Error> {
         hax_lib::fstar!("admit ()");
         let epoch_index = self.epoch_idx(epoch)?;
-        self.links[epoch_index].recv.key(index)
+        self.links[epoch_index].recv.key(index, &self.params)
     }
 
     #[hax_lib::opaque] // into_iter for vec_deque
     pub fn into_pb(self) -> pqrpb::Chain {
         pqrpb::Chain {
-            a2b: matches!(self.dir, Direction::A2B),
+            direction: self.dir.into(),
             current_epoch: self.current_epoch,
             send_epoch: self.send_epoch,
             links: self
@@ -325,17 +394,14 @@ impl Chain {
                 })
                 .collect::<Vec<_>>(),
             next_root: self.next_root,
+            params: Some(self.params),
         }
     }
 
     #[hax_lib::opaque] // into_iter and map
     pub fn from_pb(pb: pqrpb::Chain) -> Result<Self, Error> {
         Ok(Self {
-            dir: if pb.a2b {
-                Direction::A2B
-            } else {
-                Direction::B2A
-            },
+            dir: pb.direction.try_into().map_err(|_| Error::StateDecode)?,
             current_epoch: pb.current_epoch,
             send_epoch: pb.send_epoch,
             next_root: pb.next_root,
@@ -349,21 +415,22 @@ impl Chain {
                     })
                 })
                 .collect::<Result<VecDeque<_>, _>>()?,
+            params: pb.params.ok_or(Error::StateDecode)?,
         })
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::{Chain, MAX_JUMP, MAX_OOO_KEYS, TRIM_SIZE};
+    use super::*;
     use crate::{Direction, EpochSecret, Error};
     use rand::seq::SliceRandom;
     use rand::TryRngCore;
 
     #[test]
     fn directions_match() {
-        let mut a2b = Chain::new(b"1", Direction::A2B);
-        let mut b2a = Chain::new(b"1", Direction::B2A);
+        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default()).unwrap();
+        let mut b2a = Chain::new(b"1", Direction::B2A, ChainParams::default()).unwrap();
         let sk1 = a2b.send_key(0).unwrap();
         assert_eq!(sk1.0, 1);
         assert_eq!(sk1.1, b2a.recv_key(0, 1).unwrap());
@@ -388,7 +455,7 @@ mod test {
 
     #[test]
     fn previously_returned_key() {
-        let mut a2b = Chain::new(b"1", Direction::A2B);
+        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default()).unwrap();
         a2b.recv_key(0, 2).expect("should get key first time");
         assert!(matches!(
             a2b.recv_key(0, 2),
@@ -398,21 +465,23 @@ mod test {
 
     #[test]
     fn very_old_keys_are_trimmed() {
-        let mut a2b = Chain::new(b"1", Direction::A2B);
-        let mut i = 1u32;
-        while (i as usize) < TRIM_SIZE + 1 {
-            i += MAX_JUMP as u32 - 1;
-            a2b.recv_key(0, i).expect("should allow this jump");
-        }
+        let params = ChainParams {
+            max_jump: 10,
+            max_ooo_keys: 10,
+        };
+        let mut a2b = Chain::new(b"1", Direction::A2B, params).unwrap();
+        a2b.recv_key(0, 10).expect("should allow this jump");
+        a2b.recv_key(0, 12).expect("should allow progression");
         assert!(matches!(a2b.recv_key(0, 1), Err(Error::KeyTrimmed(1))));
     }
 
     #[test]
     fn out_of_order_keys() {
-        let mut a2b = Chain::new(b"1", Direction::A2B);
-        let mut b2a = Chain::new(b"1", Direction::B2A);
-        let mut keys = Vec::with_capacity(MAX_OOO_KEYS);
-        for _i in 0..MAX_OOO_KEYS {
+        let max_ooo = DEFAULT_CHAIN_PARAMS.max_ooo_keys;
+        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default()).unwrap();
+        let mut b2a = Chain::new(b"1", Direction::B2A, ChainParams::default()).unwrap();
+        let mut keys = Vec::with_capacity(max_ooo as usize);
+        for _i in 0..(max_ooo as usize) {
             keys.push(a2b.send_key(0).unwrap());
         }
         let mut rng = rand::rngs::OsRng.unwrap_err();
@@ -424,7 +493,7 @@ mod test {
 
     #[test]
     fn clear_old_send_keys() {
-        let mut a2b = Chain::new(b"1", Direction::A2B);
+        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default()).unwrap();
         a2b.send_key(0).unwrap();
         a2b.send_key(0).unwrap();
         a2b.add_epoch(EpochSecret {

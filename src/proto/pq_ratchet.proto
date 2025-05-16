@@ -25,8 +25,8 @@ message PolynomialDecoder {
 message PqRatchetState {
   message VersionNegotiation {
     bytes auth_key = 1;
-    bool alice = 2;
-    uint32 min_version = 3;
+    Direction direction = 2;
+    Version min_version = 3;
   }
   VersionNegotiation version_negotiation = 1;
   Chain chain = 2;
@@ -201,9 +201,30 @@ message Chain {
     Direction send = 1;
     Direction recv = 2;
   }
-  bool a2b = 1;
+  Direction direction = 1;
   uint64 current_epoch = 2;
   repeated Epoch links = 3;
   bytes next_root = 4;
   uint64 send_epoch = 5;
+  ChainParams params = 6;
+}
+
+enum Version {
+  V_0 = 0;  // disabled
+  V_1 = 1;
+}
+
+enum Direction {
+  A_2_B = 0;
+  B_2_A = 1;
+}
+
+message ChainParams {
+  // Disallow requesting a key that is more than MAX_JUMP ahead of `ctr`.
+  // If zero, defaults to 25,000.
+  uint32 max_jump = 1;
+  // Keep around keys back to at least `ctr - MAX_OOO_KEYS`, in case an out-of-order
+  // message comes in.  Messages older than this that arrive out-of-order
+  // will not be able to be decrypted and will return Error::KeyTrimmed.
+  uint32 max_ooo_keys = 2;
 }

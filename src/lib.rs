@@ -13,8 +13,9 @@ pub(crate) mod util;
 mod v1;
 
 use crate::chain::Chain;
+pub use crate::chain::ChainParams;
 use crate::proto::pq_ratchet as pqrpb;
-use num_enum::IntoPrimitive;
+pub use crate::proto::pq_ratchet::{Direction, Version};
 use prost::Message;
 use rand::{CryptoRng, Rng};
 use std::cmp::Ordering;
@@ -35,14 +36,16 @@ pub struct EpochSecret {
     pub secret: Secret,
 }
 
-#[derive(Clone, Copy)]
-pub enum Direction {
-    A2B,
-    B2A,
+pub struct Params<'a> {
+    pub direction: Direction,
+    pub version: Version,
+    pub min_version: Version,
+    pub auth_key: &'a [u8],
+    pub chain_params: ChainParams,
 }
 
 impl Direction {
-    fn switch(&self) -> Self {
+    pub fn switch(&self) -> Self {
         match self {
             Direction::A2B => Direction::B2A,
             Direction::B2A => Direction::A2B,
@@ -95,6 +98,8 @@ pub enum Error {
     ErroneousDataReceived,
     #[error("Send key epoch decreased ({0} -> {1})")]
     SendKeyEpochDecreased(u64, u64),
+    #[error("Invalid params: {0}")]
+    InvalidParams(&'static str),
 }
 
 impl From<encoding::EncodingError> for Error {
@@ -142,22 +147,6 @@ impl SecretOutput {
     }
 }
 
-/// Protocol version.
-///
-/// Note that these versions are strictly ordered:  if vX > vY, it is
-/// assumed that vX is preferred to vY and should be used if both
-/// parties support it.
-#[derive(Copy, Clone, IntoPrimitive)]
-#[repr(u8)]
-pub enum Version {
-    /// V0 is not using PQ ratcheting at all.  All sends are empty, and no
-    /// secrets are ever returned.
-    V0 = 0,
-    /// V1 uses an incremental ML-KEM 768 negotiation with polynomial encoders
-    /// based on GF16.
-    V1 = 1,
-}
-
 #[hax_lib::opaque]
 impl TryFrom<u8> for Version {
     type Error = String;
@@ -170,53 +159,54 @@ impl TryFrom<u8> for Version {
     }
 }
 
-impl Version {
-    pub const MAX: Version = Self::V1;
-
-    pub fn initial_alice_state(&self, auth_key: &[u8], min_version: Version) -> SerializedState {
-        hax_lib::fstar!("admit()");
-        pqrpb::PqRatchetState {
-            inner: self.init_alice_inner(auth_key),
-            version_negotiation: Some(pqrpb::pq_ratchet_state::VersionNegotiation {
-                auth_key: auth_key.to_vec(),
-                alice: true,
-                min_version: min_version as u32,
-            }),
-            chain: Some(Chain::new(auth_key, Direction::A2B).into_pb()),
+impl From<Version> for u8 {
+    fn from(v: Version) -> u8 {
+        match v {
+            Version::V0 => 0,
+            Version::V1 => 1,
         }
-        .encode_to_vec()
     }
+}
 
-    pub fn initial_bob_state(&self, auth_key: &[u8], min_version: Version) -> SerializedState {
-        hax_lib::fstar!("admit()");
-        pqrpb::PqRatchetState {
-            inner: self.init_bob_inner(auth_key),
-            version_negotiation: Some(pqrpb::pq_ratchet_state::VersionNegotiation {
-                auth_key: auth_key.to_vec(),
-                alice: false,
-                min_version: min_version as u32,
-            }),
-            chain: Some(Chain::new(auth_key, Direction::B2A).into_pb()),
-        }
-        .encode_to_vec()
-    }
-
-    fn init_alice_inner(&self, auth_key: &[u8]) -> Option<pqrpb::pq_ratchet_state::Inner> {
-        match self {
-            Version::V0 => None,
-            Version::V1 => Some(pqrpb::pq_ratchet_state::Inner::V1(
+fn init_inner(v: Version, d: Direction, auth_key: &[u8]) -> Option<pqrpb::pq_ratchet_state::Inner> {
+    match v {
+        Version::V0 => None,
+        Version::V1 => match d {
+            Direction::A2B => Some(pqrpb::pq_ratchet_state::Inner::V1(
                 v1states::States::init_a(auth_key).into_pb(),
             )),
-        }
-    }
-    fn init_bob_inner(&self, auth_key: &[u8]) -> Option<pqrpb::pq_ratchet_state::Inner> {
-        match self {
-            Version::V0 => None,
-            Version::V1 => Some(pqrpb::pq_ratchet_state::Inner::V1(
+            Direction::B2A => Some(pqrpb::pq_ratchet_state::Inner::V1(
                 v1states::States::init_b(auth_key).into_pb(),
             )),
+        },
+    }
+}
+
+pub fn initial_state(params: Params) -> Result<SerializedState, Error> {
+    hax_lib::fstar!("admit()");
+    match params.version {
+        Version::V0 => Ok(empty_state()),
+        _ => {
+            let version_negotiation = Some(pqrpb::pq_ratchet_state::VersionNegotiation {
+                auth_key: params.auth_key.to_vec(),
+                direction: params.direction.into(),
+                min_version: params.min_version.into(),
+            });
+            let chain =
+                Some(Chain::new(params.auth_key, params.direction, params.chain_params)?.into_pb());
+            Ok(pqrpb::PqRatchetState {
+                inner: init_inner(params.version, params.direction, params.auth_key),
+                chain,
+                version_negotiation,
+            }
+            .encode_to_vec())
         }
     }
+}
+
+impl Version {
+    pub const DISABLED: Version = Self::V0;
+    pub const MAX: Version = Self::V1;
 }
 
 pub struct Send {
@@ -305,15 +295,15 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
                         return Err(Error::VersionMismatch);
                     }
                     Some(ref vn) => {
-                        if (v as u32) < vn.min_version {
+                        if (v as i32) < vn.min_version {
                             return Err(Error::MinimumVersion);
                         }
                         pqrpb::PqRatchetState {
-                            inner: if vn.alice {
-                                v.init_alice_inner(&vn.auth_key)
-                            } else {
-                                v.init_bob_inner(&vn.auth_key)
-                            },
+                            inner: init_inner(
+                                v,
+                                vn.direction.try_into().map_err(|_| Error::StateDecode)?,
+                                &vn.auth_key,
+                            ),
                             // This is our negotiation; we disallow any further.
                             version_negotiation: None,
                             chain: prenegotiated_state_pb.chain,
@@ -392,7 +382,7 @@ mod lib_test {
     use rand::TryRngCore;
     use rand_core::OsRng;
 
-    use crate::{empty_state, recv, send, Error, Recv, Send, SerializedState, Version};
+    use super::*;
 
     #[test]
     fn ratchet() -> Result<(), Error> {
@@ -400,8 +390,20 @@ mod lib_test {
 
         let version = Version::V1;
 
-        let alex_pq_state = version.initial_alice_state(&[41u8; 32], Version::V1);
-        let blake_pq_state = version.initial_bob_state(&[41u8; 32], Version::V1);
+        let alex_pq_state = initial_state(Params {
+            version,
+            min_version: version,
+            direction: Direction::A2B,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let blake_pq_state = initial_state(Params {
+            version,
+            min_version: version,
+            direction: Direction::B2A,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
 
         // Now let's send some messages
         let Send {

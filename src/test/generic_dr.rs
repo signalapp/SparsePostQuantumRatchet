@@ -89,9 +89,9 @@ mod test {
     use rand_core::OsRng;
 
     use crate::{
-        chain, kdf, recv, send,
+        chain, initial_state, kdf, recv, send,
         test::{scka::Scka, x25519_scka},
-        Error, Secret, SerializedMessage, SerializedState, Version,
+        ChainParams, Direction, Error, Params, Secret, SerializedMessage, SerializedState, Version,
     };
 
     use super::{dr_recv, dr_send, DoubleRatchet};
@@ -151,7 +151,7 @@ mod test {
     #[test]
     fn hybrid_ratchet() -> Result<(), Error> {
         let alex_ec_ratchet = x25519_scka::states::States::init_a();
-        let alex_ec_chain = chain::Chain::new(&[43u8; 32], crate::Direction::A2B);
+        let alex_ec_chain = chain::Chain::new(&[43u8; 32], Direction::A2B, ChainParams::default())?;
 
         let alex_ec_state = DoubleRatchet {
             asymratchet: alex_ec_ratchet,
@@ -159,7 +159,8 @@ mod test {
         };
 
         let blake_ec_ratchet = x25519_scka::states::States::init_b();
-        let blake_ec_chain = chain::Chain::new(&[43u8; 32], crate::Direction::B2A);
+        let blake_ec_chain =
+            chain::Chain::new(&[43u8; 32], Direction::B2A, ChainParams::default())?;
 
         let blake_ec_state = DoubleRatchet {
             asymratchet: blake_ec_ratchet,
@@ -168,8 +169,20 @@ mod test {
 
         let version = Version::V1;
 
-        let alex_pq_state = version.initial_alice_state(&[41u8; 32], Version::V1);
-        let blake_pq_state = version.initial_bob_state(&[41u8; 32], Version::V1);
+        let alex_pq_state = initial_state(Params {
+            version,
+            min_version: version,
+            direction: Direction::A2B,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let blake_pq_state = initial_state(Params {
+            version,
+            min_version: version,
+            direction: Direction::B2A,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
 
         // Now let's send some messages
         println!("alex send");

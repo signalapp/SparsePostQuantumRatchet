@@ -12,25 +12,36 @@ mod tests {
     use spqr::*;
     use test::{black_box, Bencher};
 
+    fn state(dir: Direction) -> SerializedState {
+        initial_state(Params {
+            version: Version::MAX,
+            min_version: Version::MAX,
+            auth_key: b"1",
+            direction: dir,
+            chain_params: ChainParams::default(),
+        })
+        .expect("should be valid params")
+    }
+
     #[bench]
     fn init_a(b: &mut Bencher) {
         b.iter(|| {
             // Inner closure, the actual test
-            black_box(Version::MAX.initial_alice_state(b"1", Version::V1));
+            black_box(state(Direction::A2B));
         });
     }
     #[bench]
     fn init_b(b: &mut Bencher) {
         b.iter(|| {
             // Inner closure, the actual test
-            black_box(Version::MAX.initial_bob_state(b"1", Version::V1));
+            black_box(state(Direction::B2A));
         });
     }
     #[bench]
     fn send_recv(bench: &mut Bencher) {
         let mut ctr: u64 = 0;
-        let mut a = Version::MAX.initial_alice_state(b"1", Version::V1);
-        let mut b = Version::MAX.initial_bob_state(b"1", Version::V1);
+        let mut a = state(Direction::A2B);
+        let mut b = state(Direction::B2A);
         let mut rng = OsRng.unwrap_err();
         let mut drop_ctr = 0;
         bench.iter(|| {
@@ -61,8 +72,8 @@ mod tests {
     #[bench]
     fn long_chain_send(bench: &mut Bencher) {
         let mut rng = OsRng.unwrap_err();
-        let mut a = Version::MAX.initial_alice_state(b"1", Version::V1);
-        let mut b = Version::MAX.initial_bob_state(b"1", Version::V1);
+        let mut a = state(Direction::A2B);
+        let mut b = state(Direction::B2A);
 
         // Build a state with a lot of unused chain keys.
         for _i in 0..8 {
