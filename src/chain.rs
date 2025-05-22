@@ -75,7 +75,9 @@ impl ChainParamsPB {
     /// When the size of our key history exceeds this amount, we run a
     /// garbage collection on it.
     fn trim_size(&self) -> usize {
-        (self.max_ooo_keys_or_default() as usize) * 11 / 10 + 1
+        let max_ooo = self.max_ooo_keys_or_default() as usize;
+        hax_lib::assume!(max_ooo < 390451572);
+        max_ooo * 11 / 10 + 1
     }
 }
 
@@ -130,7 +132,7 @@ impl KeyHistory {
         }
     }
 
-    #[hax_lib::requires(self.data.len() <= KeyHistory::KEY_SIZE * _params.trim_size())]
+    #[hax_lib::requires(_params.trim_size() < 119304647 && self.data.len() <= KeyHistory::KEY_SIZE * _params.trim_size())]
     fn add(&mut self, k: (u32, [u8; 32]), _params: &pqrpb::ChainParams) {
         self.data.extend_from_slice(&k.0.to_be_bytes()[..]);
         self.data.extend_from_slice(&k.1[..]);
@@ -166,7 +168,7 @@ impl KeyHistory {
         self.data.clear();
     }
 
-    #[hax_lib::requires(my_array_index <= self.data.len() && self.data.len() <= KeyHistory::KEY_SIZE * _params.trim_size())]
+    #[hax_lib::requires(my_array_index <= self.data.len() && _params.trim_size() < 119304647 && self.data.len() <= KeyHistory::KEY_SIZE * _params.trim_size())]
     fn remove(&mut self, mut my_array_index: usize, _params: &pqrpb::ChainParams) {
         if my_array_index + Self::KEY_SIZE < self.data.len() {
             let new_end = self.data.len() - Self::KEY_SIZE;
@@ -272,15 +274,15 @@ impl ChainEpochDirection {
             .to_vec())
     }
 
-    fn into_pb(self) -> pqrpb::chain::epoch::Direction {
-        pqrpb::chain::epoch::Direction {
+    fn into_pb(self) -> pqrpb::chain::epoch::EpochDirection {
+        pqrpb::chain::epoch::EpochDirection {
             ctr: self.ctr,
             next: self.next,
             prev: self.prev.data,
         }
     }
 
-    fn from_pb(pb: pqrpb::chain::epoch::Direction) -> Result<Self, Error> {
+    fn from_pb(pb: pqrpb::chain::epoch::EpochDirection) -> Result<Self, Error> {
         Ok(Self {
             ctr: pb.ctr,
             next: pb.next,

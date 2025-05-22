@@ -193,13 +193,13 @@ message V1State {
 
 message Chain {
   message Epoch {
-    message Direction {
+    message EpochDirection {
       uint32 ctr = 1;
       bytes next = 2;
       bytes prev = 3;
     }
-    Direction send = 1;
-    Direction recv = 2;
+    EpochDirection send = 1;
+    EpochDirection recv = 2;
   }
   Direction direction = 1;
   uint64 current_epoch = 2;
