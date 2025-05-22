@@ -108,18 +108,15 @@ pub struct Chain {
     dir: Direction,
     current_epoch: Epoch,
     send_epoch: Epoch,
-    // links.len() <= EPOCHS_TO_KEEP
     links: VecDeque<ChainEpoch>, // stores [link[current_epoch-N] .. link[current_epoch]]
     // next_root.len() == 32
     next_root: Vec<u8>,
     params: pqrpb::ChainParams,
 }
 
-/// We keep around this many epochs (including the current one) for out-of-order
-/// messages.  Currently, since there's O(10s) of messages required to exit a
-/// single epoch and our MAX_OOO_KEYS is close to that number as well, we only
-/// keep one additional epoch around.
-const EPOCHS_TO_KEEP: usize = 2;
+/// We keep around this many epochs to keep prior to the current send epoch.
+/// We'll always keep the send epoch and any subsequent epochs.
+const EPOCHS_TO_KEEP_PRIOR_TO_SEND_EPOCH: usize = 1;
 
 #[hax_lib::attributes]
 impl KeyHistory {
@@ -343,9 +340,6 @@ impl Chain {
             send: Self::ced_for_direction(&gen, &self.dir),
             recv: Self::ced_for_direction(&gen, &self.dir.switch()),
         });
-        if self.links.len() > EPOCHS_TO_KEEP {
-            self.links.pop_front();
-        }
     }
 
     fn epoch_idx(&mut self, epoch: Epoch) -> Result<usize, Error> {
@@ -365,9 +359,13 @@ impl Chain {
         if epoch < self.send_epoch {
             return Err(Error::SendKeyEpochDecreased(self.send_epoch, epoch));
         }
-        let epoch_index = self.epoch_idx(epoch)?;
+        let mut epoch_index = self.epoch_idx(epoch)?;
         if self.send_epoch != epoch {
             self.send_epoch = epoch;
+            while epoch_index > EPOCHS_TO_KEEP_PRIOR_TO_SEND_EPOCH {
+                self.links.pop_front();
+                epoch_index -= 1;
+            }
             for i in 0..epoch_index {
                 self.links[i].send.clear_next();
             }
