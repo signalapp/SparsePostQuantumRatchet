@@ -356,20 +356,20 @@ process
 
    (* Compromise Private Keys *)
    
-     CompromiseKeysA(A,B,0)  | CompromiseKeysB(B,A,0) | 
+     CompromiseKeysA(A,B,0)  | (* CompromiseKeysB(B,A,0) | 
      CompromiseKeysA(B,A,1)  | CompromiseKeysB(A,B,1) | 
-     CompromiseKeysA(A,B,2)  | CompromiseKeysB(B,A,2) | 
-     CompromiseKeysA(B,A,3)  | CompromiseKeysB(A,B,3) |
-     CompromiseKeysA(B,A,4)  | CompromiseKeysB(A,B,4) |
+     CompromiseKeysA(A,B,2)  | *) CompromiseKeysB(B,A,2) | 
+     (* CompromiseKeysA(B,A,3)  | CompromiseKeysB(A,B,3) |
+     CompromiseKeysA(B,A,4)  | CompromiseKeysB(A,B,4) | *)
    
      
    (* Compromise MAC Keys *)
    
-     CompromiseAuthA(A,B,0)  | CompromiseAuthB(B,A,0) | 
+     (* CompromiseAuthA(A,B,0)  | CompromiseAuthB(B,A,0) | 
      CompromiseAuthA(B,A,1)  | CompromiseAuthB(A,B,1) |
      CompromiseAuthA(A,B,2)  | CompromiseAuthB(B,A,2) |
      CompromiseAuthA(B,A,3)  | CompromiseAuthB(A,B,3) |
-     CompromiseAuthA(B,A,4)  | CompromiseAuthB(A,B,4) |
+     CompromiseAuthA(B,A,4)  |*) CompromiseAuthB(A,B,4) |
  
    (* Post-Compromise Secrecy: Passively Compromise MAC Keys *after* all epochs are done *)
      (phase 1; (out(c,authAB) |
