@@ -283,7 +283,7 @@ query ep:nat, sk:symkey;
 
 (* Confidentiality Queries *)
 
-query ep:nat, sk:symkey, ep_:nat, x:principal, y:principal;
+query i: time, j: time, ep:nat, sk:symkey, ep_:nat, x:principal, y:principal;
     event(CompletedA(A,B,0,sk)) && attacker(sk);
     event(CompletedB(B,A,0,sk)) && attacker(sk);
     event(CompletedA(B,A,1,sk)) && attacker(sk);
