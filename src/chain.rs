@@ -302,7 +302,7 @@ impl Chain {
         })
     }
 
-    pub fn new(initial_key: &[u8], dir: Direction, params: ChainParams) -> Result<Self, Error> {
+    pub fn new(initial_key: &[u8], dir: Direction, params: ChainParamsPB) -> Result<Self, Error> {
         hax_lib::fstar!("admit ()");
         let mut gen = [0u8; 96];
         kdf::hkdf_to_slice(
@@ -320,7 +320,7 @@ impl Chain {
                 recv: Self::ced_for_direction(&gen, &dir.switch()),
             }]),
             next_root: gen[0..32].to_vec(),
-            params: params.into_pb(),
+            params,
         })
     }
 
@@ -429,8 +429,8 @@ mod test {
 
     #[test]
     fn directions_match() {
-        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default()).unwrap();
-        let mut b2a = Chain::new(b"1", Direction::B2A, ChainParams::default()).unwrap();
+        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default().into_pb()).unwrap();
+        let mut b2a = Chain::new(b"1", Direction::B2A, ChainParams::default().into_pb()).unwrap();
         let sk1 = a2b.send_key(0).unwrap();
         assert_eq!(sk1.0, 1);
         assert_eq!(sk1.1, b2a.recv_key(0, 1).unwrap());
@@ -455,7 +455,7 @@ mod test {
 
     #[test]
     fn previously_returned_key() {
-        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default()).unwrap();
+        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default().into_pb()).unwrap();
         a2b.recv_key(0, 2).expect("should get key first time");
         assert!(matches!(
             a2b.recv_key(0, 2),
@@ -468,7 +468,8 @@ mod test {
         let params = ChainParams {
             max_jump: 10,
             max_ooo_keys: 10,
-        };
+        }
+        .into_pb();
         let mut a2b = Chain::new(b"1", Direction::A2B, params).unwrap();
         a2b.recv_key(0, 10).expect("should allow this jump");
         a2b.recv_key(0, 12).expect("should allow progression");
@@ -478,8 +479,8 @@ mod test {
     #[test]
     fn out_of_order_keys() {
         let max_ooo = DEFAULT_CHAIN_PARAMS.max_ooo_keys;
-        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default()).unwrap();
-        let mut b2a = Chain::new(b"1", Direction::B2A, ChainParams::default()).unwrap();
+        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default().into_pb()).unwrap();
+        let mut b2a = Chain::new(b"1", Direction::B2A, ChainParams::default().into_pb()).unwrap();
         let mut keys = Vec::with_capacity(max_ooo as usize);
         for _i in 0..(max_ooo as usize) {
             keys.push(a2b.send_key(0).unwrap());
@@ -493,7 +494,7 @@ mod test {
 
     #[test]
     fn clear_old_send_keys() {
-        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default()).unwrap();
+        let mut a2b = Chain::new(b"1", Direction::A2B, ChainParams::default().into_pb()).unwrap();
         a2b.send_key(0).unwrap();
         a2b.send_key(0).unwrap();
         a2b.add_epoch(EpochSecret {

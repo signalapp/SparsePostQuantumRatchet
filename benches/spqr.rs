@@ -58,7 +58,7 @@ mod tests {
             } = send(x, &mut rng).unwrap();
             *x = state;
             let Recv { state, key: key_b } = recv(y, &msg).unwrap();
-            assert_eq!(key_a.unwrap(), key_b.unwrap());
+            assert_eq!(key_a, key_b);
             if drop_ctr == 0 {
                 drop_ctr += 30;
                 // We 'drop' a message by not replacing y's state.

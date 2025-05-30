@@ -68,6 +68,15 @@ pub enum SecretOutput {
     Recv(Secret),
 }
 
+#[derive(Debug)]
+pub enum CurrentVersion {
+    StillNegotiating {
+        version: Version,
+        min_version: Version,
+    },
+    NegotiationComplete(Version),
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("state decode failed")]
@@ -100,6 +109,8 @@ pub enum Error {
     SendKeyEpochDecreased(u64, u64),
     #[error("Invalid params: {0}")]
     InvalidParams(&'static str),
+    #[error("Chain not available")]
+    ChainNotAvailable,
 }
 
 impl From<encoding::EncodingError> for Error {
@@ -191,12 +202,11 @@ pub fn initial_state(params: Params) -> Result<SerializedState, Error> {
                 auth_key: params.auth_key.to_vec(),
                 direction: params.direction.into(),
                 min_version: params.min_version.into(),
+                chain_params: Some(params.chain_params.into_pb()),
             });
-            let chain =
-                Some(Chain::new(params.auth_key, params.direction, params.chain_params)?.into_pb());
             Ok(pqrpb::PqRatchetState {
                 inner: init_inner(params.version, params.direction, params.auth_key),
-                chain,
+                chain: None,
                 version_negotiation,
             }
             .encode_to_vec())
@@ -215,6 +225,21 @@ pub struct Send {
     pub key: MessageKey,
 }
 
+pub fn current_version(state: &SerializedState) -> Result<CurrentVersion, Error> {
+    let state_pb = decode_state(state)?;
+    let version = match state_pb.inner {
+        None => Version::V0,
+        Some(pqrpb::pq_ratchet_state::Inner::V1(_)) => Version::V1,
+    };
+    Ok(match state_pb.version_negotiation {
+        None => CurrentVersion::NegotiationComplete(version),
+        Some(vn) => CurrentVersion::StillNegotiating {
+            version,
+            min_version: vn.min_version.try_into().map_err(|_| Error::StateDecode)?,
+        },
+    })
+}
+
 #[hax_lib::fstar::verification_status(lax)]
 pub fn send<R: Rng + CryptoRng>(state: &SerializedState, rng: &mut R) -> Result<Send, Error> {
     let state_pb = decode_state(state)?;
@@ -225,14 +250,35 @@ pub fn send<R: Rng + CryptoRng>(state: &SerializedState, rng: &mut R) -> Result<
             key: None,
         }),
         Some(pqrpb::pq_ratchet_state::Inner::V1(pb)) => {
-            let mut chain = Chain::from_pb(state_pb.chain.ok_or(Error::StateDecode)?)?;
-
             let v1states::Send { msg, key, state } = v1states::States::from_pb(pb)?.send(rng)?;
-
-            if let Some(epoch_secret) = key {
-                chain.add_epoch(epoch_secret);
-            }
-            let (index, msg_key) = chain.send_key(msg.epoch - 1)?;
+            let chain = match state_pb.chain {
+                None => match state_pb.version_negotiation.as_ref() {
+                    Some(vn) => {
+                        if vn.min_version > Version::V0 as i32 {
+                            Some(chain_from_version_negotiation(vn)?)
+                        } else {
+                            None
+                        }
+                    }
+                    None => {
+                        return Err(Error::ChainNotAvailable);
+                    }
+                },
+                Some(pb) => Some(Chain::from_pb(pb)?),
+            };
+            let (index, msg_key, chain_pb) = match chain {
+                None => {
+                    assert!(key.is_none());
+                    (0, vec![], None)
+                }
+                Some(mut chain) => {
+                    if let Some(epoch_secret) = key {
+                        chain.add_epoch(epoch_secret);
+                    }
+                    let (index, msg_key) = chain.send_key(msg.epoch - 1)?;
+                    (index, msg_key, Some(chain.into_pb()))
+                }
+            };
 
             let msg = msg.serialize(index);
             assert!(!msg.is_empty());
@@ -242,11 +288,16 @@ pub fn send<R: Rng + CryptoRng>(state: &SerializedState, rng: &mut R) -> Result<
                     inner: Some(pqrpb::pq_ratchet_state::Inner::V1(state.into_pb())),
                     // Sending never changes our version negotiation.
                     version_negotiation: state_pb.version_negotiation,
-                    chain: Some(chain.into_pb()),
+                    chain: chain_pb,
                 }
                 .encode_to_vec(),
                 msg,
-                key: Some(msg_key),
+                // hax does not like `filter`
+                key: if msg_key.is_empty() {
+                    None
+                } else {
+                    Some(msg_key)
+                },
             })
         }
     }
@@ -255,6 +306,29 @@ pub fn send<R: Rng + CryptoRng>(state: &SerializedState, rng: &mut R) -> Result<
 pub struct Recv {
     pub state: SerializedState,
     pub key: MessageKey,
+}
+
+fn chain_from_version_negotiation(
+    vn: &pqrpb::pq_ratchet_state::VersionNegotiation,
+) -> Result<Chain, Error> {
+    Chain::new(
+        &vn.auth_key,
+        vn.direction.try_into().map_err(|_| Error::StateDecode)?,
+        vn.chain_params.ok_or(Error::ChainNotAvailable)?,
+    )
+}
+
+fn chain_from(
+    pb: Option<pqrpb::Chain>,
+    vn: Option<&pqrpb::pq_ratchet_state::VersionNegotiation>,
+) -> Result<Chain, Error> {
+    match pb {
+        Some(pb) => Ok(Chain::from_pb(pb)?),
+        None => match vn {
+            None => Err(Error::ChainNotAvailable),
+            Some(vn) => chain_from_version_negotiation(vn),
+        },
+    }
 }
 
 #[hax_lib::fstar::verification_status(lax)]
@@ -275,15 +349,9 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
             });
         }
         Some(v) => match (v as u8).cmp(&(state_version(&prenegotiated_state_pb) as u8)) {
-            Ordering::Equal => {
+            Ordering::Equal | Ordering::Greater => {
                 // Our versions are equal; proceed with existing state
                 prenegotiated_state_pb
-            }
-            Ordering::Greater => {
-                // Their version is greater than ours, but still one we support.
-                // This should not happen, since we should use our highest supported
-                // version.
-                return Err(Error::VersionMismatch);
             }
             Ordering::Less => {
                 // Their version is less than ours.  If we are allowed to negotiate, we
@@ -306,7 +374,13 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
                             ),
                             // This is our negotiation; we disallow any further.
                             version_negotiation: None,
-                            chain: prenegotiated_state_pb.chain,
+                            chain: Some(
+                                chain_from(
+                                    prenegotiated_state_pb.chain,
+                                    prenegotiated_state_pb.version_negotiation.as_ref(),
+                                )?
+                                .into_pb(),
+                            ),
                         }
                     }
                 }
@@ -323,16 +397,20 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
             key: None,
         }),
         Some(pqrpb::pq_ratchet_state::Inner::V1(pb)) => {
-            let mut chain = Chain::from_pb(state_pb.chain.ok_or(Error::StateDecode)?)?;
             let (scka_msg, index, _) = v1states::Message::deserialize(msg)?;
 
             let v1states::Recv { key, state } = v1states::States::from_pb(pb)?.recv(&scka_msg)?;
-
+            let msg_key_epoch = scka_msg.epoch - 1;
+            let mut chain = chain_from(state_pb.chain, state_pb.version_negotiation.as_ref())?;
             if let Some(epoch_secret) = key {
                 chain.add_epoch(epoch_secret);
             }
+            let msg_key = if msg_key_epoch == 0 && index == 0 {
+                vec![]
+            } else {
+                chain.recv_key(msg_key_epoch, index)?
+            };
 
-            let msg_key = chain.recv_key(scka_msg.epoch - 1, index)?;
             Ok(Recv {
                 state: pqrpb::PqRatchetState {
                     inner: Some(pqrpb::pq_ratchet_state::Inner::V1(state.into_pb())),
@@ -341,7 +419,12 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
                     chain: Some(chain.into_pb()),
                 }
                 .encode_to_vec(),
-                key: Some(msg_key),
+                // hax does not like `filter`
+                key: if msg_key.is_empty() {
+                    None
+                } else {
+                    Some(msg_key)
+                },
             })
         }
     }
@@ -566,5 +649,400 @@ mod lib_test {
     fn empty_constructor_for_state() {
         let v = empty_state();
         assert!(v.is_empty());
+    }
+
+    #[test]
+    fn empty_key_until_version_negotiation() -> Result<(), Error> {
+        let mut rng = OsRng.unwrap_err();
+
+        let version = Version::V1;
+
+        let alex_pq_state = initial_state(Params {
+            version,
+            min_version: Version::V0,
+            direction: Direction::A2B,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let blake_pq_state = initial_state(Params {
+            version,
+            min_version: Version::V0,
+            direction: Direction::B2A,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+
+        // Now let's send some messages
+        let Send {
+            state: alex_pq_state,
+            msg: msg_a1,
+            key: key_a1,
+        } = send(&alex_pq_state, &mut rng)?;
+        let Send {
+            state: alex_pq_state,
+            msg: msg_a2,
+            key: key_a2,
+        } = send(&alex_pq_state, &mut rng)?;
+        let Send {
+            state: alex_pq_state,
+            msg: msg_a3,
+            key: key_a3,
+        } = send(&alex_pq_state, &mut rng)?;
+
+        let Send {
+            state: blake_pq_state,
+            msg: msg_b1,
+            key: key_b1,
+        } = send(&blake_pq_state, &mut rng)?;
+        let Send {
+            state: blake_pq_state,
+            msg: msg_b2,
+            key: key_b2,
+        } = send(&blake_pq_state, &mut rng)?;
+        let Send {
+            state: blake_pq_state,
+            msg: msg_b3,
+            key: key_b3,
+        } = send(&blake_pq_state, &mut rng)?;
+
+        assert_eq!(key_a1, None);
+        assert_eq!(key_a2, None);
+        assert_eq!(key_a3, None);
+        assert_eq!(key_b1, None);
+        assert_eq!(key_b2, None);
+        assert_eq!(key_b3, None);
+
+        let Recv {
+            state: alex_pq_state,
+            key: key_b2,
+        } = recv(&alex_pq_state, &msg_b2)?;
+        assert_eq!(key_b2, None);
+        // After our first Recv, keys are now non-empty.
+        let Send {
+            state: alex_pq_state,
+            msg: msg_a4,
+            key: key_a4,
+        } = send(&alex_pq_state, &mut rng)?;
+        assert!(key_a4.is_some());
+        let Send {
+            state: mut alex_pq_state,
+            msg: msg_a5,
+            key: key_a5,
+        } = send(&alex_pq_state, &mut rng)?;
+        assert!(key_a5.is_some());
+
+        let Recv {
+            state: blake_pq_state,
+            key: key_a1,
+        } = recv(&blake_pq_state, &msg_a1)?;
+        assert_eq!(key_a1, None);
+        // After our first Recv, keys are now non-empty.
+        let Send {
+            state: blake_pq_state,
+            msg: msg_b4,
+            key: key_b4,
+        } = send(&blake_pq_state, &mut rng)?;
+        assert!(key_b4.is_some());
+        let Send {
+            state: mut blake_pq_state,
+            msg: msg_b5,
+            key: key_b5,
+        } = send(&blake_pq_state, &mut rng)?;
+        assert!(key_b5.is_some());
+
+        for (msg, want_key) in [
+            (msg_a3, key_a3),
+            (msg_a4, key_a4),
+            (msg_a2, key_a2),
+            (msg_a5, key_a5),
+        ] {
+            let Recv { state, key } = recv(&blake_pq_state, &msg)?;
+            assert_eq!(want_key, key);
+            blake_pq_state = state;
+        }
+
+        for (msg, want_key) in [
+            (msg_b1, key_b1),
+            (msg_b3, key_b3),
+            (msg_b4, key_b4),
+            (msg_b5, key_b5),
+        ] {
+            let Recv { state, key } = recv(&alex_pq_state, &msg)?;
+            assert_eq!(want_key, key);
+            alex_pq_state = state;
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn min_version_v1_always_creates_keys_a2b() -> Result<(), Error> {
+        let mut rng = OsRng.unwrap_err();
+
+        let alex_pq_state = initial_state(Params {
+            version: Version::MAX,
+            min_version: Version::V1,
+            direction: Direction::A2B,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let blake_pq_state = initial_state(Params {
+            version: Version::MAX,
+            min_version: Version::V0,
+            direction: Direction::B2A,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let Send {
+            msg: msg_a1,
+            key: key_a1,
+            ..
+        } = send(&alex_pq_state, &mut rng)?;
+        assert!(key_a1.is_some());
+        let Send {
+            state: blake_pq_state,
+            key: key_b1,
+            ..
+        } = send(&blake_pq_state, &mut rng)?;
+        assert!(key_b1.is_none());
+        let Recv {
+            state: blake_pq_state,
+            ..
+        } = recv(&blake_pq_state, &msg_a1)?;
+        // After our first Recv, keys are now non-empty.
+        let Send { key: key_b2, .. } = send(&blake_pq_state, &mut rng)?;
+        assert!(key_b2.is_some());
+        Ok(())
+    }
+
+    #[test]
+    fn min_version_v1_always_creates_keys_b2a() -> Result<(), Error> {
+        let mut rng = OsRng.unwrap_err();
+
+        let alex_pq_state = initial_state(Params {
+            version: Version::MAX,
+            min_version: Version::V0,
+            direction: Direction::A2B,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let blake_pq_state = initial_state(Params {
+            version: Version::MAX,
+            min_version: Version::V1,
+            direction: Direction::B2A,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let Send {
+            msg: msg_b1,
+            key: key_b1,
+            ..
+        } = send(&blake_pq_state, &mut rng)?;
+        assert!(key_b1.is_some());
+        let Send {
+            state: alex_pq_state,
+            key: key_a1,
+            ..
+        } = send(&alex_pq_state, &mut rng)?;
+        assert!(key_a1.is_none());
+        let Recv {
+            state: alex_pq_state,
+            ..
+        } = recv(&alex_pq_state, &msg_b1)?;
+        // After our first Recv, keys are now non-empty.
+        let Send { key: key_a2, .. } = send(&alex_pq_state, &mut rng)?;
+        assert!(key_a2.is_some());
+        Ok(())
+    }
+
+    #[test]
+    fn negotiate_to_v0_a2b() -> Result<(), Error> {
+        let mut rng = OsRng.unwrap_err();
+
+        let alex_pq_state = initial_state(Params {
+            version: Version::MAX,
+            min_version: Version::V0,
+            direction: Direction::A2B,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let blake_pq_state = initial_state(Params {
+            version: Version::V0,
+            min_version: Version::V0,
+            direction: Direction::B2A,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        assert!(matches!(
+            current_version(&alex_pq_state)?,
+            CurrentVersion::StillNegotiating {
+                version: Version::MAX,
+                min_version: Version::V0
+            },
+        ));
+        assert!(matches!(
+            current_version(&blake_pq_state)?,
+            CurrentVersion::NegotiationComplete(Version::V0),
+        ));
+        let Send {
+            msg: msg_a1,
+            state: alex_pq_state,
+            ..
+        } = send(&alex_pq_state, &mut rng)?;
+        let Recv {
+            state: blake_pq_state,
+            ..
+        } = recv(&blake_pq_state, &msg_a1)?;
+        let Send { msg: msg_b1, .. } = send(&blake_pq_state, &mut rng)?;
+        let Recv {
+            state: alex_pq_state,
+            ..
+        } = recv(&alex_pq_state, &msg_b1)?;
+        assert!(matches!(
+            current_version(&alex_pq_state)?,
+            CurrentVersion::NegotiationComplete(Version::V0),
+        ));
+        assert!(matches!(
+            current_version(&alex_pq_state)?,
+            CurrentVersion::NegotiationComplete(Version::V0),
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn negotiate_to_v0_b2a() -> Result<(), Error> {
+        let mut rng = OsRng.unwrap_err();
+
+        let alex_pq_state = initial_state(Params {
+            version: Version::V0,
+            min_version: Version::V0,
+            direction: Direction::A2B,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let blake_pq_state = initial_state(Params {
+            version: Version::MAX,
+            min_version: Version::V0,
+            direction: Direction::B2A,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        assert!(matches!(
+            current_version(&alex_pq_state)?,
+            CurrentVersion::NegotiationComplete(Version::V0),
+        ));
+        assert!(matches!(
+            current_version(&blake_pq_state)?,
+            CurrentVersion::StillNegotiating {
+                version: Version::MAX,
+                min_version: Version::V0
+            },
+        ));
+        let Send {
+            msg: msg_a1,
+            state: alex_pq_state,
+            ..
+        } = send(&alex_pq_state, &mut rng)?;
+        let Recv {
+            state: blake_pq_state,
+            ..
+        } = recv(&blake_pq_state, &msg_a1)?;
+        let Send { msg: msg_b1, .. } = send(&blake_pq_state, &mut rng)?;
+        let Recv {
+            state: alex_pq_state,
+            ..
+        } = recv(&alex_pq_state, &msg_b1)?;
+        assert!(matches!(
+            current_version(&alex_pq_state)?,
+            CurrentVersion::NegotiationComplete(Version::V0),
+        ));
+        assert!(matches!(
+            current_version(&alex_pq_state)?,
+            CurrentVersion::NegotiationComplete(Version::V0),
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn negotiation_refused_a2b() -> Result<(), Error> {
+        let mut rng = OsRng.unwrap_err();
+
+        let alex_pq_state = initial_state(Params {
+            version: Version::MAX,
+            min_version: Version::V1,
+            direction: Direction::A2B,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let blake_pq_state = initial_state(Params {
+            version: Version::V0,
+            min_version: Version::V0,
+            direction: Direction::B2A,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        assert!(matches!(
+            current_version(&alex_pq_state)?,
+            CurrentVersion::StillNegotiating {
+                version: Version::MAX,
+                min_version: Version::V1
+            },
+        ));
+        assert!(matches!(
+            current_version(&blake_pq_state)?,
+            CurrentVersion::NegotiationComplete(Version::V0),
+        ));
+        let Send {
+            msg: msg_a1,
+            state: alex_pq_state,
+            ..
+        } = send(&alex_pq_state, &mut rng)?;
+        let Recv {
+            state: blake_pq_state,
+            ..
+        } = recv(&blake_pq_state, &msg_a1)?;
+        let Send { msg: msg_b1, .. } = send(&blake_pq_state, &mut rng)?;
+        assert!(matches!(
+            recv(&alex_pq_state, &msg_b1),
+            Err(Error::MinimumVersion),
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn negotiation_refused_b2a() -> Result<(), Error> {
+        let mut rng = OsRng.unwrap_err();
+
+        let alex_pq_state = initial_state(Params {
+            version: Version::V0,
+            min_version: Version::V0,
+            direction: Direction::A2B,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let blake_pq_state = initial_state(Params {
+            version: Version::MAX,
+            min_version: Version::V1,
+            direction: Direction::B2A,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        assert!(matches!(
+            current_version(&alex_pq_state)?,
+            CurrentVersion::NegotiationComplete(Version::V0),
+        ));
+        assert!(matches!(
+            current_version(&blake_pq_state)?,
+            CurrentVersion::StillNegotiating {
+                version: Version::MAX,
+                min_version: Version::V1
+            },
+        ));
+        let Send { msg: msg_a1, .. } = send(&alex_pq_state, &mut rng)?;
+        assert!(matches!(
+            recv(&blake_pq_state, &msg_a1),
+            Err(Error::MinimumVersion)
+        ));
+        Ok(())
     }
 }

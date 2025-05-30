@@ -116,7 +116,7 @@ mod test {
 
         let key = kdf::hkdf_to_vec(
             &[0u8; 32],
-            &[pq_send.key.unwrap(), ec_send.key.unwrap().to_vec()].concat(),
+            &[pq_send.key.unwrap_or(vec![]), ec_send.key.unwrap().to_vec()].concat(),
             b"hybrid ratchet merge",
             32,
         );
@@ -141,7 +141,7 @@ mod test {
 
         let key = kdf::hkdf_to_vec(
             &[0u8; 32],
-            &[pq_recv.key.unwrap(), ec_recv.key.unwrap().to_vec()].concat(),
+            &[pq_recv.key.unwrap_or(vec![]), ec_recv.key.unwrap().to_vec()].concat(),
             b"hybrid ratchet merge",
             32,
         );
@@ -151,7 +151,11 @@ mod test {
     #[test]
     fn hybrid_ratchet() -> Result<(), Error> {
         let alex_ec_ratchet = x25519_scka::states::States::init_a();
-        let alex_ec_chain = chain::Chain::new(&[43u8; 32], Direction::A2B, ChainParams::default())?;
+        let alex_ec_chain = chain::Chain::new(
+            &[43u8; 32],
+            Direction::A2B,
+            ChainParams::default().into_pb(),
+        )?;
 
         let alex_ec_state = DoubleRatchet {
             asymratchet: alex_ec_ratchet,
@@ -159,8 +163,11 @@ mod test {
         };
 
         let blake_ec_ratchet = x25519_scka::states::States::init_b();
-        let blake_ec_chain =
-            chain::Chain::new(&[43u8; 32], Direction::B2A, ChainParams::default())?;
+        let blake_ec_chain = chain::Chain::new(
+            &[43u8; 32],
+            Direction::B2A,
+            ChainParams::default().into_pb(),
+        )?;
 
         let blake_ec_state = DoubleRatchet {
             asymratchet: blake_ec_ratchet,

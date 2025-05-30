@@ -12,7 +12,7 @@ mod tests {
 
     #[bench]
     fn add_epoch(b: &mut Bencher) {
-        let mut c = chain::Chain::new(b"1", Direction::A2B, ChainParams::default())
+        let mut c = chain::Chain::new(b"1", Direction::A2B, ChainParams::default().into_pb())
             .expect("should be valid");
         let mut e: u64 = 0;
         b.iter(|| {
@@ -28,7 +28,7 @@ mod tests {
 
     #[bench]
     fn send_key(b: &mut Bencher) {
-        let mut c = chain::Chain::new(b"1", Direction::A2B, ChainParams::default())
+        let mut c = chain::Chain::new(b"1", Direction::A2B, ChainParams::default().into_pb())
             .expect("should be valid");
         b.iter(|| {
             // Inner closure, the actual test
@@ -38,7 +38,7 @@ mod tests {
 
     #[bench]
     fn recv_key(b: &mut Bencher) {
-        let mut c = chain::Chain::new(b"1", Direction::A2B, ChainParams::default())
+        let mut c = chain::Chain::new(b"1", Direction::A2B, ChainParams::default().into_pb())
             .expect("should be valid");
         let mut k: u32 = 0;
         b.iter(|| {
@@ -50,7 +50,7 @@ mod tests {
 
     #[bench]
     fn recv_skip_key(b: &mut Bencher) {
-        let mut c = chain::Chain::new(b"1", Direction::A2B, ChainParams::default())
+        let mut c = chain::Chain::new(b"1", Direction::A2B, ChainParams::default().into_pb())
             .expect("should be valid");
         let mut k: u32 = 0;
         b.iter(|| {
@@ -63,7 +63,7 @@ mod tests {
 
     #[bench]
     fn recv_with_truncate(b: &mut Bencher) {
-        let mut c = chain::Chain::new(b"1", Direction::A2B, ChainParams::default())
+        let mut c = chain::Chain::new(b"1", Direction::A2B, ChainParams::default().into_pb())
             .expect("should be valid");
         let mut k: u32 = 0;
         b.iter(|| {

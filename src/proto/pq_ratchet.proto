@@ -27,6 +27,7 @@ message PqRatchetState {
     bytes auth_key = 1;
     Direction direction = 2;
     Version min_version = 3;
+    ChainParams chain_params = 4;
   }
   VersionNegotiation version_negotiation = 1;
   Chain chain = 2;
