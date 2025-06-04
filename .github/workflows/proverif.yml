@@ -1,0 +1,22 @@
+name: proverif
+
+on:
+  push:
+
+jobs:
+  proofs:
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: sudo apt-get install -y opam libgtk2.0-dev
+      - run: opam init
+      - run: opam install -y proverif
+
+      - name: proverif proofs
+        run: |
+          eval $(opam env)
+          proverif -lib cryptolib.pvl spqr-cka.pv
+          proverif -lib cryptolib.pvl spqr-dr.pv
+        working-directory: ./proofs/proverif
