@@ -404,7 +404,6 @@ dependencies = [
  "libcrux-intrinsics",
  "libcrux-platform",
  "libcrux-sha3",
- "rand 0.9.1",
 ]
 
 [[package]]

@@ -49,6 +49,8 @@ impl Ord for Pt {
     }
 }
 
+// TODO: Use a canonical implementation of Ord/PartialOrd once it works with hax
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for Pt {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.x.value.cmp(&other.x.value))

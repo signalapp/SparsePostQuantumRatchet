@@ -14,7 +14,7 @@ hax-lib = "0.3.1"
 hkdf = "0.12"
 libcrux-hkdf = "0.0.2"
 libcrux-hmac = "0.0.2"
-libcrux-ml-kem = { version = "0.0.2", features = ["incremental"] }
+libcrux-ml-kem = { version = "0.0.2", default-features = false, features = ["incremental", "mlkem768"] }
 num_enum = "0.7.3"
 prost = "0.13.1"
 rand = "0.9"
