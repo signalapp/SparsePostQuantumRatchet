@@ -1,6 +1,6 @@
 [package]
 name = "spqr"
-version = "0.1.0"
+version = "1.2.0"
 edition = "2021"
 license = "AGPL-3.0-only"
 rust-version = "1.83.0"
@@ -15,6 +15,7 @@ hkdf = "0.12"
 libcrux-hkdf = "0.0.2"
 libcrux-hmac = "0.0.2"
 libcrux-ml-kem = { version = "0.0.2", default-features = false, features = ["incremental", "mlkem768"] }
+log = "0.4.21"
 num_enum = "0.7.3"
 prost = "0.13.1"
 rand = "0.9"

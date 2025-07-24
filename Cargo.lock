@@ -915,6 +915,7 @@ dependencies = [
  "libcrux-hkdf",
  "libcrux-hmac",
  "libcrux-ml-kem",
+ "log",
  "matches",
  "num_enum",
  "prost",
