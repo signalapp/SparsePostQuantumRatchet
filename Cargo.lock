@@ -228,11 +228,11 @@ dependencies = [
 
 [[package]]
 name = "hax-lib"
-version = "0.3.1"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a89999d4446ba7d86c777bc6a30c106b9bf60d12eb1952242af5d1d7cb33943d"
+checksum = "7bf40682e31dc3961209a4657f6fe7c412879b59f212bac3d14bd7ece5af76a3"
 dependencies = [
- "hax-lib-macros 0.3.1",
+ "hax-lib-macros 0.3.4",
  "num-bigint",
  "num-traits",
 ]
@@ -253,11 +253,11 @@ dependencies = [
 
 [[package]]
 name = "hax-lib-macros"
-version = "0.3.1"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "704a31fb12a8c50243e8d4c88d006f64852822b0e24488a0de9986803a661792"
+checksum = "e33a5a4ff169bcc4e9189f4bace3ed22d03fcd8e52eee90a00b7b1e2621cb490"
 dependencies = [
- "hax-lib-macros-types 0.3.1",
+ "hax-lib-macros-types 0.3.4",
  "proc-macro-error2",
  "proc-macro2",
  "quote",
@@ -279,9 +279,9 @@ dependencies = [
 
 [[package]]
 name = "hax-lib-macros-types"
-version = "0.3.1"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f302d2a43ba5888c61454ffeb8719dc43e7c0e83082d0fe302ac82d8d898b075"
+checksum = "a39dc59c01c2eec9bce75698c4f9ca01d11759ace2a28e1691b66fb0008c6a21"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -903,13 +903,13 @@ checksum = "d372029cb5195f9ab4e4b9aef550787dce78b124fcaee8d82519925defcd6f0d"
 
 [[package]]
 name = "spqr"
-version = "0.1.0"
+version = "1.2.0"
 dependencies = [
  "cpufeatures",
  "curve25519-dalek",
  "displaydoc",
  "galois_field_2pm",
- "hax-lib 0.3.1",
+ "hax-lib 0.3.4",
  "hkdf",
  "hmac",
  "libcrux-hkdf",

@@ -758,7 +758,7 @@ impl PolyDecoder {
             hax_lib::assume!(pts.len() <= 2 * MAX_STORED_POLYNOMIAL_DEGREE_V1 + 1);
             let mut v = Vec::<u8>::with_capacity(4 * pts.len());
             for i in 0..pts.len() {
-                hax_lib::loop_invariant!(|i: usize| (v.len() == i * 4));
+                hax_lib::loop_invariant!(|i: usize| v.len() == i * 4);
                 let pt = &pts[i];
                 v.extend_from_slice(&pt.serialize()[..]);
             }

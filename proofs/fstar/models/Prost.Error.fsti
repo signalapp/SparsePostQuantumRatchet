@@ -14,7 +14,7 @@ type t_Inner = {
 /// general it is not possible to exactly pinpoint why data is malformed.
 type t_DecodeError = { f_inner:Alloc.Boxed.t_Box t_Inner Alloc.Alloc.t_Global }
 
-let impl_6: Core.Clone.t_Clone t_DecodeError = { f_clone = (fun x -> x) }
+let impl_6: Core.Clone.t_Clone t_DecodeError = { f_clone = (fun x -> x); f_clone_pre = (fun _ -> True); f_clone_post = (fun _ _ -> True) }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
 val impl_7:Core.Marker.t_StructuralPartialEq t_DecodeError
@@ -25,7 +25,7 @@ val impl_8:Core.Cmp.t_PartialEq t_DecodeError t_DecodeError
 [@@ FStar.Tactics.Typeclasses.tcinstance]
 val impl_9:Core.Cmp.t_Eq t_DecodeError
 
-let impl_10: Core.Clone.t_Clone t_Inner = { f_clone = (fun x -> x) }
+let impl_10: Core.Clone.t_Clone t_Inner = { f_clone = (fun x -> x); f_clone_pre = (fun _ -> True); f_clone_post = (fun _ _ -> True) }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
 val impl_11:Core.Marker.t_StructuralPartialEq t_Inner
@@ -64,7 +64,7 @@ type t_EncodeError = {
   f_remaining:usize
 }
 
-let impl_15: Core.Clone.t_Clone t_EncodeError = { f_clone = (fun x -> x) }
+let impl_15: Core.Clone.t_Clone t_EncodeError = { f_clone = (fun x -> x); f_clone_pre = (fun _ -> True); f_clone_post = (fun _ _ -> True) }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
 val impl_14:Core.Marker.t_Copy t_EncodeError
@@ -102,7 +102,7 @@ val impl_4:Core.Fmt.t_Display t_EncodeError
 /// presently used enum definition.
 type t_UnknownEnumValue = | UnknownEnumValue : i32 -> t_UnknownEnumValue
 
-let impl_21: Core.Clone.t_Clone t_UnknownEnumValue = { f_clone = (fun x -> x) }
+let impl_21: Core.Clone.t_Clone t_UnknownEnumValue = { f_clone = (fun x -> x); f_clone_pre = (fun _ -> True); f_clone_post = (fun _ _ -> True) }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
 val impl_20:Core.Marker.t_Copy t_UnknownEnumValue

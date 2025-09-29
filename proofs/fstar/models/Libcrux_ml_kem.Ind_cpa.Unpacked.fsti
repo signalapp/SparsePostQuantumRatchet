@@ -37,7 +37,7 @@ let impl_2
       (#[FStar.Tactics.Typeclasses.tcresolve ()]
           i2:
           Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector)
-    : Core.Clone.t_Clone (t_IndCpaPublicKeyUnpacked v_K v_Vector) = { f_clone = (fun x -> x) }
+    : Core.Clone.t_Clone (t_IndCpaPublicKeyUnpacked v_K v_Vector) = { f_clone = (fun x -> x); f_clone_pre = (fun _ -> True); f_clone_post = (fun _ _ -> True) }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
 val impl_1
