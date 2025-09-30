@@ -262,7 +262,6 @@ impl States {
     }
 
     pub(crate) fn recv(self, msg: &Message) -> Result<Recv, Error> {
-        hax_lib::fstar!("admit()");
         // println!("send_ct recv msg: {:?}", msg);
         let mut key = None;
         let state = match self {

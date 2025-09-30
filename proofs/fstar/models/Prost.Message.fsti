@@ -37,7 +37,7 @@ class t_Message (v_Self: Type0) = {
         (impl_806524398_ & Core.Result.t_Result Prims.unit Prost.Error.t_EncodeError)
         (f_encode_pre #impl_806524398_ #i2 x0 x1)
         (fun result -> f_encode_post #impl_806524398_ #i2 x0 x1 result);
-  f_encode_to_vec_pre:v_Self -> Type0;
+  f_encode_to_vec_pre:v_Self -> res:Type0 {true ==> res};
   f_encode_to_vec_post:v_Self -> Alloc.Vec.t_Vec u8 Alloc.Alloc.t_Global -> Type0;
   f_encode_to_vec:x0: v_Self
     -> Prims.Pure (Alloc.Vec.t_Vec u8 Alloc.Alloc.t_Global)
@@ -48,7 +48,7 @@ class t_Message (v_Self: Type0) = {
       {| i4: Core.Default.t_Default v_Self |} ->
       {| i5: Bytes.Buf.Buf_impl.t_Buf impl_75985673_ |} ->
       impl_75985673_
-    -> Type0;
+    -> res:Type0 {true ==> res};
   f_decode_post:
       #impl_75985673_: Type0 ->
       {| i4: Core.Default.t_Default v_Self |} ->

@@ -493,7 +493,7 @@ const COMPLETE_POINTS_POLYS_36: [PolyConst<36>; 36] = lagrange_polys_for_complet
 // Size of a chunk in bytes
 const CHUNK_SIZE: usize = 32;
 // Number of polys or points that need to be tracked when using GF(2^16) with 2-byte elements
-const NUM_POLYS: usize = CHUNK_SIZE / 2;
+pub const NUM_POLYS: usize = CHUNK_SIZE / 2;
 
 #[cfg_attr(test, derive(Clone))]
 pub(crate) enum EncoderState {
@@ -641,6 +641,7 @@ impl PolyEncoder {
         }
     }
 
+    #[hax_lib::ensures(|res| hax_lib::implies(msg.len() % 2 == 0 && msg.len() <= (1 << 16) * NUM_POLYS, res.is_ok()))]
     fn encode_bytes_base(msg: &[u8]) -> Result<Self, super::EncodingError> {
         if msg.len() % 2 != 0 {
             return Err(PolynomialError::MessageLengthEven.into());
@@ -682,6 +683,7 @@ impl PolyEncoder {
 
 #[hax_lib::attributes]
 impl Encoder for PolyEncoder {
+    #[hax_lib::ensures(|res| hax_lib::implies(msg.len() % 2 == 0 && msg.len() <= (1 << 16) * NUM_POLYS, res.is_ok()))]
     fn encode_bytes(msg: &[u8]) -> Result<Self, super::EncodingError> {
         Self::encode_bytes_base(msg)
     }

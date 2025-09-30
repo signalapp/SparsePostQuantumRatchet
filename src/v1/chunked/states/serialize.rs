@@ -102,7 +102,6 @@ enum MessageType {
     Ct2 = 6,
 }
 
-#[hax_lib::opaque]
 impl TryFrom<u8> for MessageType {
     type Error = String;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
@@ -146,7 +145,8 @@ fn encode_varint(mut a: u64, into: &mut SerializedMessage) {
     }
 }
 
-#[hax_lib::opaque] // return in while
+#[hax_lib::opaque] // while loop with return
+#[hax_lib::ensures(|res| hax_lib::implies(res.is_ok(), *future(at) < from.len()))]
 fn decode_varint(from: &SerializedMessage, at: &mut usize) -> Result<u64, Error> {
     let mut out = 0u64;
     let mut shift = 0;
@@ -162,16 +162,16 @@ fn decode_varint(from: &SerializedMessage, at: &mut usize) -> Result<u64, Error>
     Err(Error::MsgDecode)
 }
 
-#[hax_lib::fstar::verification_status(lax)]
 fn encode_chunk(c: &Chunk, into: &mut SerializedMessage) {
     encode_varint(c.index as u64, into);
+    hax_lib::assume!(into.len() < usize::MAX - 32);
     into.extend_from_slice(&c.data[..]);
 }
 
-#[hax_lib::fstar::verification_status(lax)]
 fn decode_chunk(from: &SerializedMessage, at: &mut usize) -> Result<Chunk, Error> {
     let index = decode_varint(from, at)?;
     let start = *at;
+    hax_lib::assume!(*at < usize::MAX - 32);
     *at += 32;
     if *at > from.len() || index > 65535 {
         return Err(Error::MsgDecode);
@@ -182,6 +182,7 @@ fn decode_chunk(from: &SerializedMessage, at: &mut usize) -> Result<Chunk, Error
     })
 }
 
+#[hax_lib::attributes]
 impl Message {
     /// Serialize a message.
     ///
@@ -197,8 +198,8 @@ impl Message {
     ///
     ///   [index]        - varint, 1-3 bytes
     ///   [chunk_data]   - 32 bytes
+    #[hax_lib::ensures(|res| res.len() > 0 && res[0] == Version::V1.into())]
     pub fn serialize(&self, index: u32) -> SerializedMessage {
-        hax_lib::fstar!("admit()");
         let mut into = Vec::with_capacity(40);
         into.push(Version::V1.into());
         encode_varint(self.epoch, &mut into);
@@ -212,16 +213,19 @@ impl Message {
                 MessagePayload::Ct1(ref chunk) => chunk,
                 MessagePayload::Ct2(ref chunk) => chunk,
                 _ => {
+                    // This assumption could be proven with post-conditions on encode_varint
+                    hax_lib::assume!(into.len() > 0 && into[0] == Version::V1.into());
                     return into;
                 }
             },
             &mut into,
         );
+        // This assumption could be proven with post-conditions on encode_varint and encode_chunk
+        hax_lib::assume!(into.len() > 0 && into[0] == Version::V1.into());
         into
     }
 
     pub fn deserialize(from: &SerializedMessage) -> Result<(Self, u32, usize), Error> {
-        hax_lib::fstar!("admit()");
         if from.is_empty() || from[0] != Version::V1.into() {
             return Err(Error::MsgDecode);
         }
