@@ -151,8 +151,11 @@ pub enum Ct1SampledRecvChunk {
     Done(Ct2Sampled),
 }
 
-#[hax_lib::fstar::verification_status(lax)]
 fn send_ct2_encoder(ct2: &[u8], mac: &[u8]) -> polynomial::PolyEncoder {
+    hax_lib::assume!(
+        [ct2, mac].concat().len() % 2 == 0
+            && [ct2, mac].concat().len() <= (1 << 16) * crate::encoding::polynomial::NUM_POLYS
+    );
     polynomial::PolyEncoder::encode_bytes(&[ct2, mac].concat()).expect("should be able to send ct2")
 }
 
@@ -179,6 +182,11 @@ impl Ct1Sampled {
             let uc = uc.recv_ek(epoch, decoded)?;
             if ct1_ack {
                 let (uc, ct2, mac) = uc.send_ct2();
+                hax_lib::assume!(
+                    [ct2.clone(), mac.clone()].concat().len() % 2 == 0
+                        && [ct2.clone(), mac.clone()].concat().len()
+                            <= (1 << 16) * crate::encoding::polynomial::NUM_POLYS
+                );
                 Ct1SampledRecvChunk::Done(Ct2Sampled {
                     uc,
                     sending_ct2: send_ct2_encoder(&ct2, &mac),

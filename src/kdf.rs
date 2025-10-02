@@ -15,6 +15,7 @@ pub fn hkdf_to_vec(salt: &[u8], ikm: &[u8], info: &[u8], okm_len: usize) -> Vec<
 }
 
 #[hax_lib::opaque]
+#[hax_lib::ensures(|_| future(okm).len() == okm.len())]
 pub fn hkdf_to_slice(salt: &[u8], ikm: &[u8], info: &[u8], okm: &mut [u8]) {
     if cfg!(feature = "proof") {
         okm.copy_from_slice(&hkdf_to_vec(salt, ikm, info, okm.len()));

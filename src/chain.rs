@@ -103,7 +103,6 @@ struct ChainEpoch {
 }
 
 /// Chain keeps track of keys for all epochs.
-#[hax_lib::fstar::verification_status(lax)]
 pub struct Chain {
     dir: Direction,
     current_epoch: Epoch,
@@ -201,6 +200,7 @@ impl KeyHistory {
     }
 }
 
+#[hax_lib::attributes]
 impl ChainEpochDirection {
     fn new(k: &[u8]) -> Self {
         Self {
@@ -210,13 +210,14 @@ impl ChainEpochDirection {
         }
     }
 
+    #[hax_lib::requires(self.next.len() > 0 && self.ctr < u32::MAX)]
     fn next_key(&mut self) -> (u32, Vec<u8>) {
         let (idx, key) = Self::next_key_internal(&mut self.next, &mut self.ctr);
         (idx, key.to_vec())
     }
 
+    #[hax_lib::requires(next.len() > 0 && *ctr < u32::MAX)]
     fn next_key_internal(next: &mut [u8], ctr: &mut u32) -> (u32, [u8; 32]) {
-        hax_lib::fstar!("admit()");
         assert!(!next.is_empty());
         *ctr += 1;
         let mut gen = [0u8; 64];
@@ -235,7 +236,6 @@ impl ChainEpochDirection {
     }
 
     fn key(&mut self, at: u32, params: &pqrpb::ChainParams) -> Result<Vec<u8>, Error> {
-        hax_lib::fstar!("admit()");
         match at.cmp(&self.ctr) {
             Ordering::Greater => {
                 if at - self.ctr > params.max_jump_or_default() {
@@ -250,11 +250,15 @@ impl ChainEpochDirection {
                 return Err(Error::KeyAlreadyRequested(at));
             }
         }
+        hax_lib::assume!(
+            params.max_ooo_keys_or_default() < 390451572 && self.ctr <= u32::MAX - 390451572
+        );
         if at > self.ctr + params.max_ooo_keys_or_default() {
             // We're about to make all currently-held keys obsolete - just remove
             // them all.
             self.prev.clear();
         }
+        hax_lib::fstar!("admit ()"); // potential overflows in condition and body of the loop
         while at > self.ctr + 1 {
             let k = Self::next_key_internal(&mut self.next, &mut self.ctr);
             // Only add keys into our history if we're not going to immediately GC them.
@@ -303,7 +307,6 @@ impl Chain {
     }
 
     pub fn new(initial_key: &[u8], dir: Direction, params: ChainParamsPB) -> Result<Self, Error> {
-        hax_lib::fstar!("admit ()");
         let mut gen = [0u8; 96];
         kdf::hkdf_to_slice(
             &[0u8; 32],
@@ -325,7 +328,10 @@ impl Chain {
     }
 
     pub fn add_epoch(&mut self, epoch_secret: EpochSecret) {
-        hax_lib::fstar!("admit ()");
+        // This assume could be turned into a precondition but it uses private fields
+        hax_lib::assume!(
+            self.current_epoch < u64::MAX && epoch_secret.epoch == self.current_epoch + 1
+        );
         assert!(epoch_secret.epoch == self.current_epoch + 1);
         let mut gen = [0u8; 96];
         kdf::hkdf_to_slice(
@@ -342,6 +348,7 @@ impl Chain {
         });
     }
 
+    #[hax_lib::ensures(|res| if let Ok(v) = res {v < self.links.len()} else {true})]
     fn epoch_idx(&mut self, epoch: Epoch) -> Result<usize, Error> {
         if epoch > self.current_epoch {
             return Err(Error::EpochOutOfRange(epoch));
@@ -355,7 +362,6 @@ impl Chain {
     }
 
     pub fn send_key(&mut self, epoch: Epoch) -> Result<(u32, Vec<u8>), Error> {
-        hax_lib::fstar!("admit ()");
         if epoch < self.send_epoch {
             return Err(Error::SendKeyEpochDecreased(self.send_epoch, epoch));
         }
@@ -363,23 +369,29 @@ impl Chain {
         if self.send_epoch != epoch {
             self.send_epoch = epoch;
             while epoch_index > EPOCHS_TO_KEEP_PRIOR_TO_SEND_EPOCH {
+                hax_lib::loop_decreases!(epoch_index);
                 self.links.pop_front();
                 epoch_index -= 1;
             }
             for i in 0..epoch_index {
+                hax_lib::assume!(i < self.links.len());
                 self.links[i].send.clear_next();
             }
         }
+        hax_lib::assume!(
+            epoch_index < self.links.len()
+                && self.links[epoch_index].send.next.len() > 0
+                && self.links[epoch_index].send.ctr < u32::MAX
+        );
         Ok(self.links[epoch_index].send.next_key())
     }
 
     pub fn recv_key(&mut self, epoch: Epoch, index: u32) -> Result<Vec<u8>, Error> {
-        hax_lib::fstar!("admit ()");
         let epoch_index = self.epoch_idx(epoch)?;
         self.links[epoch_index].recv.key(index, &self.params)
     }
 
-    #[hax_lib::opaque] // into_iter for vec_deque
+    #[hax_lib::opaque] // into_iter and map
     pub fn into_pb(self) -> pqrpb::Chain {
         pqrpb::Chain {
             direction: self.dir.into(),

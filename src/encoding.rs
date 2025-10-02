@@ -52,7 +52,9 @@ impl Chunk {
     }
 }
 
+#[hax_lib::attributes]
 pub trait Encoder {
+    #[hax_lib::requires(true)]
     fn encode_bytes(msg: &[u8]) -> Result<Self, EncodingError>
     where
         Self: Sized;
@@ -60,7 +62,9 @@ pub trait Encoder {
     fn data(&self) -> &Vec<u8>;
 }
 
+#[hax_lib::attributes]
 pub trait Decoder {
+    #[hax_lib::requires(true)]
     fn new(len_bytes: usize) -> Result<Self, EncodingError>
     where
         Self: Sized;
@@ -74,7 +78,7 @@ pub trait Decoder {
 //      functions that return mutable references, such as Option::take.
 //      We therefore `take` the value out and store it back for the
 //      encoder and decoder.
-#[hax_lib::opaque] // Needed for abstract precondition
+#[hax_lib::attributes]
 impl<T: Encoder> Encoder for Option<T> {
     fn encode_bytes(msg: &[u8]) -> Result<Self, EncodingError>
     where
@@ -83,19 +87,28 @@ impl<T: Encoder> Encoder for Option<T> {
         Ok(Some(T::encode_bytes(msg)?))
     }
 
+    #[hax_lib::requires(self.is_some())]
     fn next_chunk(&mut self) -> Chunk {
         let mut tmp = self.take().unwrap();
+        hax_lib::fstar!(
+            "Hax_lib.v_assume (f_next_chunk_pre #v_T #FStar.Tactics.Typeclasses.solve tmp)"
+        );
         let chunk = T::next_chunk(&mut tmp);
         *self = Some(tmp);
         chunk
     }
 
+    #[hax_lib::requires(self.is_some())]
     fn data(&self) -> &Vec<u8> {
-        T::data(self.as_ref().unwrap())
+        let value = self.as_ref().unwrap();
+        hax_lib::fstar!(
+            "Hax_lib.v_assume (f_data_pre #v_T #FStar.Tactics.Typeclasses.solve value)"
+        );
+        T::data(value)
     }
 }
 
-#[hax_lib::opaque] // Needed for abstract precondition
+#[hax_lib::attributes]
 impl<T: Decoder> Decoder for Option<T> {
     fn new(len_bytes: usize) -> Result<Self, EncodingError>
     where
@@ -104,14 +117,23 @@ impl<T: Decoder> Decoder for Option<T> {
         Ok(Some(T::new(len_bytes)?))
     }
 
+    #[hax_lib::requires(self.is_some())]
     fn add_chunk(&mut self, chunk: &Chunk) {
         let mut tmp = self.take().unwrap();
+        hax_lib::fstar!(
+            "Hax_lib.v_assume (f_add_chunk_pre #v_T #FStar.Tactics.Typeclasses.solve tmp chunk)"
+        );
         T::add_chunk(&mut tmp, chunk);
         *self = Some(tmp);
     }
 
+    #[hax_lib::requires(self.is_some())]
     fn decoded_message(&self) -> Option<Vec<u8>> {
-        T::decoded_message(self.as_ref().unwrap())
+        let value = self.as_ref().unwrap();
+        hax_lib::fstar!(
+            "Hax_lib.v_assume (f_decoded_message_pre #v_T #FStar.Tactics.Typeclasses.solve value)"
+        );
+        T::decoded_message(value)
     }
 
     /* fn take_decoded_message(&mut self) -> Option<Vec<u8>> {
@@ -121,7 +143,12 @@ impl<T: Decoder> Decoder for Option<T> {
         result
     } */
 
+    #[hax_lib::requires(self.is_some())]
     fn is_complete(&self) -> bool {
-        T::is_complete(self.as_ref().unwrap())
+        let value = self.as_ref().unwrap();
+        hax_lib::fstar!(
+            "Hax_lib.v_assume (f_is_complete_pre #v_T #FStar.Tactics.Typeclasses.solve value)"
+        );
+        T::is_complete(value)
     }
 }

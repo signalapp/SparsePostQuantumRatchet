@@ -158,7 +158,6 @@ impl SecretOutput {
     }
 }
 
-#[hax_lib::opaque]
 impl TryFrom<u8> for Version {
     type Error = String;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
@@ -194,7 +193,7 @@ fn init_inner(v: Version, d: Direction, auth_key: &[u8]) -> Option<pqrpb::pq_rat
 }
 
 pub fn initial_state(params: Params) -> Result<SerializedState, Error> {
-    hax_lib::fstar!("admit()");
+    #[cfg(not(hax))]
     log::info!(
         "spqr initiating state with version {:?} and direction {:?}",
         params.version,
@@ -273,6 +272,7 @@ pub fn send<R: Rng + CryptoRng>(state: &SerializedState, rng: &mut R) -> Result<
             };
             let (index, msg_key, chain_pb) = match chain {
                 None => {
+                    hax_lib::assume!(key.is_none());
                     assert!(key.is_none());
                     (0, vec![], None)
                 }
@@ -336,7 +336,6 @@ fn chain_from(
     }
 }
 
-#[hax_lib::fstar::verification_status(lax)]
 pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Error> {
     // Perform version negotiation.  At the beginning of our interaction
     // with a remote party, we are set to allow negotiation.  This
@@ -371,6 +370,7 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
                         if (v as i32) < vn.min_version {
                             return Err(Error::MinimumVersion);
                         }
+                        #[cfg(not(hax))]
                         log::info!("spqr negotiating version down to {v:?}");
                         pqrpb::PqRatchetState {
                             inner: init_inner(
@@ -406,6 +406,7 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
             let (scka_msg, index, _) = v1states::Message::deserialize(msg)?;
 
             let v1states::Recv { key, state } = v1states::States::from_pb(pb)?.recv(&scka_msg)?;
+            hax_lib::assume!(scka_msg.epoch > 0);
             let msg_key_epoch = scka_msg.epoch - 1;
             let mut chain = chain_from(state_pb.chain, state_pb.version_negotiation.as_ref())?;
             if let Some(epoch_secret) = key {
@@ -443,7 +444,6 @@ fn state_version(state: &pqrpb::PqRatchetState) -> Version {
     }
 }
 
-#[hax_lib::fstar::verification_status(lax)]
 fn msg_version(msg: &SerializedMessage) -> Option<Version> {
     if msg.is_empty() {
         Some(Version::V0)
@@ -452,7 +452,6 @@ fn msg_version(msg: &SerializedMessage) -> Option<Version> {
     }
 }
 
-#[hax_lib::fstar::verification_status(lax)]
 fn decode_state(s: &SerializedState) -> Result<pqrpb::PqRatchetState, Error> {
     if s.is_empty() {
         Ok(proto::pq_ratchet::PqRatchetState {
