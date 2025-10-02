@@ -103,7 +103,6 @@ struct ChainEpoch {
 }
 
 /// Chain keeps track of keys for all epochs.
-#[hax_lib::fstar::verification_status(lax)] // Needs better model of VecDeque (eqtype)
 pub struct Chain {
     dir: Direction,
     current_epoch: Epoch,
@@ -349,6 +348,7 @@ impl Chain {
         });
     }
 
+    #[hax_lib::ensures(|res| if let Ok(v) = res {v < self.links.len()} else {true})]
     fn epoch_idx(&mut self, epoch: Epoch) -> Result<usize, Error> {
         if epoch > self.current_epoch {
             return Err(Error::EpochOutOfRange(epoch));
@@ -374,21 +374,24 @@ impl Chain {
                 epoch_index -= 1;
             }
             for i in 0..epoch_index {
-                hax_lib::fstar!("admit ()"); // A more precise model of VecDeque is needed here
+                hax_lib::assume!(i < self.links.len());
                 self.links[i].send.clear_next();
             }
         }
-        hax_lib::fstar!("admit ()");
+        hax_lib::assume!(
+            epoch_index < self.links.len()
+                && self.links[epoch_index].send.next.len() > 0
+                && self.links[epoch_index].send.ctr < u32::MAX
+        );
         Ok(self.links[epoch_index].send.next_key())
     }
 
     pub fn recv_key(&mut self, epoch: Epoch, index: u32) -> Result<Vec<u8>, Error> {
         let epoch_index = self.epoch_idx(epoch)?;
-        hax_lib::fstar!("admit ()"); // A more precise model of VecDeque is needed here
         self.links[epoch_index].recv.key(index, &self.params)
     }
 
-    #[hax_lib::opaque] // into_iter for vec_deque
+    #[hax_lib::opaque] // into_iter and map
     pub fn into_pb(self) -> pqrpb::Chain {
         pqrpb::Chain {
             direction: self.dir.into(),
