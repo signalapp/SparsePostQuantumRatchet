@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: sudo apt-get install -y opam libgtk2.0-dev
+      - run: sudo apt-get update && sudo apt-get install -y opam libgtk2.0-dev
       - run: opam init
       - run: opam install -y proverif
 
