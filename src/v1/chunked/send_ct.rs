@@ -88,7 +88,7 @@ impl NoHeaderReceived {
             hax_lib::assume!(
                 hdr.len()
                     == incremental_mlkem768::HEADER_SIZE + authenticator::Authenticator::MACSIZE
-            );
+            ); // post on `decoded_message`
             let mac: authenticator::Mac = hdr.split_off(incremental_mlkem768::HEADER_SIZE);
             let receiving_ek =
                 polynomial::PolyDecoder::new(incremental_mlkem768::ENCAPSULATION_KEY_SIZE);
@@ -172,11 +172,9 @@ impl Ct1Sampled {
             sending_ct1,
         } = self;
         receiving_ek.add_chunk(chunk);
-        hax_lib::assume!(
-            receiving_ek.pts_needed < polynomial::MAX_INTERMEDIATE_POLYNOMIAL_DEGREE_V1 * 2 + 1
-        );
+        hax_lib::assume!(receiving_ek.pts_needed == 576);
         Ok(if let Some(decoded) = receiving_ek.decoded_message() {
-            hax_lib::assume!(decoded.len() == 1152); // Need to prove that receiving_ek.pts_needed is 576. This seems contradictory with the condition above
+            hax_lib::assume!(decoded.len() == 1152); // Could come from a post condition on `decoded_message` (problem: return in loop)
             let uc = uc.recv_ek(epoch, decoded)?;
             if ct1_ack {
                 let (uc, ct2, mac) = uc.send_ct2();
@@ -265,9 +263,7 @@ impl Ct1Acknowledged {
             mut receiving_ek,
         } = self;
         receiving_ek.add_chunk(chunk);
-        hax_lib::assume!(
-            receiving_ek.get_pts_needed() < polynomial::MAX_STORED_POLYNOMIAL_DEGREE_V1 * 2 + 1
-        ); // Could be done using a precondition or a refinement type
+        hax_lib::assume!(receiving_ek.get_pts_needed() == 576); // Could be done using a precondition or a refinement type
         Ok(if let Some(decoded) = receiving_ek.decoded_message() {
             hax_lib::assume!(decoded.len() == 1152); // post-condition on `decoded_message`? hard because of returns
             let uc = uc.recv_ek(epoch, decoded)?;
