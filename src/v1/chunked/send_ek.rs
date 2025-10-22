@@ -54,10 +54,9 @@ impl KeysUnsampled {
     }
 
     pub fn send_hdr_chunk<R: Rng + CryptoRng>(self, rng: &mut R) -> (KeysSampled, Chunk) {
-        let (uc, hdr, mac) = self.uc.send_header(rng);
-        let to_send = [hdr, mac].concat();
+        let (uc, mut to_send, mut mac) = self.uc.send_header(rng);
+        to_send.append(&mut mac);
         let encoder = polynomial::PolyEncoder::encode_bytes(&to_send);
-        hax_lib::assume!(encoder.is_ok()); // needs model of concat
         let mut sending_hdr = encoder.expect("should be able to encode header size");
         let chunk = sending_hdr.next_chunk();
         (KeysSampled { uc, sending_hdr }, chunk)
@@ -82,9 +81,7 @@ impl KeysSampled {
     #[hax_lib::requires(epoch == self.uc.epoch)]
     pub fn recv_ct1_chunk(self, epoch: Epoch, chunk: &Chunk) -> HeaderSent {
         assert_eq!(epoch, self.uc.epoch);
-        //hax_lib::assert!(incremental_mlkem768::CIPHERTEXT1_SIZE % 2 == 0);
         let decoder = polynomial::PolyDecoder::new(incremental_mlkem768::CIPHERTEXT1_SIZE);
-        //hax_lib::assert!(decoder.is_ok());
         let mut receiving_ct1 = decoder.expect("should be able to decode header size");
         receiving_ct1.add_chunk(chunk);
         let (uc, ek) = self.uc.send_ek();

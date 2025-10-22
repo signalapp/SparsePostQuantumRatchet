@@ -71,6 +71,7 @@ pub struct EkSentCt1Received {
     ct1: incremental_mlkem768::Ciphertext1,
 }
 
+#[hax_lib::attributes]
 impl KeysUnsampled {
     pub fn new(auth_key: &[u8]) -> Self {
         Self {
@@ -79,6 +80,7 @@ impl KeysUnsampled {
         }
     }
 
+    #[hax_lib::ensures(|(_, hdr, mac)| hdr.len() == incremental_mlkem768::HEADER_SIZE && mac.len() == authenticator::Authenticator::MACSIZE)]
     pub fn send_header<R: Rng + CryptoRng>(
         self,
         rng: &mut R,

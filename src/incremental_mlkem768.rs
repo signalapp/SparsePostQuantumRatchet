@@ -30,7 +30,7 @@ pub fn ek_matches_header(ek: &EncapsulationKey, hdr: &Header) -> bool {
 }
 
 /// Generate a new keypair and associated header.
-#[hax_lib::ensures(|result| result.hdr.len() == 64 && result.ek.len() == 1152 && result.dk.len() == 2400)]
+#[hax_lib::ensures(|result| result.hdr.len() == HEADER_SIZE && result.ek.len() == ENCAPSULATION_KEY_SIZE && result.dk.len() == 2400)]
 pub fn generate<R: Rng + CryptoRng>(rng: &mut R) -> Keys {
     let mut randomness = [0u8; libcrux_ml_kem::KEY_GENERATION_SEED_SIZE];
     rng.fill_bytes(&mut randomness);
