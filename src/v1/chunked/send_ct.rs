@@ -152,8 +152,9 @@ pub enum Ct1SampledRecvChunk {
 
 #[hax_lib::requires(ct2.len() == 128 && mac.len() == authenticator::Authenticator::MACSIZE)]
 fn send_ct2_encoder(ct2: &[u8], mac: &[u8]) -> polynomial::PolyEncoder {
-    hax_lib::assume!(polynomial::PolyEncoder::encode_bytes(&[ct2, mac].concat()).is_ok()); // needs model of concat
-    polynomial::PolyEncoder::encode_bytes(&[ct2, mac].concat()).expect("should be able to send ct2")
+    let mut msg = ct2.to_vec();
+    msg.extend_from_slice(mac);
+    polynomial::PolyEncoder::encode_bytes(&msg).expect("should be able to send ct2")
 }
 
 #[hax_lib::attributes]
