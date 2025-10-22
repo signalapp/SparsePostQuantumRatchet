@@ -224,6 +224,7 @@ impl ChainEpochDirection {
     }
 
     #[hax_lib::requires(next.len() > 0 && *ctr < u32::MAX)]
+    #[hax_lib::ensures(|_| *future(ctr) == ctr + 1)]
     fn next_key_internal(next: &mut [u8], ctr: &mut u32) -> (u32, [u8; 32]) {
         assert!(!next.is_empty());
         *ctr += 1;
@@ -265,17 +266,28 @@ impl ChainEpochDirection {
             // them all.
             self.prev.clear();
         }
-        hax_lib::fstar!("admit ()"); // potential overflows in condition and body of the loop
         while at > self.ctr + 1 {
+            hax_lib::loop_invariant!(self.ctr < u32::MAX);
+            hax_lib::loop_decreases!(u32::MAX - self.ctr);
+            hax_lib::assume!(self.next.len() > 0);
             let k = Self::next_key_internal(&mut self.next, &mut self.ctr);
+            hax_lib::assume!(
+                params.max_ooo_keys_or_default() < 390451572 && self.ctr <= u32::MAX - 390451572
+            );
             // Only add keys into our history if we're not going to immediately GC them.
             if self.ctr + params.max_ooo_keys_or_default() >= at {
+                hax_lib::assume!(
+                    params.trim_size() < 119304647
+                        && self.prev.data.len() <= KeyHistory::KEY_SIZE * params.trim_size()
+                );
                 self.prev.add(k, params);
             }
         }
         // After we've potentially added some new keys, see if there's any we
         // want to throw away.
         self.prev.gc(self.ctr, params);
+
+        hax_lib::assume!(self.next.len() > 0);
 
         Ok(Self::next_key_internal(&mut self.next, &mut self.ctr)
             .1
