@@ -12,9 +12,11 @@ use crate::{Epoch, EpochSecret, Error};
 use rand::{CryptoRng, Rng};
 
 #[cfg_attr(test, derive(Clone))]
+#[hax_lib::attributes]
 pub struct NoHeaderReceived {
     pub(super) uc: unchunked::NoHeaderReceived,
     // `receiving_hdr` only decodes messages of length `incremental_mlkem768::HEADER_SIZE + authenticator::Authenticator::MACSIZE`
+    #[hax_lib::refine(receiving_hdr.get_pts_needed() == (incremental_mlkem768::HEADER_SIZE + authenticator::Authenticator::MACSIZE) / 2)]
     pub(super) receiving_hdr: polynomial::PolyDecoder,
 }
 
@@ -64,7 +66,6 @@ impl NoHeaderReceived {
         let decoder = polynomial::PolyDecoder::new(
             incremental_mlkem768::HEADER_SIZE + authenticator::Authenticator::MACSIZE,
         );
-        hax_lib::assume!(decoder.is_ok());
         NoHeaderReceived {
             uc: unchunked::NoHeaderReceived::new(auth_key),
             receiving_hdr: decoder.expect("should be able to decode header size"),
@@ -83,15 +84,14 @@ impl NoHeaderReceived {
             mut receiving_hdr,
         } = self;
         receiving_hdr.add_chunk(chunk);
-        hax_lib::assume!(
-            receiving_hdr.get_pts_needed() <= polynomial::MAX_STORED_POLYNOMIAL_DEGREE_V1
-        );
         if let Some(mut hdr) = receiving_hdr.decoded_message() {
             let mac: authenticator::Mac = hdr.drain(incremental_mlkem768::HEADER_SIZE..).collect();
+            // To remove this we can either:
+            // Add a model of `drain` in hax core lib and add the necessary pre/post to propagate this
+            // Switch to fixed length instead of Vec?
             hax_lib::assume!(hdr.len() == 64 && mac.len() == authenticator::Authenticator::MACSIZE);
             let receiving_ek =
                 polynomial::PolyDecoder::new(incremental_mlkem768::ENCAPSULATION_KEY_SIZE);
-            hax_lib::assume!(receiving_ek.is_ok());
             Ok(NoHeaderReceivedRecvChunk::Done(HeaderReceived {
                 uc: uc.recv_header(epoch, hdr, &mac)?,
                 receiving_ek: receiving_ek.expect("should be able to decode EncapsulationKey size"),
@@ -123,7 +123,6 @@ impl HeaderReceived {
 
         let (uc, ct1, epoch_secret) = uc.send_ct1(rng);
         let encoder = polynomial::PolyEncoder::encode_bytes(&ct1);
-        hax_lib::assume!(encoder.is_ok());
         let mut sending_ct1 = encoder.expect("should be able to send CTSIZE");
         let chunk = sending_ct1.next_chunk();
         (
@@ -151,11 +150,9 @@ pub enum Ct1SampledRecvChunk {
     Done(Ct2Sampled),
 }
 
+#[hax_lib::requires(ct2.len() == 128 && mac.len() == authenticator::Authenticator::MACSIZE)]
 fn send_ct2_encoder(ct2: &[u8], mac: &[u8]) -> polynomial::PolyEncoder {
-    hax_lib::assume!(
-        [ct2, mac].concat().len() % 2 == 0
-            && [ct2, mac].concat().len() <= (1 << 16) * crate::encoding::polynomial::NUM_POLYS
-    );
+    hax_lib::assume!(polynomial::PolyEncoder::encode_bytes(&[ct2, mac].concat()).is_ok()); // needs model of concat
     polynomial::PolyEncoder::encode_bytes(&[ct2, mac].concat()).expect("should be able to send ct2")
 }
 
@@ -175,18 +172,13 @@ impl Ct1Sampled {
         } = self;
         receiving_ek.add_chunk(chunk);
         hax_lib::assume!(
-            receiving_ek.get_pts_needed() <= polynomial::MAX_STORED_POLYNOMIAL_DEGREE_V1
+            receiving_ek.pts_needed < polynomial::MAX_INTERMEDIATE_POLYNOMIAL_DEGREE_V1 * 2 + 1
         );
         Ok(if let Some(decoded) = receiving_ek.decoded_message() {
-            hax_lib::assume!(decoded.len() == 1152);
+            hax_lib::assume!(decoded.len() == 1152); // Need to prove that receiving_ek.pts_needed is 576. This seems contradictory with the condition above
             let uc = uc.recv_ek(epoch, decoded)?;
             if ct1_ack {
                 let (uc, ct2, mac) = uc.send_ct2();
-                hax_lib::assume!(
-                    [ct2.clone(), mac.clone()].concat().len() % 2 == 0
-                        && [ct2.clone(), mac.clone()].concat().len()
-                            <= (1 << 16) * crate::encoding::polynomial::NUM_POLYS
-                );
                 Ct1SampledRecvChunk::Done(Ct2Sampled {
                     uc,
                     sending_ct2: send_ct2_encoder(&ct2, &mac),
@@ -273,10 +265,10 @@ impl Ct1Acknowledged {
         } = self;
         receiving_ek.add_chunk(chunk);
         hax_lib::assume!(
-            receiving_ek.get_pts_needed() <= polynomial::MAX_STORED_POLYNOMIAL_DEGREE_V1
-        );
+            receiving_ek.get_pts_needed() < polynomial::MAX_STORED_POLYNOMIAL_DEGREE_V1 * 2 + 1
+        ); // Could be done using a precondition or a refinement type
         Ok(if let Some(decoded) = receiving_ek.decoded_message() {
-            hax_lib::assume!(decoded.len() == 1152);
+            hax_lib::assume!(decoded.len() == 1152); // post-condition on `decoded_message`? hard because of returns
             let uc = uc.recv_ek(epoch, decoded)?;
             let (uc, ct2, mac) = uc.send_ct2();
             Ct1AcknowledgedRecvChunk::Done(Ct2Sampled {

@@ -196,11 +196,15 @@ impl ops::Div<&GF16> for GF16 {
 }
 
 #[inline]
-#[hax_lib::fstar::verification_status(lax)] // proving absence of overflow in loop condition is tricky
+#[hax_lib::requires(into.len() <= usize::MAX - 2)]
+#[hax_lib::ensures(|_| future(into).len() == into.len())]
 pub fn parallel_mult(a: GF16, into: &mut [GF16]) {
-    let mut i = 0;
+    let mut i: usize = 0;
+    #[cfg(hax)]
+    let l = into.len();
     while i + 2 <= into.len() {
-        hax_lib::loop_decreases!(into.len() - i);
+        hax_lib::loop_decreases!(l - i);
+        hax_lib::loop_invariant!(into.len() == l && i <= l);
         (into[i].value, into[i + 1].value) = mul2_u16(a.value, into[i].value, into[i + 1].value);
         i += 2;
     }

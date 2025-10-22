@@ -131,7 +131,7 @@ impl EkSent {
 
 #[hax_lib::attributes]
 impl EkSentCt1Received {
-    #[hax_lib::requires(ct2.len() == 128 && mac.len() == authenticator::Authenticator::MACSIZE)]
+    #[hax_lib::requires(ct2.len() == incremental_mlkem768::CIPHERTEXT2_SIZE && mac.len() == authenticator::Authenticator::MACSIZE)]
     pub fn recv_ct2(
         self,
         ct2: incremental_mlkem768::Ciphertext2,

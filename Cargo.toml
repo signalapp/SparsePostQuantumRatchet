@@ -10,7 +10,7 @@ rust-version = "1.83.0"
 [dependencies]
 curve25519-dalek = { version = "4.1.3", features = ["rand_core"] }
 displaydoc = "0.2"
-hax-lib = "0.3.5"
+hax-lib = {path = "../hax/hax-lib"}
 hkdf = "0.12"
 libcrux-hmac = "0.0.4"
 libcrux-ml-kem = { version = "0.0.5", default-features = false, features = ["incremental", "mlkem768"] }

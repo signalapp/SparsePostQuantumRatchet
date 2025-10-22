@@ -116,6 +116,7 @@ impl NoHeaderReceived {
 #[hax_lib::attributes]
 impl HeaderReceived {
     #[hax_lib::requires(self.hdr.len() == 64)]
+    #[hax_lib::ensures(|(_, ct1, _)| ct1.len() == 960)]
     pub fn send_ct1<R: Rng + CryptoRng>(
         self,
         rng: &mut R,
