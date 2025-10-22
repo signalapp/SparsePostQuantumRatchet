@@ -210,13 +210,12 @@ impl EkSentCt1Received {
         receiving_ct2.add_chunk(chunk);
         hax_lib::assume!(receiving_ct2.pts_needed < usize::MAX / 2);
         if let Some(mut ct2) = receiving_ct2.decoded_message() {
-            let mac: authenticator::Mac = ct2
-                .drain(incremental_mlkem768::CIPHERTEXT2_SIZE..)
-                .collect();
             hax_lib::assume!(
-                ct2.len() == incremental_mlkem768::CIPHERTEXT2_SIZE
-                    && mac.len() == authenticator::Authenticator::MACSIZE
-            ); // Needs model of drain
+                ct2.len()
+                    == incremental_mlkem768::CIPHERTEXT2_SIZE
+                        + authenticator::Authenticator::MACSIZE
+            );
+            let mac: authenticator::Mac = ct2.split_off(incremental_mlkem768::CIPHERTEXT2_SIZE);
             let (uc, sec) = uc.recv_ct2(ct2, mac)?;
             let decoder = polynomial::PolyDecoder::new(
                 incremental_mlkem768::HEADER_SIZE + authenticator::Authenticator::MACSIZE,
