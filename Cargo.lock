@@ -347,12 +347,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "hax-lib-macros"
+name = "hax-lib"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "24ba777a231a58d1bce1d68313fa6b6afcc7966adef23d60f45b8a2b9b688bf1"
 dependencies = [
- "hax-lib-macros-types 0.3.5",
+ "hax-lib-macros 0.3.5 (git+https://github.com/cryspen/hax?branch=tls-codec-panic-freedom)",
+ "num-bigint",
+ "num-traits",
+]
+
+[[package]]
+name = "hax-lib-macros"
+version = "0.3.6"
+dependencies = [
+ "hax-lib-macros-types 0.3.6",
  "proc-macro-error2",
  "proc-macro2",
  "quote",
@@ -361,9 +370,10 @@ dependencies = [
 
 [[package]]
 name = "hax-lib-macros"
-version = "0.3.6"
+version = "0.3.5"
+source = "git+https://github.com/cryspen/hax?branch=tls-codec-panic-freedom#19fe3e7b7293d1f67ab887290adb4088ce0857b3"
 dependencies = [
- "hax-lib-macros-types 0.3.6",
+ "hax-lib-macros-types 0.3.5 (git+https://github.com/cryspen/hax?branch=tls-codec-panic-freedom)",
  "proc-macro-error2",
  "proc-macro2",
  "quote",
