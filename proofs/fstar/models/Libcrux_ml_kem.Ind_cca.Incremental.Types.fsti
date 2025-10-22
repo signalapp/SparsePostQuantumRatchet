@@ -137,7 +137,8 @@ val impl_4__deserialize
 type t_Ciphertext1 (v_LEN: usize) = { f_value:t_Array u8 v_LEN }
 
 /// The size of the ciphertext.
-val impl_5__len: v_LEN: usize -> Prims.unit -> Prims.Pure usize Prims.l_True (fun _ -> Prims.l_True)
+val impl_5__len: v_LEN: usize -> Prims.unit -> Prims.Pure usize Prims.l_True 
+  (ensures fun res -> let res:usize = res in res =. v_LEN)
 
 /// The partial ciphertext c2 - second part.
 type t_Ciphertext2 (v_LEN: usize) = { f_value:t_Array u8 v_LEN }

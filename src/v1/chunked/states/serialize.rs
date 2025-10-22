@@ -56,6 +56,11 @@ impl States {
                 Self::KeysSampled(send_ek::KeysSampled::from_pb(pb)?)
             }
             Some(pqrpb::v1_state::InnerState::HeaderSent(pb)) => {
+                hax_lib::assume!(match &pb.receiving_ct1 {
+                    Some(d) =>
+                        d.pts_needed as usize == crate::incremental_mlkem768::CIPHERTEXT1_SIZE / 2,
+                    None => true,
+                });
                 Self::HeaderSent(send_ek::HeaderSent::from_pb(pb)?)
             }
             Some(pqrpb::v1_state::InnerState::Ct1Received(pb)) => {
@@ -67,6 +72,14 @@ impl States {
 
             // send_ct
             Some(pqrpb::v1_state::InnerState::NoHeaderReceived(pb)) => {
+                hax_lib::assume!(match &pb.receiving_hdr {
+                    Some(rhdr) =>
+                        rhdr.pts_needed
+                            == ((crate::incremental_mlkem768::HEADER_SIZE
+                                + crate::authenticator::Authenticator::MACSIZE)
+                                / 2) as u32,
+                    None => true,
+                });
                 Self::NoHeaderReceived(send_ct::NoHeaderReceived::from_pb(pb)?)
             }
             Some(pqrpb::v1_state::InnerState::HeaderReceived(pb)) => {

@@ -15,7 +15,7 @@ val pk1_len: Prims.unit -> Prims.Pure usize Prims.l_True
   (ensures fun res -> let res:usize = res in res =. mk_usize 64)
 
 /// Get the size of the second public key in bytes.
-val pk2_len: Prims.unit -> Prims.Pure usize Prims.l_True (fun _ -> Prims.l_True)
+val pk2_len: Prims.unit -> Prims.Pure usize Prims.l_True (ensures fun res -> res =. mk_usize 1152)
 
 /// The size of a compressed key pair in bytes.
 let v_COMPRESSED_KEYPAIR_LEN: usize = Libcrux_ml_kem.Mlkem768.v_SECRET_KEY_SIZE
