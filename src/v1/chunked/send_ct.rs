@@ -85,11 +85,11 @@ impl NoHeaderReceived {
         } = self;
         receiving_hdr.add_chunk(chunk);
         if let Some(mut hdr) = receiving_hdr.decoded_message() {
-            let mac: authenticator::Mac = hdr.drain(incremental_mlkem768::HEADER_SIZE..).collect();
-            // To remove this we can either:
-            // Add a model of `drain` in hax core lib and add the necessary pre/post to propagate this
-            // Switch to fixed length instead of Vec?
-            hax_lib::assume!(hdr.len() == 64 && mac.len() == authenticator::Authenticator::MACSIZE);
+            hax_lib::assume!(
+                hdr.len()
+                    == incremental_mlkem768::HEADER_SIZE + authenticator::Authenticator::MACSIZE
+            );
+            let mac: authenticator::Mac = hdr.split_off(incremental_mlkem768::HEADER_SIZE);
             let receiving_ek =
                 polynomial::PolyDecoder::new(incremental_mlkem768::ENCAPSULATION_KEY_SIZE);
             Ok(NoHeaderReceivedRecvChunk::Done(HeaderReceived {
