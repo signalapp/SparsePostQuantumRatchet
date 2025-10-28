@@ -880,18 +880,26 @@ impl Decoder for PolyDecoder {
     }
 
     #[hax_lib::requires(self.pts_needed < usize::MAX / 2)]
+    #[hax_lib::ensures(|res| match res {
+        Some(v) => v.len() / 2 == self.pts_needed,
+        None => true
+    })]
     fn decoded_message(&self) -> Option<Vec<u8>> {
         if self.is_complete {
             return None;
         }
         let mut points_vecs = Vec::with_capacity(self.pts.len());
+        let mut ret_none = false;
         for i in 0..(self.pts.len()) {
             let pts = &self.pts[i];
             if pts.len() < self.necessary_points(i) {
-                return None;
+                ret_none = true;
             } else {
                 points_vecs.push(&pts[..self.necessary_points(i)]);
             }
+        }
+        if ret_none {
+            return None;
         }
         // We may or may not need these vectors of points (only if we need
         // to do a lagrange_interpolate call).  For now, we just create
@@ -900,7 +908,7 @@ impl Decoder for PolyDecoder {
         let mut polys: [Option<Poly>; 16] = core::array::from_fn(|_| None);
         let mut out: Vec<u8> = Vec::with_capacity(self.pts_needed * 2);
         for i in 0..self.pts_needed {
-            hax_lib::loop_invariant!(out.len() == i * 2);
+            hax_lib::loop_invariant!(|i: usize| out.len() == i * 2);
             let poly = i % 16;
             let poly_idx = i / 16;
             let pt = Pt {
