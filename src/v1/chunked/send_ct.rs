@@ -21,17 +21,21 @@ pub struct NoHeaderReceived {
 }
 
 #[cfg_attr(test, derive(Clone))]
+#[hax_lib::attributes]
 pub struct HeaderReceived {
     uc: unchunked::HeaderReceived,
     // `receiving_ek` only decodes messages of length `incremental_mlkem768::ENCAPSULATION_KEY_SIZE`
+    #[hax_lib::refine(receiving_ek.get_pts_needed() == incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2)]
     receiving_ek: polynomial::PolyDecoder,
 }
 
 #[cfg_attr(test, derive(Clone))]
+#[hax_lib::attributes]
 pub struct Ct1Sampled {
     uc: unchunked::Ct1Sent,
     sending_ct1: polynomial::PolyEncoder,
     // `receiving_ek` only decodes messages of length `incremental_mlkem768::ENCAPSULATION_KEY_SIZE`
+    #[hax_lib::refine(receiving_ek.get_pts_needed() == incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2)]
     receiving_ek: polynomial::PolyDecoder,
 }
 
@@ -42,9 +46,11 @@ pub struct EkReceivedCt1Sampled {
 }
 
 #[cfg_attr(test, derive(Clone))]
+#[hax_lib::attributes]
 pub struct Ct1Acknowledged {
     uc: unchunked::Ct1Sent,
     // `receiving_ek` only decodes messages of length `incremental_mlkem768::ENCAPSULATION_KEY_SIZE`
+    #[hax_lib::refine(receiving_ek.get_pts_needed() == incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2)]
     receiving_ek: polynomial::PolyDecoder,
 }
 
@@ -85,10 +91,6 @@ impl NoHeaderReceived {
         } = self;
         receiving_hdr.add_chunk(chunk);
         if let Some(mut hdr) = receiving_hdr.decoded_message() {
-            hax_lib::assume!(
-                hdr.len()
-                    == incremental_mlkem768::HEADER_SIZE + authenticator::Authenticator::MACSIZE
-            ); // post on `decoded_message`
             let mac: authenticator::Mac = hdr.split_off(incremental_mlkem768::HEADER_SIZE);
             let receiving_ek =
                 polynomial::PolyDecoder::new(incremental_mlkem768::ENCAPSULATION_KEY_SIZE);
@@ -172,9 +174,7 @@ impl Ct1Sampled {
             sending_ct1,
         } = self;
         receiving_ek.add_chunk(chunk);
-        hax_lib::assume!(receiving_ek.pts_needed == 576);
         Ok(if let Some(decoded) = receiving_ek.decoded_message() {
-            hax_lib::assume!(decoded.len() == 1152); // Could come from a post condition on `decoded_message` (problem: return in loop)
             let uc = uc.recv_ek(epoch, decoded)?;
             if ct1_ack {
                 let (uc, ct2, mac) = uc.send_ct2();
@@ -263,9 +263,7 @@ impl Ct1Acknowledged {
             mut receiving_ek,
         } = self;
         receiving_ek.add_chunk(chunk);
-        hax_lib::assume!(receiving_ek.get_pts_needed() == 576); // Could be done using a precondition or a refinement type
         Ok(if let Some(decoded) = receiving_ek.decoded_message() {
-            hax_lib::assume!(decoded.len() == 1152); // post-condition on `decoded_message`? hard because of returns
             let uc = uc.recv_ek(epoch, decoded)?;
             let (uc, ct2, mac) = uc.send_ct2();
             Ct1AcknowledgedRecvChunk::Done(Ct2Sampled {

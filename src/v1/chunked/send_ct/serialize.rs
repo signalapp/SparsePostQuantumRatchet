@@ -39,6 +39,11 @@ impl HeaderReceived {
     }
 
     pub fn from_pb(pb: pqrpb::v1_state::chunked::HeaderReceived) -> Result<Self, Error> {
+        if let Some(d) = &pb.receiving_ek {
+            if d.pts_needed as usize != crate::incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2 {
+                return Err(Error::MsgDecode);
+            }
+        }
         Ok(Self {
             uc: unchunked::send_ct::HeaderReceived::from_pb(pb.uc.ok_or(Error::StateDecode)?)?,
             receiving_ek: polynomial::PolyDecoder::from_pb(
@@ -59,6 +64,11 @@ impl Ct1Sampled {
     }
 
     pub fn from_pb(pb: pqrpb::v1_state::chunked::Ct1Sampled) -> Result<Self, Error> {
+        if let Some(d) = &pb.receiving_ek {
+            if d.pts_needed as usize != crate::incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2 {
+                return Err(Error::MsgDecode);
+            }
+        }
         Ok(Self {
             uc: unchunked::send_ct::Ct1Sent::from_pb(pb.uc.ok_or(Error::StateDecode)?)?,
             sending_ct1: polynomial::PolyEncoder::from_pb(
@@ -101,6 +111,11 @@ impl Ct1Acknowledged {
     }
 
     pub fn from_pb(pb: pqrpb::v1_state::chunked::Ct1Acknowledged) -> Result<Self, Error> {
+        if let Some(d) = &pb.receiving_ek {
+            if d.pts_needed as usize != crate::incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2 {
+                return Err(Error::MsgDecode);
+            }
+        }
         Ok(Self {
             uc: unchunked::send_ct::Ct1Sent::from_pb(pb.uc.ok_or(Error::StateDecode)?)?,
             receiving_ek: polynomial::PolyDecoder::from_pb(
