@@ -49,8 +49,12 @@ impl HeaderSent {
         }
     }
 
-    #[hax_lib::requires(match pb.receiving_ct1 {Some(d) => d.pts_needed as usize == incremental_mlkem768::CIPHERTEXT1_SIZE / 2, None => true })]
     pub fn from_pb(pb: pqrpb::v1_state::chunked::HeaderSent) -> Result<Self, Error> {
+        if let Some(d) = &pb.receiving_ct1 {
+            if d.pts_needed as usize != crate::incremental_mlkem768::CIPHERTEXT1_SIZE / 2 {
+                return Err(Error::MsgDecode);
+            }
+        }
         Ok(Self {
             uc: unchunked::send_ek::EkSent::from_pb(pb.uc.ok_or(Error::StateDecode)?)?,
             sending_ek: polynomial::PolyEncoder::from_pb(pb.sending_ek.ok_or(Error::StateDecode)?)
@@ -89,6 +93,14 @@ impl EkSentCt1Received {
     }
 
     pub fn from_pb(pb: pqrpb::v1_state::chunked::EkSentCt1Received) -> Result<Self, Error> {
+        if let Some(d) = &pb.receiving_ct2 {
+            if d.pts_needed as usize
+                != (incremental_mlkem768::CIPHERTEXT2_SIZE + authenticator::Authenticator::MACSIZE)
+                    / 2
+            {
+                return Err(Error::MsgDecode);
+            }
+        }
         Ok(Self {
             uc: unchunked::send_ek::EkSentCt1Received::from_pb(pb.uc.ok_or(Error::StateDecode)?)?,
             receiving_ct2: polynomial::PolyDecoder::from_pb(

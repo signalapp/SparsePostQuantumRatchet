@@ -56,11 +56,6 @@ impl States {
                 Self::KeysSampled(send_ek::KeysSampled::from_pb(pb)?)
             }
             Some(pqrpb::v1_state::InnerState::HeaderSent(pb)) => {
-                if let Some(d) = &pb.receiving_ct1 {
-                    if d.pts_needed as usize != crate::incremental_mlkem768::CIPHERTEXT1_SIZE / 2 {
-                        return Err(Error::MsgDecode);
-                    }
-                }
                 Self::HeaderSent(send_ek::HeaderSent::from_pb(pb)?)
             }
             Some(pqrpb::v1_state::InnerState::Ct1Received(pb)) => {
@@ -72,49 +67,18 @@ impl States {
 
             // send_ct
             Some(pqrpb::v1_state::InnerState::NoHeaderReceived(pb)) => {
-                if let Some(rhdr) = &pb.receiving_hdr {
-                    if rhdr.pts_needed
-                        != ((crate::incremental_mlkem768::HEADER_SIZE
-                            + crate::authenticator::Authenticator::MACSIZE)
-                            / 2) as u32
-                    {
-                        return Err(Error::MsgDecode);
-                    }
-                }
-
                 Self::NoHeaderReceived(send_ct::NoHeaderReceived::from_pb(pb)?)
             }
             Some(pqrpb::v1_state::InnerState::HeaderReceived(pb)) => {
-                if let Some(d) = &pb.receiving_ek {
-                    if d.pts_needed as usize
-                        != crate::incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2
-                    {
-                        return Err(Error::MsgDecode);
-                    }
-                }
                 Self::HeaderReceived(send_ct::HeaderReceived::from_pb(pb)?)
             }
             Some(pqrpb::v1_state::InnerState::Ct1Sampled(pb)) => {
-                if let Some(d) = &pb.receiving_ek {
-                    if d.pts_needed as usize
-                        != crate::incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2
-                    {
-                        return Err(Error::MsgDecode);
-                    }
-                }
                 Self::Ct1Sampled(send_ct::Ct1Sampled::from_pb(pb)?)
             }
             Some(pqrpb::v1_state::InnerState::EkReceivedCt1Sampled(pb)) => {
                 Self::EkReceivedCt1Sampled(send_ct::EkReceivedCt1Sampled::from_pb(pb)?)
             }
             Some(pqrpb::v1_state::InnerState::Ct1Acknowledged(pb)) => {
-                if let Some(d) = &pb.receiving_ek {
-                    if d.pts_needed as usize
-                        != crate::incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2
-                    {
-                        return Err(Error::MsgDecode);
-                    }
-                }
                 Self::Ct1Acknowledged(send_ct::Ct1Acknowledged::from_pb(pb)?)
             }
             Some(pqrpb::v1_state::InnerState::Ct2Sampled(pb)) => {
