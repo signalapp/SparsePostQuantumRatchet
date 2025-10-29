@@ -100,7 +100,9 @@ impl KeysUnsampled {
     }
 }
 
+#[hax_lib::attributes]
 impl HeaderSent {
+    #[hax_lib::ensures(|(_, ek)| ek.len() == 1152)]
     pub fn send_ek(self) -> (EkSent, incremental_mlkem768::EncapsulationKey) {
         (
             EkSent {

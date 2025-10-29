@@ -15,11 +15,16 @@ impl NoHeaderReceived {
         }
     }
 
-    #[hax_lib::requires(match pb.receiving_hdr {
-        Some(rhdr) => rhdr.pts_needed == ((incremental_mlkem768::HEADER_SIZE + authenticator::Authenticator::MACSIZE) / 2) as u32,
-        None => true}
-    )]
     pub fn from_pb(pb: pqrpb::v1_state::chunked::NoHeaderReceived) -> Result<Self, Error> {
+        if let Some(rhdr) = &pb.receiving_hdr {
+            if rhdr.pts_needed
+                != ((crate::incremental_mlkem768::HEADER_SIZE
+                    + crate::authenticator::Authenticator::MACSIZE)
+                    / 2) as u32
+            {
+                return Err(Error::MsgDecode);
+            }
+        }
         Ok(Self {
             uc: unchunked::send_ct::NoHeaderReceived::from_pb(pb.uc.ok_or(Error::StateDecode)?)?,
             receiving_hdr: polynomial::PolyDecoder::from_pb(
