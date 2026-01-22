@@ -806,6 +806,7 @@ impl PolyDecoder {
             return Err(PolynomialError::SerializationInvalid);
         }
         let mut out_pts = core::array::from_fn(|_| SortedSet::new());
+        #[allow(clippy::needless_range_loop)]
         for i in 0..16 {
             let pts = &pb.pts[i];
             if pts.len() % 4 != 0 {
