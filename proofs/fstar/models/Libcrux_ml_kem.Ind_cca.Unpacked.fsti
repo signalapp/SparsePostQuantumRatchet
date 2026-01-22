@@ -1,6 +1,6 @@
 module Libcrux_ml_kem.Ind_cca.Unpacked
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 80"
-open Core
+open Core_models
 open FStar.Mul
 
 let _ =
@@ -34,11 +34,11 @@ type t_MlKemPublicKeyUnpacked
 let impl_2
       (v_K: usize)
       (#v_Vector: Type0)
-      (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Clone.t_Clone v_Vector)
+      (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core_models.Clone.t_Clone v_Vector)
       (#[FStar.Tactics.Typeclasses.tcresolve ()]
           i2:
           Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector)
-    : Core.Clone.t_Clone (t_MlKemPublicKeyUnpacked v_K v_Vector) = { f_clone = (fun x -> x); f_clone_pre = (fun _ -> True); f_clone_post = (fun _ _ -> True) }
+    : Core_models.Clone.t_Clone (t_MlKemPublicKeyUnpacked v_K v_Vector) = { f_clone = (fun x -> x); f_clone_pre = (fun _ -> True); f_clone_post = (fun _ _ -> True) }
 
 /// An unpacked ML-KEM KeyPair
 type t_MlKemKeyPairUnpacked
@@ -149,7 +149,7 @@ val impl
       (v_K: usize)
       (#v_Vector: Type0)
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : Core.Default.t_Default (t_MlKemPublicKeyUnpacked v_K v_Vector)
+    : Core_models.Default.t_Default (t_MlKemPublicKeyUnpacked v_K v_Vector)
 
 /// Take a serialized private key and generate an unpacked key pair from it.
 val keys_from_private_key
@@ -277,7 +277,7 @@ val impl_1
       (v_K: usize)
       (#v_Vector: Type0)
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : Core.Default.t_Default (t_MlKemKeyPairUnpacked v_K v_Vector)
+    : Core_models.Default.t_Default (t_MlKemKeyPairUnpacked v_K v_Vector)
 
 /// Create a new empty unpacked key pair.
 val impl_4__new:
@@ -358,8 +358,8 @@ val encaps_prepare
       (randomness pk_hash: t_Slice u8)
     : Prims.Pure (t_Array u8 (mk_usize 64))
       (requires
-        (Core.Slice.impl__len #u8 randomness <: usize) =. mk_usize 32 &&
-        (Core.Slice.impl__len #u8 pk_hash <: usize) =. mk_usize 32)
+        (Core_models.Slice.impl__len #u8 randomness <: usize) =. mk_usize 32 &&
+        (Core_models.Slice.impl__len #u8 pk_hash <: usize) =. mk_usize 32)
       (ensures
         fun result ->
           let result:t_Array u8 (mk_usize 64) = result in

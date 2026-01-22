@@ -1,5 +1,5 @@
 module Spec.GF16
-open Core
+open Core_models
 
 (** Boolean Operations **)
 

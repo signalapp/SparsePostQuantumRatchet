@@ -1,6 +1,6 @@
 module Libcrux_ml_kem.Vector.Traits
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 80"
-open Core
+open Core_models
 open FStar.Mul
 
 let v_MONTGOMERY_R_SQUARED_MOD_FIELD_MODULUS: i16 = mk_i16 1353
@@ -16,8 +16,8 @@ let v_BARRETT_SHIFT: i32 = mk_i32 26
 let v_BARRETT_R: i32 = mk_i32 1 <<! v_BARRETT_SHIFT
 
 class t_Repr (v_Self: Type0) = {
-  [@@@ FStar.Tactics.Typeclasses.no_method]_super_5883514518384729217:Core.Marker.t_Copy v_Self;
-  [@@@ FStar.Tactics.Typeclasses.no_method]_super_16027770981543256320:Core.Clone.t_Clone v_Self;
+  [@@@ FStar.Tactics.Typeclasses.no_method]_super_5883514518384729217:Core_models.Marker.t_Copy v_Self;
+  [@@@ FStar.Tactics.Typeclasses.no_method]_super_16027770981543256320:Core_models.Clone.t_Clone v_Self;
   f_repr_pre:x: v_Self -> pred: Type0{true ==> pred};
   f_repr_post:v_Self -> t_Array i16 (mk_usize 16) -> Type0;
   f_repr:x0: v_Self
@@ -25,8 +25,8 @@ class t_Repr (v_Self: Type0) = {
 }
 
 class t_Operations (v_Self: Type0) = {
-  [@@@ FStar.Tactics.Typeclasses.no_method]_super_5883514518384729217:Core.Marker.t_Copy v_Self;
-  [@@@ FStar.Tactics.Typeclasses.no_method]_super_16027770981543256320:Core.Clone.t_Clone v_Self;
+  [@@@ FStar.Tactics.Typeclasses.no_method]_super_5883514518384729217:Core_models.Marker.t_Copy v_Self;
+  [@@@ FStar.Tactics.Typeclasses.no_method]_super_16027770981543256320:Core_models.Clone.t_Clone v_Self;
   [@@@ FStar.Tactics.Typeclasses.no_method]_super_15138760880757129450:t_Repr v_Self;
   f_ZERO_pre:x: Prims.unit
     -> pred:
@@ -42,7 +42,7 @@ class t_Operations (v_Self: Type0) = {
             f_repr result == Seq.create 16 (mk_i16 0)) };
   f_ZERO:x0: Prims.unit -> Prims.Pure v_Self (f_ZERO_pre x0) (fun result -> f_ZERO_post x0 result);
   f_from_i16_array_pre:array: t_Slice i16
-    -> pred: Type0{(Core.Slice.impl__len #i16 array <: usize) =. mk_usize 16 ==> pred};
+    -> pred: Type0{(Core_models.Slice.impl__len #i16 array <: usize) =. mk_usize 16 ==> pred};
   f_from_i16_array_post:array: t_Slice i16 -> result: v_Self
     -> pred: Type0{pred ==> f_repr result == array};
   f_from_i16_array:x0: t_Slice i16
@@ -55,12 +55,12 @@ class t_Operations (v_Self: Type0) = {
         (f_to_i16_array_pre x0)
         (fun result -> f_to_i16_array_post x0 result);
   f_from_bytes_pre:array: t_Slice u8
-    -> pred: Type0{(Core.Slice.impl__len #u8 array <: usize) >=. mk_usize 32 ==> pred};
+    -> pred: Type0{(Core_models.Slice.impl__len #u8 array <: usize) >=. mk_usize 32 ==> pred};
   f_from_bytes_post:t_Slice u8 -> v_Self -> Type0;
   f_from_bytes:x0: t_Slice u8
     -> Prims.Pure v_Self (f_from_bytes_pre x0) (fun result -> f_from_bytes_post x0 result);
   f_to_bytes_pre:x: v_Self -> bytes: t_Slice u8
-    -> pred: Type0{(Core.Slice.impl__len #u8 bytes <: usize) >=. mk_usize 32 ==> pred};
+    -> pred: Type0{(Core_models.Slice.impl__len #u8 bytes <: usize) >=. mk_usize 32 ==> pred};
   f_to_bytes_post:v_Self -> t_Slice u8 -> t_Slice u8 -> Type0;
   f_to_bytes:x0: v_Self -> x1: t_Slice u8
     -> Prims.Pure (t_Slice u8) (f_to_bytes_pre x0 x1) (fun result -> f_to_bytes_post x0 x1 result);
@@ -324,7 +324,7 @@ class t_Operations (v_Self: Type0) = {
         (f_serialize_1__pre x0)
         (fun result -> f_serialize_1__post x0 result);
   f_deserialize_1__pre:a: t_Slice u8
-    -> pred: Type0{(Core.Slice.impl__len #u8 a <: usize) =. mk_usize 2 ==> pred};
+    -> pred: Type0{(Core_models.Slice.impl__len #u8 a <: usize) =. mk_usize 2 ==> pred};
   f_deserialize_1__post:a: t_Slice u8 -> result: v_Self
     -> pred:
       Type0{pred ==> sz (Seq.length a) =. sz 2 ==> Spec.MLKEM.deserialize_post 1 a (f_repr result)};
@@ -341,7 +341,7 @@ class t_Operations (v_Self: Type0) = {
         (f_serialize_4__pre x0)
         (fun result -> f_serialize_4__post x0 result);
   f_deserialize_4__pre:a: t_Slice u8
-    -> pred: Type0{(Core.Slice.impl__len #u8 a <: usize) =. mk_usize 8 ==> pred};
+    -> pred: Type0{(Core_models.Slice.impl__len #u8 a <: usize) =. mk_usize 8 ==> pred};
   f_deserialize_4__post:a: t_Slice u8 -> result: v_Self
     -> pred:
       Type0{pred ==> sz (Seq.length a) =. sz 8 ==> Spec.MLKEM.deserialize_post 4 a (f_repr result)};
@@ -354,7 +354,7 @@ class t_Operations (v_Self: Type0) = {
         (f_serialize_5__pre x0)
         (fun result -> f_serialize_5__post x0 result);
   f_deserialize_5__pre:a: t_Slice u8
-    -> pred: Type0{(Core.Slice.impl__len #u8 a <: usize) =. mk_usize 10 ==> pred};
+    -> pred: Type0{(Core_models.Slice.impl__len #u8 a <: usize) =. mk_usize 10 ==> pred};
   f_deserialize_5__post:t_Slice u8 -> v_Self -> Type0;
   f_deserialize_5_:x0: t_Slice u8
     -> Prims.Pure v_Self (f_deserialize_5__pre x0) (fun result -> f_deserialize_5__post x0 result);
@@ -370,7 +370,7 @@ class t_Operations (v_Self: Type0) = {
         (f_serialize_10__pre x0)
         (fun result -> f_serialize_10__post x0 result);
   f_deserialize_10__pre:a: t_Slice u8
-    -> pred: Type0{(Core.Slice.impl__len #u8 a <: usize) =. mk_usize 20 ==> pred};
+    -> pred: Type0{(Core_models.Slice.impl__len #u8 a <: usize) =. mk_usize 20 ==> pred};
   f_deserialize_10__post:a: t_Slice u8 -> result: v_Self
     -> pred:
       Type0
@@ -384,7 +384,7 @@ class t_Operations (v_Self: Type0) = {
         (f_serialize_11__pre x0)
         (fun result -> f_serialize_11__post x0 result);
   f_deserialize_11__pre:a: t_Slice u8
-    -> pred: Type0{(Core.Slice.impl__len #u8 a <: usize) =. mk_usize 22 ==> pred};
+    -> pred: Type0{(Core_models.Slice.impl__len #u8 a <: usize) =. mk_usize 22 ==> pred};
   f_deserialize_11__post:t_Slice u8 -> v_Self -> Type0;
   f_deserialize_11_:x0: t_Slice u8
     -> Prims.Pure v_Self (f_deserialize_11__pre x0) (fun result -> f_deserialize_11__post x0 result);
@@ -400,7 +400,7 @@ class t_Operations (v_Self: Type0) = {
         (f_serialize_12__pre x0)
         (fun result -> f_serialize_12__post x0 result);
   f_deserialize_12__pre:a: t_Slice u8
-    -> pred: Type0{(Core.Slice.impl__len #u8 a <: usize) =. mk_usize 24 ==> pred};
+    -> pred: Type0{(Core_models.Slice.impl__len #u8 a <: usize) =. mk_usize 24 ==> pred};
   f_deserialize_12__post:a: t_Slice u8 -> result: v_Self
     -> pred:
       Type0
@@ -410,8 +410,8 @@ class t_Operations (v_Self: Type0) = {
   f_rej_sample_pre:a: t_Slice u8 -> out: t_Slice i16
     -> pred:
       Type0
-        { (Core.Slice.impl__len #u8 a <: usize) =. mk_usize 24 &&
-          (Core.Slice.impl__len #i16 out <: usize) =. mk_usize 16 ==>
+        { (Core_models.Slice.impl__len #u8 a <: usize) =. mk_usize 24 &&
+          (Core_models.Slice.impl__len #i16 out <: usize) =. mk_usize 16 ==>
           pred };
   f_rej_sample_post:a: t_Slice u8 -> out: t_Slice i16 -> x: (t_Slice i16 & usize)
     -> pred:

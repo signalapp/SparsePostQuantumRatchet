@@ -70,40 +70,22 @@ endif
 
 # The following is a bash script that discovers F* libraries.
 # Due to incompatibilities with make 4.3, I had to make a "oneliner" bash script...
-define FINDLIBS
-    : "Prints a path if and only if it exists. Takes one argument: the path."; \
-    function print_if_exists() { \
-        if [ -d "$$1" ]; then \
-            echo "$$1"; \
-        fi; \
-    } ; \
-    : "Asks Cargo all the dependencies for the current crate or workspace,"; \
-    : "and extract all "root" directories for each. Takes zero argument."; \
-    function dependencies() { \
-        cargo metadata --format-version 1 | \
-            jq -r ".packages | .[] | .manifest_path | split(\"/\") | .[:-1] | join(\"/\")"; \
-    } ; \
-    : "Find hax libraries *around* a given path. Takes one argument: the"; \
-    : "path."; \
-    function find_hax_libraries_at_path() { \
-        path="$$1" ; \
-        : "if there is a [proofs/fstar/extraction] subfolder, then that s a F* library" ; \
-        print_if_exists "$$path/proofs/fstar/extraction" ; \
-        : "Maybe the [proof-libs] folder of hax is around?" ; \
-        MAYBE_PROOF_LIBS=$$(realpath -q "$$path/proof-libs/fstar" || realpath -q "$$path/../proof-libs/fstar") ; \
-        if [ -n "$$MAYBE_PROOF_LIBS" ]; then \
-            print_if_exists "$$MAYBE_PROOF_LIBS/core" ; \
-            print_if_exists "$$MAYBE_PROOF_LIBS/rust_primitives" ; \
-        fi ; \
-    } ; \
-    { while IFS= read path; do \
-          find_hax_libraries_at_path "$$path"; \
-      done < <(dependencies) ; } | sort -u
-endef
-export FINDLIBS
+FINDLIBS_OUTPUT := $(shell \
+	MANIFEST=$$(cargo metadata --format-version 1 | jq -r '.resolve.root as $$root | .packages as $$pkgs | .resolve.nodes[] | select(.id == $$root) | .dependencies[] as $$dep | select($$dep | contains("hax-lib")) | $$pkgs[] | select(.id == $$dep) | .manifest_path' 2>/dev/null); \
+	if [ -n "$$MANIFEST" ] && [ "$$MANIFEST" != "null" ]; then \
+		DIR=$$(dirname "$$MANIFEST"); \
+		[ -d "$$DIR/proofs/fstar/extraction" ] && echo "$$DIR/proofs/fstar/extraction"; \
+		for p in "$$DIR/proof-libs/fstar" "$$DIR/../proof-libs/fstar"; do \
+			if [ -d "$$p" ]; then \
+				echo "$$p/core"; \
+				echo "$$p/rust_primitives"; \
+				break; \
+			fi; \
+		done; \
+	fi | sort -u)
+
 
 FSTAR_INCLUDE_DIRS_EXTRA ?=
-FINDLIBS_OUTPUT := $(shell bash -c '${FINDLIBS}')
 FSTAR_INCLUDE_DIRS = $(HACL_HOME)/lib $(FSTAR_INCLUDE_DIRS_EXTRA) $(FINDLIBS_OUTPUT) ../models
 
 # Make sure FSTAR_INCLUDE_DIRS has the `proof-libs`, print hints and

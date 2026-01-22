@@ -1,6 +1,6 @@
 module Bytes.Buf.Buf_mut
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 15"
-open Core
+open Core_models
 open FStar.Mul
 
 

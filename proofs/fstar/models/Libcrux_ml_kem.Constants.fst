@@ -1,6 +1,6 @@
 module Libcrux_ml_kem.Constants
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 80"
-open Core
+open Core_models
 open FStar.Mul
 
 /// Each field element needs floor(log_2(FIELD_MODULUS)) + 1 = 12 bits to represent
