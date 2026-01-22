@@ -1,69 +1,69 @@
 module Sorted_vec
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 15"
-open Core
+open Core_models
 open FStar.Mul
 
 /// Forward sorted vector
-type t_SortedVec (v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} = {
+type t_SortedVec (v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} = {
   f_vec:Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global
 }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_18 (#v_T: Type0) {| i1: Core.Clone.t_Clone v_T |} {| i2: Core.Cmp.t_Ord v_T |}
-    : Core.Clone.t_Clone (t_SortedVec v_T)
+val impl_18 (#v_T: Type0) {| i1: Core_models.Clone.t_Clone v_T |} {| i2: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Clone.t_Clone (t_SortedVec v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_19 (#v_T: Type0) {| i1: Core.Fmt.t_Debug v_T |} {| i2: Core.Cmp.t_Ord v_T |}
-    : Core.Fmt.t_Debug (t_SortedVec v_T)
+val impl_19 (#v_T: Type0) {| i1: Core_models.Fmt.t_Debug v_T |} {| i2: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Fmt.t_Debug (t_SortedVec v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_22 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |}
-    : Core.Marker.t_StructuralPartialEq (t_SortedVec v_T)
+val impl_22 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Marker.t_StructuralPartialEq (t_SortedVec v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_23 (#v_T: Type0) {| i1: Core.Cmp.t_PartialEq v_T v_T |} {| i2: Core.Cmp.t_Ord v_T |}
-    : Core.Cmp.t_PartialEq (t_SortedVec v_T) (t_SortedVec v_T)
+val impl_23 (#v_T: Type0) {| i1: Core_models.Cmp.t_PartialEq v_T v_T |} {| i2: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Cmp.t_PartialEq (t_SortedVec v_T) (t_SortedVec v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_20 (#v_T: Type0) {| i1: Core.Cmp.t_Eq v_T |} {| i2: Core.Cmp.t_Ord v_T |}
-    : Core.Cmp.t_Eq (t_SortedVec v_T)
+val impl_20 (#v_T: Type0) {| i1: Core_models.Cmp.t_Eq v_T |} {| i2: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Cmp.t_Eq (t_SortedVec v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_24 (#v_T: Type0) {| i1: Core.Cmp.t_PartialOrd v_T v_T |} {| i2: Core.Cmp.t_Ord v_T |}
-    : Core.Cmp.t_PartialOrd (t_SortedVec v_T) (t_SortedVec v_T)
+val impl_24 (#v_T: Type0) {| i1: Core_models.Cmp.t_PartialOrd v_T v_T |} {| i2: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Cmp.t_PartialOrd (t_SortedVec v_T) (t_SortedVec v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_21 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} : Core.Cmp.t_Ord (t_SortedVec v_T)
+val impl_21 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} : Core_models.Cmp.t_Ord (t_SortedVec v_T)
 
 /// Forward sorted set
-type t_SortedSet (v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} = { f_set:t_SortedVec v_T }
+type t_SortedSet (v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} = { f_set:t_SortedVec v_T }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_25 (#v_T: Type0) {| i1: Core.Clone.t_Clone v_T |} {| i2: Core.Cmp.t_Ord v_T |}
-    : Core.Clone.t_Clone (t_SortedSet v_T)
+val impl_25 (#v_T: Type0) {| i1: Core_models.Clone.t_Clone v_T |} {| i2: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Clone.t_Clone (t_SortedSet v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_26 (#v_T: Type0) {| i1: Core.Fmt.t_Debug v_T |} {| i2: Core.Cmp.t_Ord v_T |}
-    : Core.Fmt.t_Debug (t_SortedSet v_T)
+val impl_26 (#v_T: Type0) {| i1: Core_models.Fmt.t_Debug v_T |} {| i2: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Fmt.t_Debug (t_SortedSet v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_29 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |}
-    : Core.Marker.t_StructuralPartialEq (t_SortedSet v_T)
+val impl_29 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Marker.t_StructuralPartialEq (t_SortedSet v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_30 (#v_T: Type0) {| i1: Core.Cmp.t_PartialEq v_T v_T |} {| i2: Core.Cmp.t_Ord v_T |}
-    : Core.Cmp.t_PartialEq (t_SortedSet v_T) (t_SortedSet v_T)
+val impl_30 (#v_T: Type0) {| i1: Core_models.Cmp.t_PartialEq v_T v_T |} {| i2: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Cmp.t_PartialEq (t_SortedSet v_T) (t_SortedSet v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_27 (#v_T: Type0) {| i1: Core.Cmp.t_Eq v_T |} {| i2: Core.Cmp.t_Ord v_T |}
-    : Core.Cmp.t_Eq (t_SortedSet v_T)
+val impl_27 (#v_T: Type0) {| i1: Core_models.Cmp.t_Eq v_T |} {| i2: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Cmp.t_Eq (t_SortedSet v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_31 (#v_T: Type0) {| i1: Core.Cmp.t_PartialOrd v_T v_T |} {| i2: Core.Cmp.t_Ord v_T |}
-    : Core.Cmp.t_PartialOrd (t_SortedSet v_T) (t_SortedSet v_T)
+val impl_31 (#v_T: Type0) {| i1: Core_models.Cmp.t_PartialOrd v_T v_T |} {| i2: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Cmp.t_PartialOrd (t_SortedSet v_T) (t_SortedSet v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_28 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} : Core.Cmp.t_Ord (t_SortedSet v_T)
+val impl_28 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} : Core_models.Cmp.t_Ord (t_SortedSet v_T)
 
 /// Value returned when find_or_insert is used.
 type t_FindOrInsert =
@@ -71,29 +71,29 @@ type t_FindOrInsert =
   | FindOrInsert_Inserted : usize -> t_FindOrInsert
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_32:Core.Marker.t_StructuralPartialEq t_FindOrInsert
+val impl_32:Core_models.Marker.t_StructuralPartialEq t_FindOrInsert
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_33:Core.Cmp.t_PartialEq t_FindOrInsert t_FindOrInsert
+val impl_33:Core_models.Cmp.t_PartialEq t_FindOrInsert t_FindOrInsert
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_34:Core.Cmp.t_PartialOrd t_FindOrInsert t_FindOrInsert
+val impl_34:Core_models.Cmp.t_PartialOrd t_FindOrInsert t_FindOrInsert
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_35:Core.Cmp.t_Eq t_FindOrInsert
+val impl_35:Core_models.Cmp.t_Eq t_FindOrInsert
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_36:Core.Cmp.t_Ord t_FindOrInsert
+val impl_36:Core_models.Cmp.t_Ord t_FindOrInsert
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_37:Core.Fmt.t_Debug t_FindOrInsert
+val impl_37:Core_models.Fmt.t_Debug t_FindOrInsert
 
 (* [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_38:Core.Hash.t_Hash t_FindOrInsert *)
+val impl_38:Core_models.Hash.t_Hash t_FindOrInsert *)
 
 /// Converts from the binary_search result type into the FindOrInsert type
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl:Core.Convert.t_From t_FindOrInsert (Core.Result.t_Result usize usize)
+val impl:Core_models.Convert.t_From t_FindOrInsert (Core_models.Result.t_Result usize usize)
 
 /// Get the index of the element that was either found or inserted.
 val impl_FindOrInsert__index (self: t_FindOrInsert)
@@ -102,12 +102,12 @@ val impl_FindOrInsert__index (self: t_FindOrInsert)
 /// If an equivalent element was found in the container, get the value of
 /// its index. Otherwise get None.
 val impl_FindOrInsert__found (self: t_FindOrInsert)
-    : Prims.Pure (Core.Option.t_Option usize) Prims.l_True (fun _ -> Prims.l_True)
+    : Prims.Pure (Core_models.Option.t_Option usize) Prims.l_True (fun _ -> Prims.l_True)
 
 /// If the provided element was inserted into the container, get the value
 /// of its index. Otherwise get None.
 val impl_FindOrInsert__inserted (self: t_FindOrInsert)
-    : Prims.Pure (Core.Option.t_Option usize) Prims.l_True (fun _ -> Prims.l_True)
+    : Prims.Pure (Core_models.Option.t_Option usize) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Returns true if the element was found.
 val impl_FindOrInsert__is_found (self: t_FindOrInsert)
@@ -117,29 +117,29 @@ val impl_FindOrInsert__is_found (self: t_FindOrInsert)
 val impl_FindOrInsert__is_inserted (self: t_FindOrInsert)
     : Prims.Pure bool Prims.l_True (fun _ -> Prims.l_True)
 
-val impl_2__new: #v_T: Type0 -> {| i1: Core.Cmp.t_Ord v_T |} -> Prims.unit
+val impl_2__new: #v_T: Type0 -> {| i1: Core_models.Cmp.t_Ord v_T |} -> Prims.unit
   -> Prims.Pure (t_SortedVec v_T) Prims.l_True (fun _ -> Prims.l_True)
 
-val impl_2__with_capacity (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (capacity: usize)
+val impl_2__with_capacity (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (capacity: usize)
     : Prims.Pure (t_SortedVec v_T) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Uses `sort_unstable()` to sort in place.
 val impl_2__from_unsorted
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (vec: Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
     : Prims.Pure (t_SortedVec v_T) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Insert an element into sorted position, returning the order index at which
 /// it was placed.
-val impl_2__insert (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedVec v_T) (element: v_T)
+val impl_2__insert (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (self: t_SortedVec v_T) (element: v_T)
     : Prims.Pure (t_SortedVec v_T & usize) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Find the element and return the index with `Ok`, otherwise insert the
 /// element and return the new element index with `Err`.
 val impl_2__find_or_insert
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedVec v_T)
       (element: v_T)
     : Prims.Pure (t_SortedVec v_T & t_FindOrInsert) Prims.l_True (fun _ -> Prims.l_True)
@@ -147,14 +147,14 @@ val impl_2__find_or_insert
 /// Same as insert, except performance is O(1) when the element belongs at the
 /// back of the container. This avoids an O(log(N)) search for inserting
 /// elements at the back.
-val impl_2__push (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedVec v_T) (element: v_T)
+val impl_2__push (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (self: t_SortedVec v_T) (element: v_T)
     : Prims.Pure (t_SortedVec v_T & usize) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Reserves additional capacity in the underlying vector.
 /// See std::vec::Vec::reserve.
 val impl_2__reserve
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedVec v_T)
       (additional: usize)
     : Prims.Pure (t_SortedVec v_T) Prims.l_True (fun _ -> Prims.l_True)
@@ -163,33 +163,33 @@ val impl_2__reserve
 /// belongs at the back of the container.
 val impl_2__find_or_push
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedVec v_T)
       (element: v_T)
     : Prims.Pure (t_SortedVec v_T & t_FindOrInsert) Prims.l_True (fun _ -> Prims.l_True)
 
 val impl_2__remove_item
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedVec v_T)
       (item: v_T)
-    : Prims.Pure (t_SortedVec v_T & Core.Option.t_Option v_T) Prims.l_True (fun _ -> Prims.l_True)
+    : Prims.Pure (t_SortedVec v_T & Core_models.Option.t_Option v_T) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Panics if index is out of bounds
 val impl_2__remove_index
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedVec v_T)
       (index: usize)
     : Prims.Pure (t_SortedVec v_T & v_T) Prims.l_True (fun _ -> Prims.l_True)
 
-val impl_2__pop (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedVec v_T)
-    : Prims.Pure (t_SortedVec v_T & Core.Option.t_Option v_T) Prims.l_True (fun _ -> Prims.l_True)
+val impl_2__pop (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (self: t_SortedVec v_T)
+    : Prims.Pure (t_SortedVec v_T & Core_models.Option.t_Option v_T) Prims.l_True (fun _ -> Prims.l_True)
 
-val impl_2__clear (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedVec v_T)
+val impl_2__clear (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (self: t_SortedVec v_T)
     : Prims.Pure (t_SortedVec v_T) Prims.l_True (fun _ -> Prims.l_True)
 
-val impl_2__dedup (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedVec v_T)
+val impl_2__dedup (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (self: t_SortedVec v_T)
     : Prims.Pure (t_SortedVec v_T) Prims.l_True (fun _ -> Prims.l_True)
 
 (* item error backend: (DirectAndMut) The mutation of this [1m&mut[0m is not allowed here.
@@ -251,8 +251,8 @@ const _: () = ();
 
 (* val impl_2__drain
       (#v_T #v_R: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
-      {| i7: Core.Ops.Range.t_RangeBounds v_R usize |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
+      {| i7: Core_models.Ops.Range.t_RangeBounds v_R usize |}
       (self: t_SortedVec v_T)
       (range: v_R)
     : Prims.Pure (t_SortedVec v_T & Alloc.Vec.Drain.t_Drain v_T Alloc.Alloc.t_Global)
@@ -261,15 +261,15 @@ const _: () = ();
 
 (* val impl_2__retain
       (#v_T #v_F: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
-      {| i8: Core.Ops.Function.t_FnMut v_F v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
+      {| i8: Core_models.Ops.Function.t_FnMut v_F v_T |}
       (self: t_SortedVec v_T)
       (f: v_F)
     : Prims.Pure (t_SortedVec v_T) Prims.l_True (fun _ -> Prims.l_True) *)
 
 /// NOTE: to_vec() is a slice method that is accessible through deref, use
 /// this instead to avoid cloning
-val impl_2__into_vec (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedVec v_T)
+val impl_2__into_vec (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (self: t_SortedVec v_T)
     : Prims.Pure (Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global) Prims.l_True (fun _ -> Prims.l_True)
 
 (* item error backend: (DirectAndMut) The mutation of this [1m&mut[0m is not allowed here.
@@ -335,26 +335,26 @@ const _: () = ();
 /// The caller must ensure that the provided vector is already sorted.
 val impl_2__from_sorted
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (vec: Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
     : Prims.Pure (t_SortedVec v_T) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Unsafe access to the underlying vector. The caller must ensure that any
 /// changes to the values in the vector do not impact the ordering of the
 /// elements inside, or else this container will misbehave.
-(* val impl_2__get_unchecked_mut_vec (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedVec v_T)
+(* val impl_2__get_unchecked_mut_vec (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (self: t_SortedVec v_T)
     : Prims.Pure Rust_primitives.Hax.failure Prims.l_True (fun _ -> Prims.l_True) *)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_3 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} : Core.Default.t_Default (t_SortedVec v_T)
+val impl_3 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} : Core_models.Default.t_Default (t_SortedVec v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_4 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |}
-    : Core.Convert.t_From (t_SortedVec v_T) (Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
+val impl_4 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Convert.t_From (t_SortedVec v_T) (Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_5 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cmp.t_Ord v_T)
-    : Core.Ops.Deref.t_Deref (t_SortedVec v_T) =
+let impl_5 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core_models.Cmp.t_Ord v_T)
+    : Core_models.Ops.Deref.t_Deref (t_SortedVec v_T) =
   {
     f_Target = Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global;(* 
     f_deref_pre = (fun (self: t_SortedVec v_T) -> true);
@@ -365,24 +365,24 @@ let impl_5 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cmp
   }
 
 (* [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_6 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |}
-    : Core.Iter.Traits.Collect.t_Extend (t_SortedVec v_T) v_T *)
+val impl_6 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Iter.Traits.Collect.t_Extend (t_SortedVec v_T) v_T *)
 
 (* [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_7 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} {| i2: Core.Hash.t_Hash v_T |}
-    : Core.Hash.t_Hash (t_SortedVec v_T) *)
+val impl_7 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} {| i2: Core_models.Hash.t_Hash v_T |}
+    : Core_models.Hash.t_Hash (t_SortedVec v_T) *)
 
-val impl_10__new: #v_T: Type0 -> {| i1: Core.Cmp.t_Ord v_T |} -> Prims.unit
+val impl_10__new: #v_T: Type0 -> {| i1: Core_models.Cmp.t_Ord v_T |} -> Prims.unit
   -> Prims.Pure (t_SortedSet v_T) Prims.l_True (fun _ -> Prims.l_True)
 
-val impl_10__with_capacity (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (capacity: usize)
+val impl_10__with_capacity (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (capacity: usize)
     : Prims.Pure (t_SortedSet v_T) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Uses `sort_unstable()` to sort in place and `dedup()` to remove
 /// duplicates.
 val impl_10__from_unsorted
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (vec: Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
     : Prims.Pure (t_SortedSet v_T) Prims.l_True (fun _ -> Prims.l_True)
 
@@ -390,10 +390,10 @@ val impl_10__from_unsorted
 /// it was placed. If an existing item was found it will be returned.
 val impl_10__replace
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedSet v_T)
       (element: v_T)
-    : Prims.Pure (t_SortedSet v_T & (usize & Core.Option.t_Option v_T))
+    : Prims.Pure (t_SortedSet v_T & (usize & Core_models.Option.t_Option v_T))
       Prims.l_True
       (fun _ -> Prims.l_True)
 
@@ -401,7 +401,7 @@ val impl_10__replace
 /// element and return the new element index with `Err`.
 val impl_10__find_or_insert
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedSet v_T)
       (element: v_T)
     : Prims.Pure (t_SortedSet v_T & t_FindOrInsert) Prims.l_True (fun _ -> Prims.l_True)
@@ -409,8 +409,8 @@ val impl_10__find_or_insert
 /// Same as replace, except performance is O(1) when the element belongs at
 /// the back of the container. This avoids an O(log(N)) search for inserting
 /// elements at the back.
-val impl_10__push (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedSet v_T) (element: v_T)
-    : Prims.Pure (t_SortedSet v_T & (usize & Core.Option.t_Option v_T))
+val impl_10__push (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (self: t_SortedSet v_T) (element: v_T)
+    : Prims.Pure (t_SortedSet v_T & (usize & Core_models.Option.t_Option v_T))
       Prims.l_True
       (fun _ -> Prims.l_True)
 
@@ -418,7 +418,7 @@ val impl_10__push (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedSet 
 /// See std::vec::Vec::reserve.
 val impl_10__reserve
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedSet v_T)
       (additional: usize)
     : Prims.Pure (t_SortedSet v_T) Prims.l_True (fun _ -> Prims.l_True)
@@ -427,36 +427,36 @@ val impl_10__reserve
 /// belongs at the back of the container.
 val impl_10__find_or_push
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedSet v_T)
       (element: v_T)
     : Prims.Pure (t_SortedSet v_T & t_FindOrInsert) Prims.l_True (fun _ -> Prims.l_True)
 
 val impl_10__remove_item
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedSet v_T)
       (item: v_T)
-    : Prims.Pure (t_SortedSet v_T & Core.Option.t_Option v_T) Prims.l_True (fun _ -> Prims.l_True)
+    : Prims.Pure (t_SortedSet v_T & Core_models.Option.t_Option v_T) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Panics if index is out of bounds
 val impl_10__remove_index
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedSet v_T)
       (index: usize)
     : Prims.Pure (t_SortedSet v_T & v_T) Prims.l_True (fun _ -> Prims.l_True)
 
-val impl_10__pop (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedSet v_T)
-    : Prims.Pure (t_SortedSet v_T & Core.Option.t_Option v_T) Prims.l_True (fun _ -> Prims.l_True)
+val impl_10__pop (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (self: t_SortedSet v_T)
+    : Prims.Pure (t_SortedSet v_T & Core_models.Option.t_Option v_T) Prims.l_True (fun _ -> Prims.l_True)
 
-val impl_10__clear (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedSet v_T)
+val impl_10__clear (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (self: t_SortedSet v_T)
     : Prims.Pure (t_SortedSet v_T) Prims.l_True (fun _ -> Prims.l_True)
 
 (* val impl_10__drain
       (#v_T #v_R: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
-      {| i3: Core.Ops.Range.t_RangeBounds v_R usize |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
+      {| i3: Core_models.Ops.Range.t_RangeBounds v_R usize |}
       (self: t_SortedSet v_T)
       (range: v_R)
     : Prims.Pure (t_SortedSet v_T & Alloc.Vec.Drain.t_Drain v_T Alloc.Alloc.t_Global)
@@ -465,15 +465,15 @@ val impl_10__clear (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedSet
 
 (* val impl_10__retain
       (#v_T #v_F: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
-      {| i5: Core.Ops.Function.t_FnMut v_F v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
+      {| i5: Core_models.Ops.Function.t_FnMut v_F v_T |}
       (self: t_SortedSet v_T)
       (f: v_F)
     : Prims.Pure (t_SortedSet v_T) Prims.l_True (fun _ -> Prims.l_True) *)
 
 /// NOTE: to_vec() is a slice method that is accessible through deref, use
 /// this instead to avoid cloning
-val impl_10__into_vec (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} (self: t_SortedSet v_T)
+val impl_10__into_vec (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} (self: t_SortedSet v_T)
     : Prims.Pure (Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global) Prims.l_True (fun _ -> Prims.l_True)
 
 (* item error backend: (DirectAndMut) The mutation of this [1m&mut[0m is not allowed here.
@@ -541,7 +541,7 @@ const _: () = ();
 /// deduped.
 val impl_10__from_sorted
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (vec: Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
     : Prims.Pure (t_SortedSet v_T) Prims.l_True (fun _ -> Prims.l_True)
 
@@ -550,20 +550,20 @@ val impl_10__from_sorted
 /// elements inside, or else this container will misbehave.
 (* val impl_10__get_unchecked_mut_vec
       (#v_T: Type0)
-      {| i1: Core.Cmp.t_Ord v_T |}
+      {| i1: Core_models.Cmp.t_Ord v_T |}
       (self: t_SortedSet v_T)
     : Prims.Pure Rust_primitives.Hax.failure Prims.l_True (fun _ -> Prims.l_True) *)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_11 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} : Core.Default.t_Default (t_SortedSet v_T)
+val impl_11 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} : Core_models.Default.t_Default (t_SortedSet v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_12 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |}
-    : Core.Convert.t_From (t_SortedSet v_T) (Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
+val impl_12 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Convert.t_From (t_SortedSet v_T) (Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_13 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cmp.t_Ord v_T)
-    : Core.Ops.Deref.t_Deref (t_SortedSet v_T) =
+let impl_13 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core_models.Cmp.t_Ord v_T)
+    : Core_models.Ops.Deref.t_Deref (t_SortedSet v_T) =
   {
     f_Target = t_SortedVec v_T;
     (* f_deref_pre = (fun (self: t_SortedSet v_T) -> true);
@@ -572,16 +572,16 @@ let impl_13 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cm
   }
 
 (* [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_14 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |}
-    : Core.Iter.Traits.Collect.t_Extend (t_SortedSet v_T) v_T *)
+val impl_14 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |}
+    : Core_models.Iter.Traits.Collect.t_Extend (t_SortedSet v_T) v_T *)
 
 (* [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_15 (#v_T: Type0) {| i1: Core.Cmp.t_Ord v_T |} {| i2: Core.Hash.t_Hash v_T |}
-    : Core.Hash.t_Hash (t_SortedSet v_T) *)
+val impl_15 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |} {| i2: Core_models.Hash.t_Hash v_T |}
+    : Core_models.Hash.t_Hash (t_SortedSet v_T) *)
 
 (* [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_8 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cmp.t_Ord v_T)
-    : Core.Iter.Traits.Collect.t_IntoIterator (t_SortedVec v_T) =
+let impl_8 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core_models.Cmp.t_Ord v_T)
+    : Core_models.Iter.Traits.Collect.t_IntoIterator (t_SortedVec v_T) =
   {
     f_Item = v_T;
     f_IntoIter = Alloc.Vec.Into_iter.t_IntoIter v_T Alloc.Alloc.t_Global;
@@ -594,25 +594,25 @@ let impl_8 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cmp
     f_into_iter
     =
     fun (self: t_SortedVec v_T) ->
-      Core.Iter.Traits.Collect.f_into_iter #(Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
+      Core_models.Iter.Traits.Collect.f_into_iter #(Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
         #FStar.Tactics.Typeclasses.solve
         self.f_vec
   } *)
 
 (* [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_9 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cmp.t_Ord v_T)
-    : Core.Iter.Traits.Collect.t_IntoIterator (t_SortedVec v_T) =
+let impl_9 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core_models.Cmp.t_Ord v_T)
+    : Core_models.Iter.Traits.Collect.t_IntoIterator (t_SortedVec v_T) =
   {
     f_Item = v_T;
-    f_IntoIter = Core.Slice.Iter.t_Iter v_T;
+    f_IntoIter = Core_models.Slice.Iter.t_Iter v_T;
     f_IntoIter_8492263130362933403 = FStar.Tactics.Typeclasses.solve;
     f_into_iter_pre = (fun (self: t_SortedVec v_T) -> true);
-    f_into_iter_post = (fun (self: t_SortedVec v_T) (out: Core.Slice.Iter.t_Iter v_T) -> true);
+    f_into_iter_post = (fun (self: t_SortedVec v_T) (out: Core_models.Slice.Iter.t_Iter v_T) -> true);
     f_into_iter
     =
     fun (self: t_SortedVec v_T) ->
-      Core.Slice.impl__iter #v_T
-        (Core.Ops.Deref.f_deref #(Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
+      Core_models.Slice.impl__iter #v_T
+        (Core_models.Ops.Deref.f_deref #(Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
             #FStar.Tactics.Typeclasses.solve
             self.f_vec
           <:
@@ -620,21 +620,21 @@ let impl_9 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cmp
   } *)
 
 (* [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_17 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cmp.t_Ord v_T)
-    : Core.Iter.Traits.Collect.t_IntoIterator (t_SortedSet v_T) =
+let impl_17 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core_models.Cmp.t_Ord v_T)
+    : Core_models.Iter.Traits.Collect.t_IntoIterator (t_SortedSet v_T) =
   {
     f_Item = v_T;
-    f_IntoIter = Core.Slice.Iter.t_Iter v_T;
+    f_IntoIter = Core_models.Slice.Iter.t_Iter v_T;
     f_IntoIter_8492263130362933403 = FStar.Tactics.Typeclasses.solve;
     f_into_iter_pre = (fun (self: t_SortedSet v_T) -> true);
-    f_into_iter_post = (fun (self: t_SortedSet v_T) (out: Core.Slice.Iter.t_Iter v_T) -> true);
+    f_into_iter_post = (fun (self: t_SortedSet v_T) (out: Core_models.Slice.Iter.t_Iter v_T) -> true);
     f_into_iter
     =
     fun (self: t_SortedSet v_T) ->
-      Core.Slice.impl__iter #v_T
-        (Core.Ops.Deref.f_deref #(Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
+      Core_models.Slice.impl__iter #v_T
+        (Core_models.Ops.Deref.f_deref #(Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
             #FStar.Tactics.Typeclasses.solve
-            (Core.Ops.Deref.f_deref #(t_SortedVec v_T) #FStar.Tactics.Typeclasses.solve self.f_set
+            (Core_models.Ops.Deref.f_deref #(t_SortedVec v_T) #FStar.Tactics.Typeclasses.solve self.f_set
               <:
               Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global)
           <:
@@ -642,8 +642,8 @@ let impl_17 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cm
   } *)
 
 (* [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_16 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cmp.t_Ord v_T)
-    : Core.Iter.Traits.Collect.t_IntoIterator (t_SortedSet v_T) =
+let impl_16 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core_models.Cmp.t_Ord v_T)
+    : Core_models.Iter.Traits.Collect.t_IntoIterator (t_SortedSet v_T) =
   {
     f_Item = v_T;
     f_IntoIter = Alloc.Vec.Into_iter.t_IntoIter v_T Alloc.Alloc.t_Global;
@@ -656,7 +656,7 @@ let impl_16 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Cm
     f_into_iter
     =
     fun (self: t_SortedSet v_T) ->
-      Core.Iter.Traits.Collect.f_into_iter #(t_SortedVec v_T)
+      Core_models.Iter.Traits.Collect.f_into_iter #(t_SortedVec v_T)
         #FStar.Tactics.Typeclasses.solve
         self.f_set
   } *)

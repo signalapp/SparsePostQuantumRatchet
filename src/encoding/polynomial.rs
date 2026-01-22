@@ -534,12 +534,6 @@ impl PolyEncoder {
         &self.s
     }
 
-    #[hax_lib::requires(match self.s {
-        EncoderState::Points(points) => hax_lib::Prop::from(points.len() == 16).and(hax_lib::prop::forall(|pts: &Vec<GF16>|
-            hax_lib::prop::implies(points.contains(pts), pts.len() <= MAX_INTERMEDIATE_POLYNOMIAL_DEGREE_V1))),
-        EncoderState::Polys(polys) => hax_lib::Prop::from(polys.len() == 16).and(hax_lib::prop::forall(|poly: &Poly|
-            hax_lib::prop::implies(polys.contains(poly), poly.coefficients.len() <= MAX_INTERMEDIATE_POLYNOMIAL_DEGREE_V1)))
-    })]
     pub fn into_pb(self) -> proto::pq_ratchet::PolynomialEncoder {
         let mut out = proto::pq_ratchet::PolynomialEncoder {
             idx: self.idx,
@@ -803,18 +797,15 @@ impl PolyDecoder {
         out
     }
 
-    #[hax_lib::ensures(|res| hax_lib::implies(pb.pts.len() == 16, res.is_ok() && res.unwrap().pts_needed == pb.pts_needed as usize))]
+    #[hax_lib::ensures(|res| hax_lib::implies(res.is_ok(), res.unwrap().pts_needed == pb.pts_needed as usize))]
+    #[hax_lib::opaque] // return in loop
     pub(crate) fn from_pb(
         pb: proto::pq_ratchet::PolynomialDecoder,
     ) -> Result<Self, PolynomialError> {
         if pb.pts.len() != 16 {
             return Err(PolynomialError::SerializationInvalid);
         }
-        let mut out = Self {
-            pts_needed: pb.pts_needed as usize,
-            is_complete: pb.is_complete,
-            pts: core::array::from_fn(|_| SortedSet::new()),
-        };
+        let mut out_pts = core::array::from_fn(|_| SortedSet::new());
         for i in 0..16 {
             let pts = &pb.pts[i];
             if pts.len() % 4 != 0 {
@@ -824,9 +815,13 @@ impl PolyDecoder {
             for pt in pts.chunks_exact(4) {
                 v.push(Pt::deserialize(pt.try_into().unwrap()));
             }
-            out.pts[i] = v;
+            out_pts[i] = v;
         }
-        Ok(out)
+        Ok(Self {
+            pts_needed: pb.pts_needed as usize,
+            is_complete: pb.is_complete,
+            pts: out_pts,
+        })
     }
 
     /// Public wrapper for test utilities and benchmarks.

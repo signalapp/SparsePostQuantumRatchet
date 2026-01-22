@@ -1,6 +1,6 @@
 module Libcrux_ml_kem.Hash_functions.Portable
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 80"
-open Core
+open Core_models
 open FStar.Mul
 
 /// The state.

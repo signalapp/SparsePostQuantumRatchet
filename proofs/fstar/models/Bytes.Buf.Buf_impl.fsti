@@ -1,6 +1,6 @@
 module Bytes.Buf.Buf_impl
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 15"
-open Core
+open Core_models
 open FStar.Mul
 
 val sign_extend (v_val: u64) (nbytes: usize) : Prims.Pure i64 Prims.l_True (fun _ -> Prims.l_True)
@@ -251,7 +251,7 @@ val impl_1 (#v_T: Type0) {| i0: t_Buf v_T |} : t_Buf (Alloc.Boxed.t_Box v_T Allo
 val impl_2:t_Buf (t_Slice u8)
 
 (* [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_3 (#v_T: Type0) {| i1: Core.Convert.t_AsRef v_T (t_Slice u8) |}
+val impl_3 (#v_T: Type0) {| i1: Core_models.Convert.t_AsRef v_T (t_Slice u8) |}
     : t_Buf (Std.Io.Cursor.t_Cursor v_T) 
 
 val v__assert_trait_object (v__b: dyn 1 (fun z -> t_Buf z))

@@ -1,6 +1,6 @@
 module Prost.Encoding.Wire_type
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 15"
-open Core
+open Core_models
 open FStar.Mul
 
 type t_WireType =

@@ -1,6 +1,6 @@
 module Libcrux_ml_kem.Mlkem768.Incremental
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 80"
-open Core
+open Core_models
 open FStar.Mul
 
 let _ =
@@ -48,7 +48,7 @@ val impl_KeyPairBytes__pk2 (self: t_KeyPairBytes)
     : Prims.Pure (t_Array u8 (mk_usize 1152)) Prims.l_True (fun _ -> Prims.l_True)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_1:Core.Convert.t_AsRef t_KeyPairBytes (t_Slice u8)
+val impl_1:Core_models.Convert.t_AsRef t_KeyPairBytes (t_Slice u8)
 
 /// Generate a key pair and write it into `key_pair`.
 /// This uses unpacked keys and does not compress the keys.
@@ -56,7 +56,7 @@ val impl_1:Core.Convert.t_AsRef t_KeyPairBytes (t_Slice u8)
 /// The function returns an error if this is not the case.
 val generate_key_pair (randomness: t_Array u8 (mk_usize 64)) (key_pair: t_Slice u8)
     : Prims.Pure
-      (t_Slice u8 & Core.Result.t_Result Prims.unit Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Error
+      (t_Slice u8 & Core_models.Result.t_Result Prims.unit Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Error
       ) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Generate a new key pair.
@@ -100,7 +100,7 @@ val impl_KeyPairCompressedBytes__pk2 (self: t_KeyPairCompressedBytes)
     : Prims.Pure (t_Array u8 (mk_usize 1152)) Prims.l_True (fun _ -> Prims.l_True)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_3:Core.Convert.t_AsRef t_KeyPairCompressedBytes (t_Slice u8)
+val impl_3:Core_models.Convert.t_AsRef t_KeyPairCompressedBytes (t_Slice u8)
 
 /// Generate a key pair and write it into `key_pair`.
 /// This compresses the keys.
@@ -133,13 +133,13 @@ val pk2 (keypair: t_Array u8 (mk_usize 7392))
 
 /// Validate that the two parts `pk1` and `pk2` are consistent.
 val validate_pk (pk1: Libcrux_ml_kem.Ind_cca.Incremental.Types.t_PublicKey1) (pk2: t_Slice u8)
-    : Prims.Pure (Core.Result.t_Result Prims.unit Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Error)
+    : Prims.Pure (Core_models.Result.t_Result Prims.unit Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Error)
       Prims.l_True
       (fun _ -> Prims.l_True)
 
 /// Validate that the two parts `pk1` and `pk2` are consistent.
 val validate_pk_bytes (pk1 pk2: t_Slice u8)
-    : Prims.Pure (Core.Result.t_Result Prims.unit Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Error)
+    : Prims.Pure (Core_models.Result.t_Result Prims.unit Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Error)
       Prims.l_True
       (fun _ -> Prims.l_True)
 
@@ -152,7 +152,7 @@ val encapsulate1
       (state shared_secret: t_Slice u8)
     : Prims.Pure
       (t_Slice u8 & t_Slice u8 &
-        Core.Result.t_Result (Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Ciphertext1 (mk_usize 960))
+        Core_models.Result.t_Result (Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Ciphertext1 (mk_usize 960))
           Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Error) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Encapsulate the second part of the ciphertext.
@@ -170,7 +170,7 @@ val decapsulate_incremental_key
       (ciphertext1: Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Ciphertext1 (mk_usize 960))
       (ciphertext2: Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Ciphertext2 (mk_usize 128))
     : Prims.Pure
-      (Core.Result.t_Result (t_Array u8 (mk_usize 32))
+      (Core_models.Result.t_Result (t_Array u8 (mk_usize 32))
           Libcrux_ml_kem.Ind_cca.Incremental.Types.t_Error) Prims.l_True (fun _ -> Prims.l_True)
 
 /// Decapsulate incremental ciphertexts.

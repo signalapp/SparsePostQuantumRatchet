@@ -232,7 +232,7 @@ impl ChainEpochDirection {
         kdf::hkdf_to_slice(
             &[0u8; 32], // 32 is the hash output length
             &*next,
-            &[
+            [
                 ctr.to_be_bytes().as_slice(),
                 b"Signal PQ Ratchet V1 Chain Next",
             ]

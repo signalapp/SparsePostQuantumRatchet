@@ -1,6 +1,6 @@
 module Libcrux_ml_kem.Mlkem768
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 80"
-open Core
+open Core_models
 open FStar.Mul
 
 let v_RANK: usize = mk_usize 3

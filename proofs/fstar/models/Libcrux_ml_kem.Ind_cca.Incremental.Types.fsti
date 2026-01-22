@@ -1,6 +1,6 @@
 module Libcrux_ml_kem.Ind_cca.Incremental.Types
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 80"
-open Core
+open Core_models
 open FStar.Mul
 
 let _ =
@@ -20,30 +20,30 @@ type t_Error =
 val t_Error_cast_to_repr (x: t_Error) : Prims.Pure isize Prims.l_True (fun _ -> Prims.l_True)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_15:Core.Fmt.t_Debug t_Error
+val impl_15:Core_models.Fmt.t_Debug t_Error
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_16:Core.Clone.t_Clone t_Error
+val impl_16:Core_models.Clone.t_Clone t_Error
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_17:Core.Marker.t_Copy t_Error
+val impl_17:Core_models.Marker.t_Copy t_Error
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_18:Core.Marker.t_StructuralPartialEq t_Error
+val impl_18:Core_models.Marker.t_StructuralPartialEq t_Error
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_19:Core.Cmp.t_PartialEq t_Error t_Error
+val impl_19:Core_models.Cmp.t_PartialEq t_Error t_Error
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_20:Core.Cmp.t_Eq t_Error
+val impl_20:Core_models.Cmp.t_Eq t_Error
 
 /// Incremental trait for unpacked key pairs.
 class t_IncrementalKeyPair (v_Self: Type0) = {
   f_pk1_bytes_pre:v_Self -> t_Slice u8 -> Type0;
-  f_pk1_bytes_post:v_Self -> t_Slice u8 -> (t_Slice u8 & Core.Result.t_Result Prims.unit t_Error)
+  f_pk1_bytes_post:v_Self -> t_Slice u8 -> (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
     -> Type0;
   f_pk1_bytes:x0: v_Self -> x1: t_Slice u8
-    -> Prims.Pure (t_Slice u8 & Core.Result.t_Result Prims.unit t_Error)
+    -> Prims.Pure (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
         (f_pk1_bytes_pre x0 x1)
         (fun result -> f_pk1_bytes_post x0 x1 result);
   f_pk2_bytes_pre:v_Self -> t_Slice u8 -> Type0;
@@ -66,55 +66,55 @@ type t_PublicKey1 = {
 }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_21:Core.Default.t_Default t_PublicKey1
+val impl_21:Core_models.Default.t_Default t_PublicKey1
 
 /// Get the size of the first public key in bytes.
 val impl_PublicKey1__len: Prims.unit -> Prims.Pure usize Prims.l_True (fun _ -> Prims.l_True)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_2: Core.Convert.t_TryFrom t_PublicKey1 (t_Slice u8) =
+let impl_2: Core_models.Convert.t_TryFrom t_PublicKey1 (t_Slice u8) =
   {
     f_Error = t_Error;
     f_try_from_pre = (fun (value: t_Slice u8) -> true);
     f_try_from_post
     =
-    (fun (value: t_Slice u8) (out: Core.Result.t_Result t_PublicKey1 t_Error) -> true);
+    (fun (value: t_Slice u8) (out: Core_models.Result.t_Result t_PublicKey1 t_Error) -> true);
     f_try_from
     =
     fun (value: t_Slice u8) ->
-      if (Core.Slice.impl__len #u8 value <: usize) <. mk_usize 64
+      if (Core_models.Slice.impl__len #u8 value <: usize) <. mk_usize 64
       then
-        Core.Result.Result_Err (Error_InvalidInputLength <: t_Error)
+        Core_models.Result.Result_Err (Error_InvalidInputLength <: t_Error)
         <:
-        Core.Result.t_Result t_PublicKey1 t_Error
+        Core_models.Result.t_Result t_PublicKey1 t_Error
       else
         let seed:t_Array u8 (mk_usize 32) = Rust_primitives.Hax.repeat (mk_u8 0) (mk_usize 32) in
         let seed:t_Array u8 (mk_usize 32) =
-          Core.Slice.impl__copy_from_slice #u8
+          Core_models.Slice.impl__copy_from_slice #u8
             seed
-            (value.[ { Core.Ops.Range.f_start = mk_usize 0; Core.Ops.Range.f_end = mk_usize 32 }
+            (value.[ { Core_models.Ops.Range.f_start = mk_usize 0; Core_models.Ops.Range.f_end = mk_usize 32 }
                 <:
-                Core.Ops.Range.t_Range usize ]
+                Core_models.Ops.Range.t_Range usize ]
               <:
               t_Slice u8)
         in
         let hash:t_Array u8 (mk_usize 32) = Rust_primitives.Hax.repeat (mk_u8 0) (mk_usize 32) in
         let hash:t_Array u8 (mk_usize 32) =
-          Core.Slice.impl__copy_from_slice #u8
+          Core_models.Slice.impl__copy_from_slice #u8
             hash
-            (value.[ { Core.Ops.Range.f_start = mk_usize 32; Core.Ops.Range.f_end = mk_usize 64 }
+            (value.[ { Core_models.Ops.Range.f_start = mk_usize 32; Core_models.Ops.Range.f_end = mk_usize 64 }
                 <:
-                Core.Ops.Range.t_Range usize ]
+                Core_models.Ops.Range.t_Range usize ]
               <:
               t_Slice u8)
         in
-        Core.Result.Result_Ok ({ f_seed = seed; f_hash = hash } <: t_PublicKey1)
+        Core_models.Result.Result_Ok ({ f_seed = seed; f_hash = hash } <: t_PublicKey1)
         <:
-        Core.Result.t_Result t_PublicKey1 t_Error
+        Core_models.Result.t_Result t_PublicKey1 t_Error
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_3:Core.Convert.t_From t_PublicKey1 (t_Array u8 (mk_usize 64))
+val impl_3:Core_models.Convert.t_From t_PublicKey1 (t_Array u8 (mk_usize 64))
 
 /// The incremental public key that allows generating [`Ciphertext2`].
 /// This public key is serialized to safe bytes on the wire.
@@ -171,7 +171,7 @@ val impl_7__to_bytes
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
       (self: t_EncapsState v_K v_Vector)
       (state: t_Slice u8)
-    : Prims.Pure (t_Slice u8 & Core.Result.t_Result Prims.unit t_Error)
+    : Prims.Pure (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
       Prims.l_True
       (fun _ -> Prims.l_True)
 
@@ -181,7 +181,7 @@ val impl_7__try_from_bytes
       (#v_Vector: Type0)
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
       (bytes: t_Slice u8)
-    : Prims.Pure (Core.Result.t_Result (t_EncapsState v_K v_Vector) t_Error)
+    : Prims.Pure (Core_models.Result.t_Result (t_EncapsState v_K v_Vector) t_Error)
       Prims.l_True
       (fun _ -> Prims.l_True)
 
@@ -200,7 +200,7 @@ val impl_8
       (v_K: usize)
       (#v_Vector: Type0)
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : Core.Convert.t_From t_PublicKey1
+    : Core_models.Convert.t_From t_PublicKey1
       (Libcrux_ml_kem.Ind_cca.Unpacked.t_MlKemPublicKeyUnpacked v_K v_Vector)
 
 /// Convert [`MlKemPublicKeyUnpacked`] to a [`PublicKey2`].
@@ -209,45 +209,45 @@ val impl_9
       (v_K v_LEN: usize)
       (#v_Vector: Type0)
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : Core.Convert.t_From (t_PublicKey2 v_LEN)
+    : Core_models.Convert.t_From (t_PublicKey2 v_LEN)
       (Libcrux_ml_kem.Ind_cca.Unpacked.t_MlKemPublicKeyUnpacked v_K v_Vector)
 
 /// Convert a byte slice `&[u8]` to a [`PublicKey2`].
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_10 (v_LEN: usize) : Core.Convert.t_TryFrom (t_PublicKey2 v_LEN) (t_Slice u8) =
+let impl_10 (v_LEN: usize) : Core_models.Convert.t_TryFrom (t_PublicKey2 v_LEN) (t_Slice u8) =
   {
     f_Error = t_Error;
     f_try_from_pre = (fun (value: t_Slice u8) -> true);
     f_try_from_post
     =
-    (fun (value: t_Slice u8) (out: Core.Result.t_Result (t_PublicKey2 v_LEN) t_Error) -> true);
+    (fun (value: t_Slice u8) (out: Core_models.Result.t_Result (t_PublicKey2 v_LEN) t_Error) -> true);
     f_try_from
     =
     fun (value: t_Slice u8) ->
-      if (Core.Slice.impl__len #u8 value <: usize) <. v_LEN
+      if (Core_models.Slice.impl__len #u8 value <: usize) <. v_LEN
       then
-        Core.Result.Result_Err (Error_InvalidInputLength <: t_Error)
+        Core_models.Result.Result_Err (Error_InvalidInputLength <: t_Error)
         <:
-        Core.Result.t_Result (t_PublicKey2 v_LEN) t_Error
+        Core_models.Result.t_Result (t_PublicKey2 v_LEN) t_Error
       else
         let tt_as_ntt:t_Array u8 v_LEN = Rust_primitives.Hax.repeat (mk_u8 0) v_LEN in
         let tt_as_ntt:t_Array u8 v_LEN =
-          Core.Slice.impl__copy_from_slice #u8
+          Core_models.Slice.impl__copy_from_slice #u8
             tt_as_ntt
-            (value.[ { Core.Ops.Range.f_start = mk_usize 0; Core.Ops.Range.f_end = v_LEN }
+            (value.[ { Core_models.Ops.Range.f_start = mk_usize 0; Core_models.Ops.Range.f_end = v_LEN }
                 <:
-                Core.Ops.Range.t_Range usize ]
+                Core_models.Ops.Range.t_Range usize ]
               <:
               t_Slice u8)
         in
-        Core.Result.Result_Ok ({ f_tt_as_ntt = tt_as_ntt } <: t_PublicKey2 v_LEN)
+        Core_models.Result.Result_Ok ({ f_tt_as_ntt = tt_as_ntt } <: t_PublicKey2 v_LEN)
         <:
-        Core.Result.t_Result (t_PublicKey2 v_LEN) t_Error
+        Core_models.Result.t_Result (t_PublicKey2 v_LEN) t_Error
   }
 
 /// Convert bytes `&[u8; LEN]` to a [`PublicKey2`].
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_11 (v_LEN: usize) : Core.Convert.t_From (t_PublicKey2 v_LEN) (t_Array u8 v_LEN)
+val impl_11 (v_LEN: usize) : Core_models.Convert.t_From (t_PublicKey2 v_LEN) (t_Array u8 v_LEN)
 
 type t_KeyPair
   (v_K: usize) (v_PK2_LEN: usize) (v_Vector: Type0)
@@ -264,7 +264,7 @@ val impl_12
       (v_K v_PK2_LEN: usize)
       (#v_Vector: Type0)
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : Core.Convert.t_From (t_KeyPair v_K v_PK2_LEN v_Vector)
+    : Core_models.Convert.t_From (t_KeyPair v_K v_PK2_LEN v_Vector)
       (Libcrux_ml_kem.Ind_cca.Unpacked.t_MlKemKeyPairUnpacked v_K v_Vector)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
@@ -272,7 +272,7 @@ val impl_13
       (v_K v_PK2_LEN: usize)
       (#v_Vector: Type0)
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : Core.Convert.t_From (Libcrux_ml_kem.Ind_cca.Unpacked.t_MlKemKeyPairUnpacked v_K v_Vector)
+    : Core_models.Convert.t_From (Libcrux_ml_kem.Ind_cca.Unpacked.t_MlKemKeyPairUnpacked v_K v_Vector)
       (t_KeyPair v_K v_PK2_LEN v_Vector)
 
 /// Write `value` into `out` at `offset`.
@@ -286,7 +286,7 @@ val impl_14__pk1_bytes
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
       (self: t_KeyPair v_K v_PK2_LEN v_Vector)
       (pk1: t_Slice u8)
-    : Prims.Pure (t_Slice u8 & Core.Result.t_Result Prims.unit t_Error)
+    : Prims.Pure (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
       Prims.l_True
       (fun _ -> Prims.l_True)
 
@@ -297,7 +297,7 @@ val impl_14__pk2_bytes
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
       (self: t_KeyPair v_K v_PK2_LEN v_Vector)
       (pk2: t_Slice u8)
-    : Prims.Pure (t_Slice u8 & Core.Result.t_Result Prims.unit t_Error)
+    : Prims.Pure (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
       Prims.l_True
       (fun _ -> Prims.l_True)
 
@@ -318,7 +318,7 @@ val impl_14__to_bytes
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
       (self: t_KeyPair v_K v_PK2_LEN v_Vector)
       (key: t_Slice u8)
-    : Prims.Pure (t_Slice u8 & Core.Result.t_Result Prims.unit t_Error)
+    : Prims.Pure (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
       Prims.l_True
       (fun _ -> Prims.l_True)
 
@@ -342,6 +342,6 @@ val impl_14__from_bytes
       (#v_Vector: Type0)
       {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
       (key: t_Slice u8)
-    : Prims.Pure (Core.Result.t_Result (t_KeyPair v_K v_PK2_LEN v_Vector) t_Error)
+    : Prims.Pure (Core_models.Result.t_Result (t_KeyPair v_K v_PK2_LEN v_Vector) t_Error)
       Prims.l_True
       (fun _ -> Prims.l_True)

@@ -1,13 +1,13 @@
 module Libcrux_ml_kem.Types
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 80"
-open Core
+open Core_models
 open FStar.Mul
 
 ///An ML-KEM Ciphertext
 type t_MlKemCiphertext (v_SIZE: usize) = { f_value:t_Array u8 v_SIZE }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl (v_SIZE: usize) : Core.Default.t_Default (t_MlKemCiphertext v_SIZE) =
+let impl (v_SIZE: usize) : Core_models.Default.t_Default (t_MlKemCiphertext v_SIZE) =
   {
     f_default_pre = (fun (_: Prims.unit) -> true);
     f_default_post = (fun (_: Prims.unit) (out: t_MlKemCiphertext v_SIZE) -> true);
@@ -18,7 +18,7 @@ let impl (v_SIZE: usize) : Core.Default.t_Default (t_MlKemCiphertext v_SIZE) =
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_4 (v_SIZE: usize) : Core.Convert.t_AsRef (t_MlKemCiphertext v_SIZE) (t_Slice u8) =
+let impl_4 (v_SIZE: usize) : Core_models.Convert.t_AsRef (t_MlKemCiphertext v_SIZE) (t_Slice u8) =
   {
     f_as_ref_pre = (fun (self: t_MlKemCiphertext v_SIZE) -> true);
     f_as_ref_post
@@ -28,7 +28,7 @@ let impl_4 (v_SIZE: usize) : Core.Convert.t_AsRef (t_MlKemCiphertext v_SIZE) (t_
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_5 (v_SIZE: usize) : Core.Convert.t_From (t_MlKemCiphertext v_SIZE) (t_Array u8 v_SIZE) =
+let impl_5 (v_SIZE: usize) : Core_models.Convert.t_From (t_MlKemCiphertext v_SIZE) (t_Array u8 v_SIZE) =
   {
     f_from_pre = (fun (value: t_Array u8 v_SIZE) -> true);
     f_from_post
@@ -38,20 +38,20 @@ let impl_5 (v_SIZE: usize) : Core.Convert.t_From (t_MlKemCiphertext v_SIZE) (t_A
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_1 (v_SIZE: usize) : Core.Convert.t_From (t_MlKemCiphertext v_SIZE) (t_Array u8 v_SIZE) =
+let impl_1 (v_SIZE: usize) : Core_models.Convert.t_From (t_MlKemCiphertext v_SIZE) (t_Array u8 v_SIZE) =
   {
     f_from_pre = (fun (value: t_Array u8 v_SIZE) -> true);
     f_from_post = (fun (value: t_Array u8 v_SIZE) (out: t_MlKemCiphertext v_SIZE) -> true);
     f_from
     =
     fun (value: t_Array u8 v_SIZE) ->
-      { f_value = Core.Clone.f_clone #(t_Array u8 v_SIZE) #FStar.Tactics.Typeclasses.solve value }
+      { f_value = Core_models.Clone.f_clone #(t_Array u8 v_SIZE) #FStar.Tactics.Typeclasses.solve value }
       <:
       t_MlKemCiphertext v_SIZE
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_2 (v_SIZE: usize) : Core.Convert.t_From (t_Array u8 v_SIZE) (t_MlKemCiphertext v_SIZE) =
+let impl_2 (v_SIZE: usize) : Core_models.Convert.t_From (t_Array u8 v_SIZE) (t_MlKemCiphertext v_SIZE) =
   {
     f_from_pre = (fun (value: t_MlKemCiphertext v_SIZE) -> true);
     f_from_post = (fun (value: t_MlKemCiphertext v_SIZE) (out: t_Array u8 v_SIZE) -> true);
@@ -59,36 +59,36 @@ let impl_2 (v_SIZE: usize) : Core.Convert.t_From (t_Array u8 v_SIZE) (t_MlKemCip
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_3 (v_SIZE: usize) : Core.Convert.t_TryFrom (t_MlKemCiphertext v_SIZE) (t_Slice u8) =
+let impl_3 (v_SIZE: usize) : Core_models.Convert.t_TryFrom (t_MlKemCiphertext v_SIZE) (t_Slice u8) =
   {
-    f_Error = Core.Array.t_TryFromSliceError;
+    f_Error = Core_models.Array.t_TryFromSliceError;
     f_try_from_pre = (fun (value: t_Slice u8) -> true);
     f_try_from_post
     =
     (fun
         (value: t_Slice u8)
-        (out: Core.Result.t_Result (t_MlKemCiphertext v_SIZE) Core.Array.t_TryFromSliceError)
+        (out: Core_models.Result.t_Result (t_MlKemCiphertext v_SIZE) Core_models.Array.t_TryFromSliceError)
         ->
         true);
     f_try_from
     =
     fun (value: t_Slice u8) ->
       match
-        Core.Convert.f_try_into #(t_Slice u8)
+        Core_models.Convert.f_try_into #(t_Slice u8)
           #(t_Array u8 v_SIZE)
           #FStar.Tactics.Typeclasses.solve
           value
         <:
-        Core.Result.t_Result (t_Array u8 v_SIZE) Core.Array.t_TryFromSliceError
+        Core_models.Result.t_Result (t_Array u8 v_SIZE) Core_models.Array.t_TryFromSliceError
       with
-      | Core.Result.Result_Ok value ->
-        Core.Result.Result_Ok ({ f_value = value } <: t_MlKemCiphertext v_SIZE)
+      | Core_models.Result.Result_Ok value ->
+        Core_models.Result.Result_Ok ({ f_value = value } <: t_MlKemCiphertext v_SIZE)
         <:
-        Core.Result.t_Result (t_MlKemCiphertext v_SIZE) Core.Array.t_TryFromSliceError
-      | Core.Result.Result_Err e ->
-        Core.Result.Result_Err e
+        Core_models.Result.t_Result (t_MlKemCiphertext v_SIZE) Core_models.Array.t_TryFromSliceError
+      | Core_models.Result.Result_Err e ->
+        Core_models.Result.Result_Err e
         <:
-        Core.Result.t_Result (t_MlKemCiphertext v_SIZE) Core.Array.t_TryFromSliceError
+        Core_models.Result.t_Result (t_MlKemCiphertext v_SIZE) Core_models.Array.t_TryFromSliceError
   }
 
 /// The number of bytes
@@ -107,7 +107,7 @@ let impl_6__as_slice (v_SIZE: usize) (self: t_MlKemCiphertext v_SIZE)
 type t_MlKemPrivateKey (v_SIZE: usize) = { f_value:t_Array u8 v_SIZE }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_7 (v_SIZE: usize) : Core.Default.t_Default (t_MlKemPrivateKey v_SIZE) =
+let impl_7 (v_SIZE: usize) : Core_models.Default.t_Default (t_MlKemPrivateKey v_SIZE) =
   {
     f_default_pre = (fun (_: Prims.unit) -> true);
     f_default_post = (fun (_: Prims.unit) (out: t_MlKemPrivateKey v_SIZE) -> true);
@@ -118,7 +118,7 @@ let impl_7 (v_SIZE: usize) : Core.Default.t_Default (t_MlKemPrivateKey v_SIZE) =
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_11 (v_SIZE: usize) : Core.Convert.t_AsRef (t_MlKemPrivateKey v_SIZE) (t_Slice u8) =
+let impl_11 (v_SIZE: usize) : Core_models.Convert.t_AsRef (t_MlKemPrivateKey v_SIZE) (t_Slice u8) =
   {
     f_as_ref_pre = (fun (self: t_MlKemPrivateKey v_SIZE) -> true);
     f_as_ref_post
@@ -128,7 +128,7 @@ let impl_11 (v_SIZE: usize) : Core.Convert.t_AsRef (t_MlKemPrivateKey v_SIZE) (t
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_12 (v_SIZE: usize) : Core.Convert.t_From (t_MlKemPrivateKey v_SIZE) (t_Array u8 v_SIZE) =
+let impl_12 (v_SIZE: usize) : Core_models.Convert.t_From (t_MlKemPrivateKey v_SIZE) (t_Array u8 v_SIZE) =
   {
     f_from_pre = (fun (value: t_Array u8 v_SIZE) -> true);
     f_from_post
@@ -138,20 +138,20 @@ let impl_12 (v_SIZE: usize) : Core.Convert.t_From (t_MlKemPrivateKey v_SIZE) (t_
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_8 (v_SIZE: usize) : Core.Convert.t_From (t_MlKemPrivateKey v_SIZE) (t_Array u8 v_SIZE) =
+let impl_8 (v_SIZE: usize) : Core_models.Convert.t_From (t_MlKemPrivateKey v_SIZE) (t_Array u8 v_SIZE) =
   {
     f_from_pre = (fun (value: t_Array u8 v_SIZE) -> true);
     f_from_post = (fun (value: t_Array u8 v_SIZE) (out: t_MlKemPrivateKey v_SIZE) -> true);
     f_from
     =
     fun (value: t_Array u8 v_SIZE) ->
-      { f_value = Core.Clone.f_clone #(t_Array u8 v_SIZE) #FStar.Tactics.Typeclasses.solve value }
+      { f_value = Core_models.Clone.f_clone #(t_Array u8 v_SIZE) #FStar.Tactics.Typeclasses.solve value }
       <:
       t_MlKemPrivateKey v_SIZE
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_9 (v_SIZE: usize) : Core.Convert.t_From (t_Array u8 v_SIZE) (t_MlKemPrivateKey v_SIZE) =
+let impl_9 (v_SIZE: usize) : Core_models.Convert.t_From (t_Array u8 v_SIZE) (t_MlKemPrivateKey v_SIZE) =
   {
     f_from_pre = (fun (value: t_MlKemPrivateKey v_SIZE) -> true);
     f_from_post = (fun (value: t_MlKemPrivateKey v_SIZE) (out: t_Array u8 v_SIZE) -> true);
@@ -159,36 +159,36 @@ let impl_9 (v_SIZE: usize) : Core.Convert.t_From (t_Array u8 v_SIZE) (t_MlKemPri
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_10 (v_SIZE: usize) : Core.Convert.t_TryFrom (t_MlKemPrivateKey v_SIZE) (t_Slice u8) =
+let impl_10 (v_SIZE: usize) : Core_models.Convert.t_TryFrom (t_MlKemPrivateKey v_SIZE) (t_Slice u8) =
   {
-    f_Error = Core.Array.t_TryFromSliceError;
+    f_Error = Core_models.Array.t_TryFromSliceError;
     f_try_from_pre = (fun (value: t_Slice u8) -> true);
     f_try_from_post
     =
     (fun
         (value: t_Slice u8)
-        (out: Core.Result.t_Result (t_MlKemPrivateKey v_SIZE) Core.Array.t_TryFromSliceError)
+        (out: Core_models.Result.t_Result (t_MlKemPrivateKey v_SIZE) Core_models.Array.t_TryFromSliceError)
         ->
         true);
     f_try_from
     =
     fun (value: t_Slice u8) ->
       match
-        Core.Convert.f_try_into #(t_Slice u8)
+        Core_models.Convert.f_try_into #(t_Slice u8)
           #(t_Array u8 v_SIZE)
           #FStar.Tactics.Typeclasses.solve
           value
         <:
-        Core.Result.t_Result (t_Array u8 v_SIZE) Core.Array.t_TryFromSliceError
+        Core_models.Result.t_Result (t_Array u8 v_SIZE) Core_models.Array.t_TryFromSliceError
       with
-      | Core.Result.Result_Ok value ->
-        Core.Result.Result_Ok ({ f_value = value } <: t_MlKemPrivateKey v_SIZE)
+      | Core_models.Result.Result_Ok value ->
+        Core_models.Result.Result_Ok ({ f_value = value } <: t_MlKemPrivateKey v_SIZE)
         <:
-        Core.Result.t_Result (t_MlKemPrivateKey v_SIZE) Core.Array.t_TryFromSliceError
-      | Core.Result.Result_Err e ->
-        Core.Result.Result_Err e
+        Core_models.Result.t_Result (t_MlKemPrivateKey v_SIZE) Core_models.Array.t_TryFromSliceError
+      | Core_models.Result.Result_Err e ->
+        Core_models.Result.Result_Err e
         <:
-        Core.Result.t_Result (t_MlKemPrivateKey v_SIZE) Core.Array.t_TryFromSliceError
+        Core_models.Result.t_Result (t_MlKemPrivateKey v_SIZE) Core_models.Array.t_TryFromSliceError
   }
 
 /// The number of bytes
@@ -207,7 +207,7 @@ let impl_13__as_slice (v_SIZE: usize) (self: t_MlKemPrivateKey v_SIZE)
 type t_MlKemPublicKey (v_SIZE: usize) = { f_value:t_Array u8 v_SIZE }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_14 (v_SIZE: usize) : Core.Default.t_Default (t_MlKemPublicKey v_SIZE) =
+let impl_14 (v_SIZE: usize) : Core_models.Default.t_Default (t_MlKemPublicKey v_SIZE) =
   {
     f_default_pre = (fun (_: Prims.unit) -> true);
     f_default_post = (fun (_: Prims.unit) (out: t_MlKemPublicKey v_SIZE) -> true);
@@ -218,7 +218,7 @@ let impl_14 (v_SIZE: usize) : Core.Default.t_Default (t_MlKemPublicKey v_SIZE) =
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_18 (v_SIZE: usize) : Core.Convert.t_AsRef (t_MlKemPublicKey v_SIZE) (t_Slice u8) =
+let impl_18 (v_SIZE: usize) : Core_models.Convert.t_AsRef (t_MlKemPublicKey v_SIZE) (t_Slice u8) =
   {
     f_as_ref_pre = (fun (self: t_MlKemPublicKey v_SIZE) -> true);
     f_as_ref_post
@@ -228,7 +228,7 @@ let impl_18 (v_SIZE: usize) : Core.Convert.t_AsRef (t_MlKemPublicKey v_SIZE) (t_
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_19 (v_SIZE: usize) : Core.Convert.t_From (t_MlKemPublicKey v_SIZE) (t_Array u8 v_SIZE) =
+let impl_19 (v_SIZE: usize) : Core_models.Convert.t_From (t_MlKemPublicKey v_SIZE) (t_Array u8 v_SIZE) =
   {
     f_from_pre = (fun (value: t_Array u8 v_SIZE) -> true);
     f_from_post
@@ -238,20 +238,20 @@ let impl_19 (v_SIZE: usize) : Core.Convert.t_From (t_MlKemPublicKey v_SIZE) (t_A
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_15 (v_SIZE: usize) : Core.Convert.t_From (t_MlKemPublicKey v_SIZE) (t_Array u8 v_SIZE) =
+let impl_15 (v_SIZE: usize) : Core_models.Convert.t_From (t_MlKemPublicKey v_SIZE) (t_Array u8 v_SIZE) =
   {
     f_from_pre = (fun (value: t_Array u8 v_SIZE) -> true);
     f_from_post = (fun (value: t_Array u8 v_SIZE) (out: t_MlKemPublicKey v_SIZE) -> true);
     f_from
     =
     fun (value: t_Array u8 v_SIZE) ->
-      { f_value = Core.Clone.f_clone #(t_Array u8 v_SIZE) #FStar.Tactics.Typeclasses.solve value }
+      { f_value = Core_models.Clone.f_clone #(t_Array u8 v_SIZE) #FStar.Tactics.Typeclasses.solve value }
       <:
       t_MlKemPublicKey v_SIZE
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_16 (v_SIZE: usize) : Core.Convert.t_From (t_Array u8 v_SIZE) (t_MlKemPublicKey v_SIZE) =
+let impl_16 (v_SIZE: usize) : Core_models.Convert.t_From (t_Array u8 v_SIZE) (t_MlKemPublicKey v_SIZE) =
   {
     f_from_pre = (fun (value: t_MlKemPublicKey v_SIZE) -> true);
     f_from_post = (fun (value: t_MlKemPublicKey v_SIZE) (out: t_Array u8 v_SIZE) -> true);
@@ -259,36 +259,36 @@ let impl_16 (v_SIZE: usize) : Core.Convert.t_From (t_Array u8 v_SIZE) (t_MlKemPu
   }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_17 (v_SIZE: usize) : Core.Convert.t_TryFrom (t_MlKemPublicKey v_SIZE) (t_Slice u8) =
+let impl_17 (v_SIZE: usize) : Core_models.Convert.t_TryFrom (t_MlKemPublicKey v_SIZE) (t_Slice u8) =
   {
-    f_Error = Core.Array.t_TryFromSliceError;
+    f_Error = Core_models.Array.t_TryFromSliceError;
     f_try_from_pre = (fun (value: t_Slice u8) -> true);
     f_try_from_post
     =
     (fun
         (value: t_Slice u8)
-        (out: Core.Result.t_Result (t_MlKemPublicKey v_SIZE) Core.Array.t_TryFromSliceError)
+        (out: Core_models.Result.t_Result (t_MlKemPublicKey v_SIZE) Core_models.Array.t_TryFromSliceError)
         ->
         true);
     f_try_from
     =
     fun (value: t_Slice u8) ->
       match
-        Core.Convert.f_try_into #(t_Slice u8)
+        Core_models.Convert.f_try_into #(t_Slice u8)
           #(t_Array u8 v_SIZE)
           #FStar.Tactics.Typeclasses.solve
           value
         <:
-        Core.Result.t_Result (t_Array u8 v_SIZE) Core.Array.t_TryFromSliceError
+        Core_models.Result.t_Result (t_Array u8 v_SIZE) Core_models.Array.t_TryFromSliceError
       with
-      | Core.Result.Result_Ok value ->
-        Core.Result.Result_Ok ({ f_value = value } <: t_MlKemPublicKey v_SIZE)
+      | Core_models.Result.Result_Ok value ->
+        Core_models.Result.Result_Ok ({ f_value = value } <: t_MlKemPublicKey v_SIZE)
         <:
-        Core.Result.t_Result (t_MlKemPublicKey v_SIZE) Core.Array.t_TryFromSliceError
-      | Core.Result.Result_Err e ->
-        Core.Result.Result_Err e
+        Core_models.Result.t_Result (t_MlKemPublicKey v_SIZE) Core_models.Array.t_TryFromSliceError
+      | Core_models.Result.Result_Err e ->
+        Core_models.Result.Result_Err e
         <:
-        Core.Result.t_Result (t_MlKemPublicKey v_SIZE) Core.Array.t_TryFromSliceError
+        Core_models.Result.t_Result (t_MlKemPublicKey v_SIZE) Core_models.Array.t_TryFromSliceError
   }
 
 /// The number of bytes
@@ -318,13 +318,13 @@ let impl_21__new
   {
     f_sk
     =
-    Core.Convert.f_into #(t_Array u8 v_PRIVATE_KEY_SIZE)
+    Core_models.Convert.f_into #(t_Array u8 v_PRIVATE_KEY_SIZE)
       #(t_MlKemPrivateKey v_PRIVATE_KEY_SIZE)
       #FStar.Tactics.Typeclasses.solve
       sk;
     f_pk
     =
-    Core.Convert.f_into #(t_Array u8 v_PUBLIC_KEY_SIZE)
+    Core_models.Convert.f_into #(t_Array u8 v_PUBLIC_KEY_SIZE)
       #(t_MlKemPublicKey v_PUBLIC_KEY_SIZE)
       #FStar.Tactics.Typeclasses.solve
       pk
@@ -409,13 +409,13 @@ let unpack_private_key (v_CPA_SECRET_KEY_SIZE v_PUBLIC_KEY_SIZE: usize) (private
           (v v_CPA_SECRET_KEY_SIZE + v v_PUBLIC_KEY_SIZE +
             v Libcrux_ml_kem.Constants.v_H_DIGEST_SIZE)) =
   let ind_cpa_secret_key, secret_key:(t_Slice u8 & t_Slice u8) =
-    Core.Slice.impl__split_at #u8 private_key v_CPA_SECRET_KEY_SIZE
+    Core_models.Slice.impl__split_at #u8 private_key v_CPA_SECRET_KEY_SIZE
   in
   let ind_cpa_public_key, secret_key:(t_Slice u8 & t_Slice u8) =
-    Core.Slice.impl__split_at #u8 secret_key v_PUBLIC_KEY_SIZE
+    Core_models.Slice.impl__split_at #u8 secret_key v_PUBLIC_KEY_SIZE
   in
   let ind_cpa_public_key_hash, implicit_rejection_value:(t_Slice u8 & t_Slice u8) =
-    Core.Slice.impl__split_at #u8 secret_key Libcrux_ml_kem.Constants.v_H_DIGEST_SIZE
+    Core_models.Slice.impl__split_at #u8 secret_key Libcrux_ml_kem.Constants.v_H_DIGEST_SIZE
   in
   ind_cpa_secret_key, ind_cpa_public_key, ind_cpa_public_key_hash, implicit_rejection_value
   <:

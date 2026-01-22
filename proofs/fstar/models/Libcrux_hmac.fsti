@@ -1,6 +1,6 @@
 module Libcrux_hmac
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 15"
-open Core
+open Core_models
 open FStar.Mul
 
 /// The HMAC algorithm defining the used hash function.
@@ -14,19 +14,19 @@ val t_Algorithm_cast_to_repr (x: t_Algorithm)
     : Prims.Pure isize Prims.l_True (fun _ -> Prims.l_True)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_1:Core.Clone.t_Clone t_Algorithm
+val impl_1:Core_models.Clone.t_Clone t_Algorithm
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl:Core.Marker.t_Copy t_Algorithm
+val impl:Core_models.Marker.t_Copy t_Algorithm
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_2:Core.Fmt.t_Debug t_Algorithm
+val impl_2:Core_models.Fmt.t_Debug t_Algorithm
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_3:Core.Marker.t_StructuralPartialEq t_Algorithm
+val impl_3:Core_models.Marker.t_StructuralPartialEq t_Algorithm
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_4:Core.Cmp.t_PartialEq t_Algorithm t_Algorithm
+val impl_4:Core_models.Cmp.t_PartialEq t_Algorithm t_Algorithm
 
 /// Get the tag size for a given algorithm.
 val tag_size (alg: t_Algorithm) : Prims.Pure usize Prims.l_True (fun _ -> Prims.l_True)
@@ -35,7 +35,7 @@ val tag_size (alg: t_Algorithm) : Prims.Pure usize Prims.l_True (fun _ -> Prims.
 /// output tag length of `tag_length`.
 /// Returns a vector of length `tag_length`.
 /// Panics if either `key` or `data` are longer than `u32::MAX`.
-val hmac (alg: t_Algorithm) (key data: t_Slice u8) (tag_length: Core.Option.t_Option usize)
+val hmac (alg: t_Algorithm) (key data: t_Slice u8) (tag_length: Core_models.Option.t_Option usize)
     : Prims.Pure (Alloc.Vec.t_Vec u8 Alloc.Alloc.t_Global)
       Prims.l_True
       (ensures
@@ -49,21 +49,21 @@ val hmac (alg: t_Algorithm) (key data: t_Slice u8) (tag_length: Core.Option.t_Op
             | Algorithm_Sha512  -> mk_usize 64
           in
           match
-            (match tag_length <: Core.Option.t_Option usize with
-              | Core.Option.Option_Some l ->
+            (match tag_length <: Core_models.Option.t_Option usize with
+              | Core_models.Option.Option_Some l ->
                 (match l <=. native_tag_length <: bool with
                   | true ->
-                    Core.Option.Option_Some
+                    Core_models.Option.Option_Some
                     ((Alloc.Vec.impl_1__len #u8 #Alloc.Alloc.t_Global result <: usize) =. l)
                     <:
-                    Core.Option.t_Option bool
-                  | _ -> Core.Option.Option_None <: Core.Option.t_Option bool)
-              | _ -> Core.Option.Option_None <: Core.Option.t_Option bool)
+                    Core_models.Option.t_Option bool
+                  | _ -> Core_models.Option.Option_None <: Core_models.Option.t_Option bool)
+              | _ -> Core_models.Option.Option_None <: Core_models.Option.t_Option bool)
             <:
-            Core.Option.t_Option bool
+            Core_models.Option.t_Option bool
           with
-          | Core.Option.Option_Some x -> x
-          | Core.Option.Option_None  ->
+          | Core_models.Option.Option_Some x -> x
+          | Core_models.Option.Option_None  ->
             (Alloc.Vec.impl_1__len #u8 #Alloc.Alloc.t_Global result <: usize) =. native_tag_length)
 
 (* item error backend: (DirectAndMut) The mutation of this [1m&mut[0m is not allowed here.
@@ -76,8 +76,8 @@ Last available AST for this item:
 #[register_tool(_hax)]
 fn wrap_bufalloc<const N: int, F>(f: F) -> alloc::vec::t_Vec<int, alloc::alloc::t_Global>
 where
-    _: core::ops::function::t_Fn<F, tuple1<&mut [int; N]>>,
-    F: core::ops::function::t_FnOnce<f_Output = tuple0>,
+    _: core_models::ops::function::t_Fn<F, tuple1<&mut [int; N]>>,
+    F: core_models::ops::function::t_FnOnce<f_Output = tuple0>,
 {
     rust_primitives::hax::dropped_body
 }

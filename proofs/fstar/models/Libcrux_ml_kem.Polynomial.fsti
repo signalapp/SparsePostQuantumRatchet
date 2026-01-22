@@ -1,6 +1,6 @@
 module Libcrux_ml_kem.Polynomial
 #set-options "--fuel 0 --ifuel 1 --z3rlimit 80"
-open Core
+open Core_models
 open FStar.Mul
 
 let _ =
@@ -71,18 +71,18 @@ let to_spec_matrix_t (#r:Spec.MLKEM.rank) (#v_Vector: Type0)
 
 let impl
       (#v_Vector: Type0)
-      (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core.Clone.t_Clone v_Vector)
+      (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core_models.Clone.t_Clone v_Vector)
       (#[FStar.Tactics.Typeclasses.tcresolve ()]
           i2:
           Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector)
-    : Core.Clone.t_Clone (t_PolynomialRingElement v_Vector) = { f_clone = (fun x -> x); f_clone_pre = (fun _ -> True); f_clone_post = (fun _ _ -> True) }
+    : Core_models.Clone.t_Clone (t_PolynomialRingElement v_Vector) = { f_clone = (fun x -> x); f_clone_pre = (fun _ -> True); f_clone_post = (fun _ _ -> True) }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
 val impl_1
       (#v_Vector: Type0)
-      {| i1: Core.Marker.t_Copy v_Vector |}
+      {| i1: Core_models.Marker.t_Copy v_Vector |}
       {| i2: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : Core.Marker.t_Copy (t_PolynomialRingElement v_Vector)
+    : Core_models.Marker.t_Copy (t_PolynomialRingElement v_Vector)
 
 val v_ZERO:
     #v_Vector: Type0 ->
@@ -97,7 +97,7 @@ val from_i16_array
     : Prims.Pure (t_PolynomialRingElement v_Vector)
       (requires
         (v_VECTORS_IN_RING_ELEMENT *! mk_usize 16 <: usize) <=.
-        (Core.Slice.impl__len #i16 a <: usize))
+        (Core_models.Slice.impl__len #i16 a <: usize))
       (fun _ -> Prims.l_True)
 
 val to_i16_array
@@ -107,7 +107,7 @@ val to_i16_array
       (out: t_Slice i16)
     : Prims.Pure (t_Slice i16)
       (requires
-        (Core.Slice.impl__len #i16 out <: usize) >=.
+        (Core_models.Slice.impl__len #i16 out <: usize) >=.
         (v_VECTORS_IN_RING_ELEMENT *! mk_usize 16 <: usize))
       (fun _ -> Prims.l_True)
 
@@ -118,7 +118,7 @@ val from_bytes
     : Prims.Pure (t_PolynomialRingElement v_Vector)
       (requires
         ((v_VECTORS_IN_RING_ELEMENT *! mk_usize 16 <: usize) *! mk_usize 2 <: usize) <=.
-        (Core.Slice.impl__len #u8 bytes <: usize))
+        (Core_models.Slice.impl__len #u8 bytes <: usize))
       (fun _ -> Prims.l_True)
 
 val to_bytes
@@ -129,7 +129,7 @@ val to_bytes
     : Prims.Pure (t_Slice u8)
       (requires
         ((v_VECTORS_IN_RING_ELEMENT *! mk_usize 16 <: usize) *! mk_usize 2 <: usize) <=.
-        (Core.Slice.impl__len #u8 out <: usize))
+        (Core_models.Slice.impl__len #u8 out <: usize))
       (fun _ -> Prims.l_True)
 
 /// Given two polynomial ring elements `lhs` and `rhs`, compute the pointwise
@@ -275,7 +275,7 @@ val impl_2__from_i16_array
     : Prims.Pure (t_PolynomialRingElement v_Vector)
       (requires
         (v_VECTORS_IN_RING_ELEMENT *! mk_usize 16 <: usize) <=.
-        (Core.Slice.impl__len #i16 a <: usize))
+        (Core_models.Slice.impl__len #i16 a <: usize))
       (fun _ -> Prims.l_True)
 
 val impl_2__to_i16_array
@@ -286,7 +286,7 @@ val impl_2__to_i16_array
     : Prims.Pure (t_Slice i16)
       (requires
         (v_VECTORS_IN_RING_ELEMENT *! mk_usize 16 <: usize) <=.
-        (Core.Slice.impl__len #i16 out <: usize))
+        (Core_models.Slice.impl__len #i16 out <: usize))
       (fun _ -> Prims.l_True)
 
 val impl_2__from_bytes
@@ -296,7 +296,7 @@ val impl_2__from_bytes
     : Prims.Pure (t_PolynomialRingElement v_Vector)
       (requires
         ((v_VECTORS_IN_RING_ELEMENT *! mk_usize 16 <: usize) *! mk_usize 2 <: usize) <=.
-        (Core.Slice.impl__len #u8 bytes <: usize))
+        (Core_models.Slice.impl__len #u8 bytes <: usize))
       (fun _ -> Prims.l_True)
 
 /// Build a vector of ring elements from `bytes`.
@@ -307,12 +307,12 @@ val vec_from_bytes
       (out: t_Slice (t_PolynomialRingElement v_Vector))
     : Prims.Pure (t_Slice (t_PolynomialRingElement v_Vector))
       (requires
-        (Core.Slice.impl__len #(t_PolynomialRingElement v_Vector) out <: usize) <=. mk_usize 4 &&
+        (Core_models.Slice.impl__len #(t_PolynomialRingElement v_Vector) out <: usize) <=. mk_usize 4 &&
         (((v_VECTORS_IN_RING_ELEMENT *! mk_usize 16 <: usize) *! mk_usize 2 <: usize) *!
-          (Core.Slice.impl__len #(t_PolynomialRingElement v_Vector) out <: usize)
+          (Core_models.Slice.impl__len #(t_PolynomialRingElement v_Vector) out <: usize)
           <:
           usize) <=.
-        (Core.Slice.impl__len #u8 bytes <: usize))
+        (Core_models.Slice.impl__len #u8 bytes <: usize))
       (fun _ -> Prims.l_True)
 
 val impl_2__to_bytes
@@ -323,7 +323,7 @@ val impl_2__to_bytes
     : Prims.Pure (t_Slice u8)
       (requires
         ((v_VECTORS_IN_RING_ELEMENT *! mk_usize 16 <: usize) *! mk_usize 2 <: usize) <=.
-        (Core.Slice.impl__len #u8 out <: usize))
+        (Core_models.Slice.impl__len #u8 out <: usize))
       (fun _ -> Prims.l_True)
 
 /// Get the bytes of the vector of ring elements in `re` and write them to `out`.
@@ -334,10 +334,10 @@ val vec_to_bytes
       (out: t_Slice u8)
     : Prims.Pure (t_Slice u8)
       (requires
-        (Core.Slice.impl__len #(t_PolynomialRingElement v_Vector) re <: usize) <=. mk_usize 4 &&
+        (Core_models.Slice.impl__len #(t_PolynomialRingElement v_Vector) re <: usize) <=. mk_usize 4 &&
         (((v_VECTORS_IN_RING_ELEMENT *! mk_usize 16 <: usize) *! mk_usize 2 <: usize) *!
-          (Core.Slice.impl__len #(t_PolynomialRingElement v_Vector) re <: usize)
+          (Core_models.Slice.impl__len #(t_PolynomialRingElement v_Vector) re <: usize)
           <:
           usize) <=.
-        (Core.Slice.impl__len #u8 out <: usize))
+        (Core_models.Slice.impl__len #u8 out <: usize))
       (fun _ -> Prims.l_True)
