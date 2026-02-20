@@ -236,7 +236,8 @@ impl ChainEpochDirection {
                 ctr.to_be_bytes().as_slice(),
                 b"Signal PQ Ratchet V1 Chain Next",
             ]
-            .concat(),
+            .concat()
+            .as_slice(),
             &mut genr8r,
         );
         next.copy_from_slice(&genr8r[..32]);

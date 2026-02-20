@@ -12,8 +12,8 @@ curve25519-dalek = { version = "4.1.3", features = ["rand_core"] }
 displaydoc = "0.2"
 hax-lib = "0.3.6"
 hkdf = "0.12"
-libcrux-hmac = "0.0.5"
-libcrux-ml-kem = { version = "0.0.6", default-features = false, features = ["incremental", "mlkem768"] }
+libcrux-hmac = "0.0.6"
+libcrux-ml-kem = { version = "0.0.7", default-features = false, features = ["incremental", "mlkem768"] }
 log = "0.4.21"
 num_enum = "0.7.3"
 prost = "0.14.1"
