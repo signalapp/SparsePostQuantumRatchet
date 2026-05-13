@@ -1,7 +1,19 @@
 # Confirm Aeneas extraction succeeds 
 
 name: Aeneas extraction
-on: [push]
+on:
+  push:
+    branches: [ '**' ]
+    paths:
+      - 'Spqr/**'
+      - 'lakefile.toml'
+      - 'lean-toolchain'
+      - '.github/workflows/lean.yml'
+  # since it is required for merging, it must run on each PR even if the files affected aren't in paths
+  # see https://docs.github.com/en/enterprise-cloud@latest/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+  pull_request: 
+    branches: [ '**' ]
+  workflow_dispatch:
 
 jobs:
   extract:
