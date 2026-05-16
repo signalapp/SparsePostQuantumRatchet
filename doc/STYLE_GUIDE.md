@@ -2,7 +2,7 @@
 
 ## General Style Guidelines
 
-We follow the [Mathlib style guide][mathlib-style] with some additions related to the specific patterns we use in verification. 
+We follow the [Mathlib style guide][mathlib-style] with some additions related to the specific patterns we use in verification.
 
 ### Header and Imports
 
@@ -50,16 +50,17 @@ into helper lemmas to bring the cost down.
 
 ### Formatting
 
-- Lines should be at most 100 characters
+- Limit all lines to 100 characters.
+- In multi-line comments, wrap only when necessary, each line should use as much of the 100-character limit as possible before breaking.
 - Imports should be listed immediately after the file header without empty lines.
-- When adding definitions and theorems (except for spec theorems), follow the [Mathlib naming guidelines][mathlib-naming]. 
+- When adding definitions and theorems (except for spec theorems), follow the [Mathlib naming guidelines][mathlib-naming].
 
 ## Spec Theorem File Guidelines
 
 - Each spec theorem lives in its own file together with any additional lemmas which are required for the proof of it, unless they can also be used elsewhere, in which case they should be placed in a central location.
 - The file contains a module docstring which explains concisely the function and includes the Rust source file path where the associated function is originally defined. The module docstring should appear immediately after the imports.
   ```lean
-  /-! 
+  /-!
   # Spec theorem for `function_name`
 
   Brief description of what the function is doing / its purpose.
@@ -67,9 +68,9 @@ into helper lemmas to bring the cost down.
   Source: "rust/source/path.rs"
   -/
   ```
-- Further details or an overview of the proof can be included in other comments in the file if useful for the specific file. 
-- The file is named according to the associated function name but in UpperCamelCase. E.g., if the function is extracted in Lean to `from_bytes` then the file will be called `FromBytes.lean`. 
-- Place the file in a folder which is named to match the Rust source file where the function is defined. This folder is then placed within a directory structure which mirrors the Rust source code directory structure. In case there are two identically named functions defined in the same Rust file, add a relevant prefix to create the Lean file name so they can be distinguished from each other.  
+- Further details or an overview of the proof can be included in other comments in the file if useful for the specific file.
+- The file is named according to the associated function name but in UpperCamelCase. E.g., if the function is extracted in Lean to `from_bytes` then the file will be called `FromBytes.lean`.
+- Place the file in a folder which is named to match the Rust source file where the function is defined. This folder is then placed within a directory structure which mirrors the Rust source code directory structure. In case there are two identically named functions defined in the same Rust file, add a relevant prefix to create the Lean file name so they can be distinguished from each other.
 
 ### Spec Theorem Style
 
@@ -80,7 +81,7 @@ All spec theorems should be stated using `⦃ ... ⦄` Aeneas WP syntax. The can
 
 Concise natural language description of the spec. -/
 @[step]
-theorem fun_name_spec (a : argType) (b : argType) (h1 : pre_condition1) 
+theorem fun_name_spec (a : argType) (b : argType) (h1 : pre_condition1)
     (h2 : pre_condition2) :
     fun_name a b ⦃ (result : resultType) =>
       post_condition_1 ∧
@@ -101,10 +102,7 @@ theorem fun_name_spec (a : argType) (b : argType) (h1 : pre_condition1)
   - Arguments, preconditions and line with function application: 4 spaces
   - Postconditions `post_condition_i ∧`: 6 spaces
   - Proof body: 2 spaces
-  
+
 
 [mathlib-style]: https://leanprover-community.github.io/contribute/style.html
 [mathlib-naming]: https://leanprover-community.github.io/contribute/naming.html
-
-
-
