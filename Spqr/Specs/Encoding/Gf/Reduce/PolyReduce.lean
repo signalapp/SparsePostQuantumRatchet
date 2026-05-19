@@ -207,7 +207,7 @@ from the `@[step]` database), and then substitutes the intermediate postconditio
   2. `poly_reduce_spec`: `natToBinaryPoly result.val = (natToBinaryPoly i.val) %ₘ polyGF2`
 
 Together these yield the combined result by rewriting. -/
-theorem poly_reduce_poly_mul_spec (a b : Std.U16) :
+theorem poly_reduce_spec_poly_mul (a b : Std.U16) :
     mul a b ⦃ result =>
       natToBinaryPoly result.val =
         (natToBinaryPoly a.val * natToBinaryPoly b.val) %ₘ polyGF2 ⦄ := by
