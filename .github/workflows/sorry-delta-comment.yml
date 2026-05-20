@@ -1,0 +1,49 @@
+name: Sorry Delta Comment
+# Posts the sorry-delta PR comment after the Lean Verification workflow
+# completes.  Because workflow_run always executes in the context of the
+# *base* repository, the GITHUB_TOKEN has write access even for fork PRs.
+
+on:
+  workflow_run:
+    workflows: ["Lean Verification"]
+    types: [completed]
+
+jobs:
+  comment:
+    name: Report Sorry Delta
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/
+
+      - name: Download sorry manifests
+        uses: actions/download-artifact@v4
+        with:
+          name: sorry-manifests
+          path: sorry-manifests
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read PR number
+        id: pr
+        run: echo "number=$(cat sorry-manifests/pr-number.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Compute sorry delta
+        run: python3 scripts/sorry-diff.py sorry-manifests/sorry-manifest-base.txt sorry-manifests/sorry-manifest.txt
+
+      - name: Post PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: sorry-delta
+          number: ${{ steps.pr.outputs.number }}
+          path: .sorry-delta-comment.md
