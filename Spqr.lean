@@ -10,6 +10,7 @@ import Spqr.Math.Gf2Poly.NatRep
 import Spqr.Math.Poly.ModByMonic
 import Spqr.Specs.Encoding.Gf.GF16.Add
 import Spqr.Specs.Encoding.Gf.GF16.AddAssign
+import Spqr.Specs.Encoding.Gf.GF16.ConstSub
 import Spqr.Specs.Encoding.Gf.GF16.Eq
 import Spqr.Specs.Encoding.Gf.GF16.Sub
 import Spqr.Specs.Encoding.Gf.GF16.SubAssign
