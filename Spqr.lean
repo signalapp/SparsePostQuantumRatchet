@@ -12,6 +12,7 @@ import Spqr.Specs.Encoding.Gf.GF16.Add
 import Spqr.Specs.Encoding.Gf.GF16.AddAssign
 import Spqr.Specs.Encoding.Gf.GF16.Eq
 import Spqr.Specs.Encoding.Gf.GF16.Sub
+import Spqr.Specs.Encoding.Gf.GF16.SubAssign
 import Spqr.Specs.Encoding.Gf.Reduce.PolyReduce
 import Spqr.Specs.Encoding.Gf.Reduce.REDUCE_BYTES
 import Spqr.Specs.Encoding.Gf.Reduce.ReduceBytes
