@@ -3,11 +3,11 @@ Copyright 2026 The Beneficial AI Foundation. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Hoang Le Truong
 -/
-import Spqr.Math.Gf2Poly.Basic
-import Mathlib.Tactic.ComputeDegree
-import Mathlib.Tactic.LinearCombination
-import Mathlib.Tactic.IntervalCases
 import Mathlib.Algebra.Polynomial.Div
+import Mathlib.Data.Nat.Bitwise
+import Mathlib.Tactic.ComputeDegree
+import Mathlib.Tactic.IntervalCases
+import Spqr.Math.Gf2Poly.Basic
 
 /-!
 # The SPQR irreducible polynomial polyGF2
@@ -66,9 +66,8 @@ theorem polyGF2_ne_one : polyGF2 ≠ 1 := by
 
 lemma polyGF2_dvd_modByMonic_sub (p : BinaryPoly) :
     polyGF2 ∣ (p %ₘ polyGF2 - p) := by
-  have hadd := Polynomial.modByMonic_add_div p polyGF2_monic
   refine ⟨-(p /ₘ polyGF2), ?_⟩
-  linear_combination hadd
+  grind [Polynomial.modByMonic_add_div]
 
 lemma polyGF2_modByMonic_idem (p : BinaryPoly) :
     (p %ₘ polyGF2) %ₘ polyGF2 = p %ₘ polyGF2 :=

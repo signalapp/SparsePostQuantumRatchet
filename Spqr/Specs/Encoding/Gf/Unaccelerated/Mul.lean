@@ -82,7 +82,6 @@ theorem mul_spec
         BinaryPoly.toGF216
           ((natToBinaryPoly a.val * natToBinaryPoly b.val) %ₘ polyGF2) := by
     grind
-  rw [key, ringHom_modByMonic BinaryPoly.toGF216 polyGF2
-    polyGF2_monic BinaryPoly.toGF216_polyGF2, map_mul]
+  rw [key, ringHom_modByMonic BinaryPoly.toGF216 polyGF2 BinaryPoly.toGF216_polyGF2, map_mul]
 
 end spqr.encoding.gf.unaccelerated

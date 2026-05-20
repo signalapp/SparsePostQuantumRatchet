@@ -60,11 +60,11 @@ axiom prost.error.DecodeError : Type
     Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sorted-vec-0.8.6/src/lib.rs', lines 27:0-27:30
     Name pattern: [sorted_vec::SortedVec] -/
 @[rust_type "sorted_vec::SortedVec"]
-axiom sorted_vec.SortedVec {T : Type} (corecmpOrdInst : core.cmp.Ord T) : Type
+axiom sorted_vec.SortedVec (T : Type) : Type
 
 /-- [sorted_vec::SortedSet]
     Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sorted-vec-0.8.6/src/lib.rs', lines 39:0-39:30
     Name pattern: [sorted_vec::SortedSet] -/
 @[rust_type "sorted_vec::SortedSet"]
-axiom sorted_vec.SortedSet {T : Type} (corecmpOrdInst : core.cmp.Ord T) : Type
+axiom sorted_vec.SortedSet (T : Type) : Type
 

@@ -29,7 +29,7 @@ theorem reduce_bytes_loop_spec
       refine ⟨by scalar_tac, fun j hj => ?_, by scalar_tac⟩
       by_cases hjne : j = i'
       · simp_all [UScalar.cast_val_eq]
-      · grind
+      · simp_lists; grind
     · grind
   · exact ⟨hi, h_inv⟩
 
@@ -89,7 +89,7 @@ private lemma reduceByteLoopFull_inv (a out n : Nat) (ha : a < 256) :
     simp only [reduceByteLoopFull]
     split_ifs with htb
     · have hn_le : n ≤ 7 := by
-        by_contra hlt; push_neg at hlt
+        by_contra hlt; push Not at hlt
         have := Nat.testBit_eq_false_of_lt (calc a < 256 := ha
           _ = 2 ^ 8 := by norm_num
           _ ≤ 2 ^ n := Nat.pow_le_pow_right (by norm_num) (by omega))
@@ -139,22 +139,11 @@ theorem reduceByteTable_eq_poly_full (k : Nat) (hk : k < 256) :
     exact if_neg (Bool.not_eq_true _ ▸ Nat.testBit_eq_false_of_lt
       (Nat.lt_of_lt_of_le (Nat.mod_lt _ (by norm_num)) (Nat.pow_le_pow_right (by norm_num) hm)))
   have hA_self : A %ₘ polyGF2 = A := by
-    have hA_eq := Polynomial.modByMonic_add_div A polyGF2_monic
-    suffices A /ₘ polyGF2 = 0 by rw [this, mul_zero, add_zero] at hA_eq; exact hA_eq
-    by_contra hne
-    have hprod_deg : (A /ₘ polyGF2 * polyGF2).natDegree ≥ 16 := by
-      rw [Polynomial.natDegree_mul hne polyGF2_monic.ne_zero, polyGF2_natDegree]; omega
-    have hmod_lt : (A %ₘ polyGF2).natDegree < 16 := by
-      rw [← polyGF2_natDegree]
-      exact Polynomial.natDegree_modByMonic_lt A polyGF2_monic polyGF2_ne_one
-    have hprod_ne : A /ₘ polyGF2 * polyGF2 ≠ 0 := fun h => by simp [h] at hprod_deg
-    have hrearr : A = A %ₘ polyGF2 + A /ₘ polyGF2 * polyGF2 := by
-      rw [mul_comm polyGF2] at hA_eq; exact hA_eq.symm
-    have : A.natDegree ≥ 16 := by
-      rw [hrearr]; exact le_trans hprod_deg (Polynomial.le_natDegree_of_ne_zero (by
-        rw [Polynomial.coeff_add, Polynomial.coeff_eq_zero_of_natDegree_lt (by linarith), zero_add]
-        exact Polynomial.leadingCoeff_ne_zero.mpr hprod_ne))
-    linarith
+    have : A /ₘ polyGF2 = 0 := (Polynomial.divByMonic_eq_zero_iff polyGF2_monic).mpr
+      (lt_of_le_of_lt Polynomial.degree_le_natDegree (by
+        rw [Polynomial.degree_eq_natDegree polyGF2_monic.ne_zero, polyGF2_natDegree]
+        exact_mod_cast hA_deg))
+    grind [Polynomial.modByMonic_add_div]
   rwa [hA_self] at hinv
 
 /--

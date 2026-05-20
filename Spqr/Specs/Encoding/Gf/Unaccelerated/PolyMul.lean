@@ -147,7 +147,7 @@ theorem clmul_poly_eq_mul (a b : BinaryPoly) (n : Nat)
       rcases eq_or_ne (b - X ^ n) 0 with hzero | hne
       · rw [hzero, clmul_poly_b_zero, zero_add, sub_eq_zero.mp hzero]
       · have hdeg : (b - X ^ n).natDegree < n := by
-          by_contra hge; push_neg at hge
+          by_contra hge; push Not at hge
           have hlc := leadingCoeff_ne_zero.mpr hne
           unfold leadingCoeff at hlc
           have : (b - X ^ n).coeff (b - X ^ n).natDegree = 0 := by
@@ -158,7 +158,7 @@ theorem clmul_poly_eq_mul (a b : BinaryPoly) (n : Nat)
               exact coeff_eq_zero_of_natDegree_lt (by omega)
           exact hlc this
         rw [ih (b - X ^ n) hdeg]; ring
-    · rw [if_neg hcoeff]; push_neg at hcoeff
+    · rw [if_neg hcoeff]; push Not at hcoeff
       rcases eq_or_ne b 0 with rfl | hb0
       · simp [clmul_poly_b_zero]
       · have hlt : b.natDegree < n := by
@@ -253,27 +253,30 @@ theorem poly_mul_loop_spec (b : Std.U16) (acc : Std.U32) (me : Std.U32)
   · intro ⟨acc', shift'⟩ ⟨hShift', hInv', hMe'⟩
     simp only []
     unfold poly_mul_loop.body
-    simp only []
+    -- simp only []
     by_cases hLt : shift'.val < 16
     · simp only [UScalar.lt_equiv, UScalar.ofNatCore_val_eq, hLt,
       ↓reduceIte, bne_iff_ne, ne_eq, UScalar.neq_to_neq_val,
-      ReduceNat.reduceNatEq, bind_tc_ok, ite_not, Nat.reducePow, and_assoc]
+      ReduceNat.reduceNatEq, ite_not, Nat.reducePow, and_assoc]
       step*
-      · have : b.val.testBit shift'.val = False := by
-          have hmod : 1 <<< shift'.val % U16.size = 1 <<< shift'.val :=
-            Nat.mod_eq_of_lt (by
-              rw [Nat.one_shiftLeft, show U16.size = 2 ^ 16 from by simp [U16.size, U16.numBits]]
-              exact Nat.pow_lt_pow_right (by omega) hLt)
-          have h := not_testBit_of_and_one_shiftLeft_eq_zero
-            (n := b.val) (k := shift'.val) (by rw [← hmod]; simp_all)
-          simp [h]
-        constructor
-        · grind
-        · constructor
-          · simp [shift1_post, clmul, this]
-            simp_all
+      split
+      · step*
+        · have : b.val.testBit shift'.val = False := by
+            have hmod : 1 <<< shift'.val % U16.size = 1 <<< shift'.val :=
+              Nat.mod_eq_of_lt (by
+                rw [Nat.one_shiftLeft, show U16.size = 2 ^ 16 from by simp [U16.size, U16.numBits]]
+                exact Nat.pow_lt_pow_right (by omega) hLt)
+            have h := not_testBit_of_and_one_shiftLeft_eq_zero
+              (n := b.val) (k := shift'.val) (by rw [← hmod]; simp_all)
+            simp [h]
+          constructor
           · grind
-      · have : b.val.testBit shift'.val = True := by
+          · constructor
+            · simp [shift1_post, clmul, this]
+              simp_all
+            · grind
+      · step*
+        have : b.val.testBit shift'.val = True := by
           have hmod : 1 <<< shift'.val % U16.size = 1 <<< shift'.val :=
             Nat.mod_eq_of_lt (by
               rw [Nat.one_shiftLeft, show U16.size = 2 ^ 16 from by simp [U16.size, U16.numBits]]

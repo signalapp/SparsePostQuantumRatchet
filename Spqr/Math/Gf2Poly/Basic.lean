@@ -4,10 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Hoang Le Truong
 -/
 import Mathlib.Algebra.Field.ZMod
-import Mathlib.RingTheory.Polynomial.Basic
+import Mathlib.Algebra.Lie.OfAssociative
+import Mathlib.Algebra.Order.Ring.Star
+import Mathlib.Data.Int.ConditionallyCompleteOrder
 import Mathlib.Data.Nat.BitIndices
-import Mathlib.Data.Nat.Bits
-import Mathlib.Algebra.CharP.Two
+import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
 # The binary polynomial ring `(ZMod 2)[X]`
@@ -96,7 +97,7 @@ lemma natToBinaryPoly_coeff (n m : ℕ) :
   · simp only [hm]
     rw [List.sum_map_eq_nsmul_single _ _ fun _ ha _ => if_neg ha.symm]
     simp [mem_bitIndices_iff_testBit.mpr hm]
-  · push_neg at hm
+  · push Not at hm
     simp only [hm, Bool.false_eq_true]
     exact List.sum_eq_zero (fun x hx => by
       simp only [List.mem_map] at hx
@@ -145,7 +146,7 @@ theorem natToBinaryPoly_split (v n : ℕ) :
   by_cases hm : n ≤ m
   · simp only [hm, show ¬ m < n from by omega]
     grind
-  · push_neg at hm
+  · push Not at hm
     simp only [show ¬ n ≤ m from by omega, hm, ↓reduceIte, add_zero]
     congr 1
 
@@ -178,7 +179,7 @@ lemma natToBinaryPoly_one : natToBinaryPoly 1 = 1 := by
   | zero => decide
   | succ n =>
     have htb : Nat.testBit 1 (n + 1) = false :=
-      Nat.testBit_eq_false_of_lt (Nat.one_lt_pow (by omega) (by norm_num))
+      Nat.testBit_lt_two_pow (Nat.one_lt_pow (by omega) (by norm_num))
     simp [htb]
 
 end spqr.math.gf

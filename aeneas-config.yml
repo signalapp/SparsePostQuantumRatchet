@@ -1,7 +1,7 @@
 # Aeneas extraction configuration
 
 aeneas:
-  commit: "1180be60" # pinned commit hash
+  commit: "3fb1cd4b" # pinned commit hash
   repo: "https://github.com/AeneasVerif/aeneas.git"
 
 # Upstream Rust crate we are verifying
@@ -79,94 +79,6 @@ tweaks:
         set_option linter.style.setOption false
         set_option linter.style.whitespace false
 
-    # Insert Pt trait instances into Types.lean after the Pt struct definition
-    - find: |
-        structure encoding.polynomial.Pt where
-          x : encoding.gf.GF16
-          y : encoding.gf.GF16
-
-        /-- [spqr::encoding::polynomial::Poly]
-      replace: |
-        structure encoding.polynomial.Pt where
-          x : encoding.gf.GF16
-          y : encoding.gf.GF16
-
-        -- Pt trait instances (moved here from Funs.lean because PolyDecoder references
-        -- encoding.polynomial.Pt.Insts.CoreCmpOrd in its type signature)
-
-        def encoding.polynomial.Pt.Insts.CoreCmpPartialEqPt.eq
-          (self other : encoding.polynomial.Pt) : Result Bool := do
-          ok (self.x.value = other.x.value)
-
-        @[reducible]
-        def encoding.polynomial.Pt.Insts.CoreCmpPartialEqPt :
-          core.cmp.PartialEq encoding.polynomial.Pt encoding.polynomial.Pt := {
-          eq := encoding.polynomial.Pt.Insts.CoreCmpPartialEqPt.eq
-        }
-
-        def encoding.polynomial.Pt.Insts.CoreCmpEq.assert_receiver_is_total_eq
-          (_self : encoding.polynomial.Pt) : Result Unit := ok ()
-
-        @[reducible]
-        def encoding.polynomial.Pt.Insts.CoreCmpEq :
-          core.cmp.Eq encoding.polynomial.Pt := {
-          partialEqInst := encoding.polynomial.Pt.Insts.CoreCmpPartialEqPt
-          assert_receiver_is_total_eq :=
-            encoding.polynomial.Pt.Insts.CoreCmpEq.assert_receiver_is_total_eq
-        }
-
-        def encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.partial_cmp
-          (self other : encoding.polynomial.Pt) : Result (Option Ordering) := do
-          let o ← lift (core.cmp.impls.OrdU16.cmp self.x.value other.x.value)
-          ok (some o)
-
-        @[reducible]
-        def encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt :
-          core.cmp.PartialOrd encoding.polynomial.Pt encoding.polynomial.Pt := {
-          partialEqInst := encoding.polynomial.Pt.Insts.CoreCmpPartialEqPt
-          partial_cmp := encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.partial_cmp
-          lt := core.cmp.PartialOrd.lt.default
-            encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.partial_cmp
-          le := core.cmp.PartialOrd.le.default
-            encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.partial_cmp
-          gt := core.cmp.PartialOrd.gt.default
-            encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.partial_cmp
-          ge := core.cmp.PartialOrd.ge.default
-            encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.partial_cmp
-        }
-
-        def encoding.polynomial.Pt.Insts.CoreCmpOrd.cmp
-          (self other : encoding.polynomial.Pt) : Result Ordering := do
-          let o ←
-            encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.partial_cmp self other
-          core.option.Option.unwrap o
-
-        @[reducible]
-        def encoding.polynomial.Pt.Insts.CoreCmpOrd :
-          core.cmp.Ord encoding.polynomial.Pt := {
-          eqInst := encoding.polynomial.Pt.Insts.CoreCmpEq
-          partialOrdInst := encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt
-          cmp := encoding.polynomial.Pt.Insts.CoreCmpOrd.cmp
-          max := core.cmp.Ord.max.default
-            (encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.lt)
-          min := core.cmp.Ord.min.default
-            (encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.lt)
-          clamp := core.cmp.Ord.clamp.default
-            (encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.le)
-            (encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.lt)
-            (encoding.polynomial.Pt.Insts.CoreCmpPartialOrdPt.gt)
-        }
-
-        /-- [spqr::encoding::polynomial::Poly]
-
-    # Remove Pt PartialEq + Eq from Funs.lean
-    - regex: "/-- \\[spqr::encoding::polynomial::\\{core::cmp::PartialEq<spqr::encoding::polynomial::Pt>[\\s\\S]*?encoding\\.polynomial\\.Pt\\.Insts\\.CoreCmpEq\\.assert_receiver_is_total_eq\\n\\}\\n"
-      replace: "-- Pt PartialEq and Eq instances moved to Types.lean\n"
-
-    # Remove Pt PartialOrd + Ord from Funs.lean
-    - regex: "/-- \\[spqr::encoding::polynomial::\\{core::cmp::PartialOrd<spqr::encoding::polynomial::Pt>[\\s\\S]*?cmp := encoding\\.polynomial\\.Pt\\.Insts\\.CoreCmpOrd\\.cmp\\n\\}\\n"
-      replace: "-- Pt PartialOrd and Ord instances moved to Types.lean\n"
-
     # Strip map field from Iterator instances (Aeneas generates it but Lean backend doesn't have it)
     - regex: "\\n  map := fun \\{B : Type\\} \\{F : Type\\}[\\s\\S]*?(?=\\n  enumerate)"
       replace: ""
@@ -174,18 +86,6 @@ tweaks:
     # Replace collect field with take := sorry in Iterator instances
     - regex: "\\n  collect := fun \\{B : Type\\}[\\s\\S]*?(?=\\n\\})"
       replace: "\n  take := sorry"
-
-    # Sorry proto enum partial_cmp bodies (PartialCmpI32 doesn't exist in Aeneas stdlib)
-    - find: "ok (core.cmp.impls.PartialCmpI32.partial_cmp self1 other1)"
-      replace: "sorry"
-
-    # Add missing fields to proto enum PartialOrd instances
-    - regex: "(partial_cmp :=\\n    proto\\.pq_ratchet\\.\\w+\\.Insts\\.CoreCmpPartialOrd\\w+\\.partial_cmp\\n)\\}"
-      replace: "$1  lt := sorry\n  le := sorry\n  gt := sorry\n  ge := sorry\n}"
-
-    # Add missing fields to proto enum Ord instances
-    - regex: "(cmp := proto\\.pq_ratchet\\.\\w+\\.Insts\\.CoreCmpOrd\\.cmp\\n)\\}"
-      replace: "$1  max := sorry\n  min := sorry\n  clamp := sorry\n}"
 
     # Sorry loop bodies where Aeneas generates () instead of the correct typed value
     - regex: "(def (?:encoding\\.gf\\.parallel_mult_loop\\.body|encoding\\.polynomial\\.lagrange_polys_for_complete_points_loop0\\.body|encoding\\.polynomial\\.PolyEncoder\\.from_pb_loop1\\.body|encoding\\.polynomial\\.PolyEncoder\\.encode_bytes_base_loop\\.body)\\n[\\s\\S]*?):= do[\\s\\S]*?(?=\\n/-- )"
@@ -198,3 +98,11 @@ tweaks:
     # Sorry merge function bodies (broken Result.map with mistyped closures)
     - regex: "(def proto\\.pq_ratchet\\.(?:pq_ratchet_state\\.Inner|v1_msg\\.InnerMsg|v1_state\\.InnerState)\\.merge\\n[\\s\\S]*?):= do[\\s\\S]*?(?=\\n/-- )"
       replace: "$1:= sorry"
+
+    # Fix ok_or none type inference
+    - find: "core.option.Option.ok_or none Error.StateDecode"
+      replace: "core.option.Option.ok_or (none : Option _) Error.StateDecode"
+    - regex: "(\\| core\\.ops\\.control_flow\\.ControlFlow\\.Continue) val2 (=>\\n\\s+let \\S+ ← encoding\\.polynomial\\.PolyDecoder\\.from_pb val2)"
+      replace: "$1 (val2 : proto.pq_ratchet.PolynomialDecoder) $2"
+    - regex: "(\\| core\\.ops\\.control_flow\\.ControlFlow\\.Continue) val4 (=>\\n\\s+let \\S+ ← encoding\\.polynomial\\.PolyDecoder\\.from_pb val4)"
+      replace: "$1 (val4 : proto.pq_ratchet.PolynomialDecoder) $2"

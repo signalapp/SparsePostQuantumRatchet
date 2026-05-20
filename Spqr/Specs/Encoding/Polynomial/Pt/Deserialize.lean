@@ -133,17 +133,7 @@ theorem try_from_spec {T : Type} (N : Usize) (copyInst : core.marker.Copy T)
   unfold core.array.TryFromArrayCopySlice.try_from
   have hm := List.mapM_clone_eq h_clone
   simp only [dif_pos h_len]
-  split
-  · next s' heq =>
-    simp only [WP.spec_ok]
-    have hsv : s' = s.val := by
-      have h := hm.symm.trans heq
-      simp only [ok.injEq] at h
-      exact h.symm
-    subst hsv
-    exact ⟨⟨s.val, by scalar_tac⟩, rfl, rfl⟩
-  · next e heq => simp_all
-  · next heq => simp_all
+  step*
 
 /-- **Spec and proof concerning `encoding.polynomial.Pt.deserialize`**:
 • The function always succeeds (no panic) for any valid `[u8; 4]` input.
@@ -163,5 +153,6 @@ theorem deserialize_spec (s : Array Std.U8 4#usize) :
   step*
   simp_all only
   step*
+  simp_all
 
 end spqr.encoding.polynomial.Pt
