@@ -91,6 +91,7 @@ open Aeneas Aeneas.Std Result Polynomial spqr.encoding.gf.unaccelerated spqr.mat
 
 namespace spqr.encoding.gf.reduce
 
+/-- Reduce a 32-bit value modulo the GF(2^16) irreducible polynomial using the lookup table. -/
 def polyReduce (v : Nat) : Nat :=
   let t1 := reduceByteTable (v >>> 24)
   let v1 := v ^^^ (t1 <<< 8)

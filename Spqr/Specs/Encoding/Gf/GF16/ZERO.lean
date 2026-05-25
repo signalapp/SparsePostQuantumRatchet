@@ -33,7 +33,6 @@ namespace spqr.encoding.gf.GF16
 theorem ZERO_value : (ZERO).value = 0#u16 := by
   simp [ZERO]
 
-@[simp]
 theorem ZERO_value_val : (ZERO).value.val = 0 := by
   simp [ZERO]
 

@@ -27,6 +27,7 @@ projects working with the same Galois field.
 
 open Polynomial
 
+/-- The Galois field GF(2^16), used as the coefficient field for SPQR polynomial encoding. -/
 abbrev GF216 := GaloisField 2 16
 
 namespace spqr.math.gf
