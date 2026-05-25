@@ -4,14 +4,17 @@ name: Lean Verification
 
 on:
   push:
-    branches: [ '**' ]
+    branches: [ 'main' ]
     paths:
       - 'Spqr/**'
       - 'lakefile.toml'
       - 'lean-toolchain'
       - '.github/workflows/lean.yml'
-  # since it is required for merging, it must run on each PR even if the files affected aren't in paths
-  # see https://docs.github.com/en/enterprise-cloud@latest/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+  # Since the check is required for merging, it must run on every PR even
+  # when no Lean-related files changed (GitHub treats a skipped required
+  # check as "not passed").  Restricting `push` to main avoids duplicate
+  # runs on PR branches while keeping the sorry-manifest cache working.
+  # See https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   pull_request: 
     branches: [ '**' ]
   workflow_dispatch:
