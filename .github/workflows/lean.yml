@@ -34,13 +34,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Lean project
+      - name: Setup Lean
         uses: leanprover/lean-action@v1
         with:
-          build: true
+          build: false
           test: false
           lint: false
           use-mathlib-cache: true
+
+      - name: Build and check for non-sorry warnings
+        run: |
+          lake build --no-ansi 2>&1 | tee /tmp/lake-build.log
+          if grep 'warning:' /tmp/lake-build.log | grep -qv 'declaration uses .sorry'; then
+            echo "::error::Build produced warnings (other than sorry). Please fix them."
+            grep 'warning:' /tmp/lake-build.log | grep -v 'declaration uses .sorry'
+            exit 1
+          fi
+
+      - name: Lint hand-written code
+        run: |
+          lake exe runLinter Spqr 2>&1 | tee /tmp/lake-lint.log || true
+          if grep 'error:' /tmp/lake-lint.log | grep -qv 'Spqr/Code/'; then
+            echo "::error::Lint errors in hand-written code. Please fix them."
+            grep 'error:' /tmp/lake-lint.log | grep -v 'Spqr/Code/'
+            exit 1
+          fi
 
       - name: Restore base sorry manifest
         if: github.event_name == 'pull_request'
