@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """Compare two sorry manifests (base vs head) and report newly introduced
-sorry-tainted declarations as a GitHub Actions Job Summary and PR comment.
+sorry-tainted declarations in hand-written specs as a PR comment.
 
 Usage:
     python3 scripts/sorry-diff.py <base-manifest> <head-manifest>
 
 Environment variables (set by CI):
     GITHUB_STEP_SUMMARY  - path to the job summary file
-    SORRY_FAIL_ON_NEW    - if "true", exit 1 when new sorries are found
+    GITHUB_OUTPUT        - path to set workflow step outputs
+    SORRY_FAIL_ON_NEW    - if "true", exit 1 when new specs sorries are found
 
 Outputs:
-    .sorry-delta-comment.md  - written for sticky-pull-request-comment action
+    .sorry-delta-comment.md  - written only when new specs sorries exist
+    step output post_comment - "true" when the comment file is written
 """
 from __future__ import annotations
 
@@ -19,6 +21,7 @@ import sys
 from pathlib import Path
 
 COMMENT_FILE = ".sorry-delta-comment.md"
+SPECS_MODULE_PREFIX = "Spqr.Specs"
 MAX_ROWS = 50
 
 
@@ -46,37 +49,42 @@ def parse_line(line: str) -> tuple[str, str, str]:
             parts[2] if len(parts) > 2 else "")
 
 
-def build_body(has_baseline: bool, new_lines: list[str], total: int) -> str:
-    lines = ["### Sorry Delta", ""]
+def is_specs_line(line: str) -> bool:
+    """Match modules that Audit.lean considers specs: name == or starts with Spqr.Specs."""
+    mod = line.split()[0] if line.split() else ""
+    return mod == SPECS_MODULE_PREFIX or mod.startswith(SPECS_MODULE_PREFIX + ".")
 
-    if not has_baseline:
-        lines.append(
-            f"No baseline available for comparison. "
-            f"Current sorry-tainted declarations: {total}")
-        return "\n".join(lines)
 
-    new_count = len(new_lines)
-    if new_count == 0:
-        lines.append(
-            f"No new sorry-tainted declarations introduced. ({total} total)")
-        return "\n".join(lines)
+def build_body(new_specs_lines: list[str]) -> str:
+    count = len(new_specs_lines)
+    s = "s" if count > 1 else ""
 
-    s = "s" if new_count > 1 else ""
-    lines.append(f"**{new_count} new sorry-tainted declaration{s}** ({total} total)")
-    lines.append("")
-    lines.append("| Module | Declaration | Kind |")
-    lines.append("|--------|-------------|------|")
+    lines = [
+        "### Sorry Delta — hand-written specs",
+        "",
+        f"**{count} new sorry-tainted declaration{s} in `Spqr.Specs.*`:**",
+        "",
+        "| Module | Declaration | Kind |",
+        "|--------|-------------|------|",
+    ]
 
-    for entry in new_lines[:MAX_ROWS]:
+    for entry in new_specs_lines[:MAX_ROWS]:
         mod, decl, kind = parse_line(entry)
-        lines.append(f"| {mod} | `{decl}` | {kind} |")
+        lines.append(f"| `{mod}` | `{decl}` | {kind} |")
 
-    remaining = new_count - MAX_ROWS
+    remaining = count - MAX_ROWS
     if remaining > 0:
         lines.append("")
         lines.append(f"... and {remaining} more (see full manifest in job log)")
 
     return "\n".join(lines)
+
+
+def set_output(name: str, value: str) -> None:
+    output_path = os.environ.get("GITHUB_OUTPUT", "")
+    if output_path:
+        with open(output_path, "a") as f:
+            f.write(f"{name}={value}\n")
 
 
 def main() -> None:
@@ -102,22 +110,37 @@ def main() -> None:
     else:
         new_lines = []
 
-    body = build_body(has_baseline, new_lines, total)
-
-    summary_path = os.environ.get("GITHUB_STEP_SUMMARY", "")
-    if summary_path:
-        with open(summary_path, "a") as f:
-            f.write(body + "\n")
-
-    Path(COMMENT_FILE).write_text(body + "\n")
+    new_specs_lines = [l for l in new_lines if is_specs_line(l)]
 
     print("--- Sorry Delta Summary ---")
     print(f"Total sorry-tainted: {total}")
     if has_baseline:
-        print(f"New in this PR: {len(new_lines)}")
+        print(f"New in this PR (all): {len(new_lines)}")
+        print(f"New in this PR (specs): {len(new_specs_lines)}")
+    else:
+        print("No baseline available for comparison.")
 
-    if os.environ.get("SORRY_FAIL_ON_NEW") == "true" and new_lines:
-        print(f"::error::{len(new_lines)} new sorry-tainted declaration(s) introduced")
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY", "")
+    if summary_path:
+        with open(summary_path, "a") as f:
+            f.write(f"Sorry-tainted total: {total}\n")
+            if has_baseline:
+                f.write(f"New (all): {len(new_lines)}, New (specs): {len(new_specs_lines)}\n")
+
+    if new_specs_lines:
+        body = build_body(new_specs_lines)
+        Path(COMMENT_FILE).write_text(body + "\n")
+        set_output("post_comment", "true")
+        for entry in new_specs_lines:
+            mod, decl, kind = parse_line(entry)
+            print(f"  ⚠  [{mod}] {decl} ({kind})")
+    else:
+        set_output("post_comment", "false")
+        if has_baseline:
+            print("✓  No new sorry-tainted declarations in hand-written specs.")
+
+    if os.environ.get("SORRY_FAIL_ON_NEW") == "true" and new_specs_lines:
+        print(f"::error::{len(new_specs_lines)} new sorry-tainted declaration(s) in specs")
         sys.exit(1)
 
 

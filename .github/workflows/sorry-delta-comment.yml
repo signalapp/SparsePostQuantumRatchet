@@ -39,11 +39,22 @@ jobs:
         run: echo "number=$(cat sorry-manifests/pr-number.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Compute sorry delta
+        id: delta
         run: python3 scripts/sorry-diff.py sorry-manifests/sorry-manifest-base.txt sorry-manifests/sorry-manifest.txt
 
       - name: Post PR comment
+        if: steps.delta.outputs.post_comment == 'true'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: sorry-delta
           number: ${{ steps.pr.outputs.number }}
           path: .sorry-delta-comment.md
+
+      - name: Hide stale PR comment
+        if: steps.delta.outputs.post_comment != 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: sorry-delta
+          number: ${{ steps.pr.outputs.number }}
+          hide: true
+          hide_classify: OUTDATED
