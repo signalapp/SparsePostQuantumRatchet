@@ -112,3 +112,20 @@ tweaks:
       replace: "$1 (val2 : proto.pq_ratchet.PolynomialDecoder) $2"
     - regex: "(\\| core\\.ops\\.control_flow\\.ControlFlow\\.Continue) val4 (=>\\n\\s+let \\S+ ← encoding\\.polynomial\\.PolyDecoder\\.from_pb val4)"
       replace: "$1 (val4 : proto.pq_ratchet.PolynomialDecoder) $2"
+
+    # The goal is to later replace the mul_assign axiom with a definition. This is currently blocked
+    # because it depends on unaccelerated::mul, which is generated after related functions due to function ordering.
+    # Reordering the Rust functions should resolve the issue.
+    - find: |
+        /-- [spqr::encoding::gf::{core::ops::arith::Mul<spqr::encoding::gf::GF16, spqr::encoding::gf::GF16> for spqr::encoding::gf::GF16}::mul]:
+      replace: |
+        /-- [spqr::encoding::gf::{core::ops::arith::MulAssign<&0 (spqr::encoding::gf::GF16)> for spqr::encoding::gf::GF16}::mul_assign]:
+            Source: 'src/encoding/gf.rs', lines 490:4-503:5 -/
+        def encoding.gf.GF16.Insts.CoreOpsArithMulAssignShared0GF16.mul_assign
+          (self : encoding.gf.GF16) (other : encoding.gf.GF16) :
+          Result encoding.gf.GF16
+          := do
+          let i ← encoding.gf.unaccelerated.mul self.value other.value
+          ok { value := i }
+
+        /-- [spqr::encoding::gf::{core::ops::arith::Mul<spqr::encoding::gf::GF16, spqr::encoding::gf::GF16> for spqr::encoding::gf::GF16}::mul]:

@@ -122,108 +122,6 @@ impl ops::Sub<&GF16> for GF16 {
     }
 }
 
-#[hax_lib::attributes]
-impl ops::MulAssign<&GF16> for GF16 {
-    fn mul_assign(&mut self, other: &Self) {
-        #[cfg(all(
-            not(hax),
-            any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
-        ))]
-        if check_accelerated::TOKEN.get() {
-            self.value = accelerated::mul(self.value, other.value);
-            return;
-        }
-        self.value = unaccelerated::mul(self.value, other.value);
-    }
-}
-
-#[hax_lib::attributes]
-impl ops::MulAssign for GF16 {
-    fn mul_assign(&mut self, other: Self) {
-        self.mul_assign(&other);
-    }
-}
-
-#[hax_lib::attributes]
-impl ops::Mul for GF16 {
-    type Output = Self;
-    fn mul(self, other: Self) -> Self {
-        let mut out = self;
-        out *= &other;
-        out
-    }
-}
-
-#[hax_lib::attributes]
-impl ops::Mul<&GF16> for GF16 {
-    type Output = Self;
-    fn mul(self, other: &Self) -> Self {
-        let mut out = self;
-        out *= other;
-        out
-    }
-}
-
-#[hax_lib::attributes]
-impl ops::DivAssign<&GF16> for GF16 {
-    #[allow(clippy::suspicious_op_assign_impl)]
-    fn div_assign(&mut self, other: &Self) {
-        *self = self.div_impl(other);
-    }
-}
-
-#[hax_lib::attributes]
-impl ops::DivAssign for GF16 {
-    fn div_assign(&mut self, other: Self) {
-        *self = self.div_impl(&other);
-    }
-}
-
-#[hax_lib::attributes]
-impl ops::Div for GF16 {
-    type Output = Self;
-    fn div(self, other: Self) -> Self {
-        self.div_impl(&other)
-    }
-}
-
-#[hax_lib::attributes]
-impl ops::Div<&GF16> for GF16 {
-    type Output = Self;
-    fn div(self, other: &Self) -> Self {
-        self.div_impl(other)
-    }
-}
-
-#[inline]
-#[hax_lib::requires(into.len() <= usize::MAX - 2)]
-#[hax_lib::ensures(|_| future(into).len() == into.len())]
-pub fn parallel_mult(a: GF16, into: &mut [GF16]) {
-    let mut i: usize = 0;
-    #[cfg(hax)]
-    let l = into.len();
-    while i + 2 <= into.len() {
-        hax_lib::loop_decreases!(l - i);
-        hax_lib::loop_invariant!(into.len() == l && i <= l);
-        (into[i].value, into[i + 1].value) = mul2_u16(a.value, into[i].value, into[i + 1].value);
-        i += 2;
-    }
-    if i < into.len() {
-        into[i] *= a;
-    }
-}
-
-fn mul2_u16(a: u16, b1: u16, b2: u16) -> (u16, u16) {
-    #[cfg(all(
-        not(hax),
-        any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
-    ))]
-    if check_accelerated::TOKEN.get() {
-        return accelerated::mul2(a, b1, b2);
-    }
-    (unaccelerated::mul(a, b1), unaccelerated::mul(a, b2))
-}
-
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod accelerated {
     #[cfg(target_arch = "x86")]
@@ -587,6 +485,108 @@ impl GF16 {
         }
         out
     }
+}
+
+#[hax_lib::attributes]
+impl ops::MulAssign<&GF16> for GF16 {
+    fn mul_assign(&mut self, other: &Self) {
+        #[cfg(all(
+            not(hax),
+            any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+        ))]
+        if check_accelerated::TOKEN.get() {
+            self.value = accelerated::mul(self.value, other.value);
+            return;
+        }
+        self.value = unaccelerated::mul(self.value, other.value);
+    }
+}
+
+#[hax_lib::attributes]
+impl ops::MulAssign for GF16 {
+    fn mul_assign(&mut self, other: Self) {
+        self.mul_assign(&other);
+    }
+}
+
+#[hax_lib::attributes]
+impl ops::Mul for GF16 {
+    type Output = Self;
+    fn mul(self, other: Self) -> Self {
+        let mut out = self;
+        out *= &other;
+        out
+    }
+}
+
+#[hax_lib::attributes]
+impl ops::Mul<&GF16> for GF16 {
+    type Output = Self;
+    fn mul(self, other: &Self) -> Self {
+        let mut out = self;
+        out *= other;
+        out
+    }
+}
+
+#[hax_lib::attributes]
+impl ops::DivAssign<&GF16> for GF16 {
+    #[allow(clippy::suspicious_op_assign_impl)]
+    fn div_assign(&mut self, other: &Self) {
+        *self = self.div_impl(other);
+    }
+}
+
+#[hax_lib::attributes]
+impl ops::DivAssign for GF16 {
+    fn div_assign(&mut self, other: Self) {
+        *self = self.div_impl(&other);
+    }
+}
+
+#[hax_lib::attributes]
+impl ops::Div for GF16 {
+    type Output = Self;
+    fn div(self, other: Self) -> Self {
+        self.div_impl(&other)
+    }
+}
+
+#[hax_lib::attributes]
+impl ops::Div<&GF16> for GF16 {
+    type Output = Self;
+    fn div(self, other: &Self) -> Self {
+        self.div_impl(other)
+    }
+}
+
+#[inline]
+#[hax_lib::requires(into.len() <= usize::MAX - 2)]
+#[hax_lib::ensures(|_| future(into).len() == into.len())]
+pub fn parallel_mult(a: GF16, into: &mut [GF16]) {
+    let mut i: usize = 0;
+    #[cfg(hax)]
+    let l = into.len();
+    while i + 2 <= into.len() {
+        hax_lib::loop_decreases!(l - i);
+        hax_lib::loop_invariant!(into.len() == l && i <= l);
+        (into[i].value, into[i + 1].value) = mul2_u16(a.value, into[i].value, into[i + 1].value);
+        i += 2;
+    }
+    if i < into.len() {
+        into[i] *= a;
+    }
+}
+
+fn mul2_u16(a: u16, b1: u16, b2: u16) -> (u16, u16) {
+    #[cfg(all(
+        not(hax),
+        any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+    ))]
+    if check_accelerated::TOKEN.get() {
+        return accelerated::mul2(a, b1, b2);
+    }
+    (unaccelerated::mul(a, b1), unaccelerated::mul(a, b2))
 }
 
 #[cfg(test)]
