@@ -14,6 +14,7 @@ import Spqr.Specs.Encoding.Gf.GF16.ConstDiv
 import Spqr.Specs.Encoding.Gf.GF16.ConstMul
 import Spqr.Specs.Encoding.Gf.GF16.ConstSub
 import Spqr.Specs.Encoding.Gf.GF16.Eq
+import Spqr.Specs.Encoding.Gf.GF16.MulAssign
 import Spqr.Specs.Encoding.Gf.GF16.New
 import Spqr.Specs.Encoding.Gf.GF16.ONE
 import Spqr.Specs.Encoding.Gf.GF16.Sub
