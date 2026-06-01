@@ -1,7 +1,7 @@
 # Verify src-modifications.diff is up to date with upstream comparison
 
 name: Source modifications check
-on: [push]
+on: [push, pull_request]
 
 jobs:
   src-diff:
