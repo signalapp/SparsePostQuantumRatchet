@@ -1,7 +1,7 @@
 # Aeneas extraction configuration
 
 aeneas:
-  commit: "3fb1cd4b" # pinned commit hash
+  commit: "ac9f1bc5" # pinned commit hash
   repo: "https://github.com/AeneasVerif/aeneas.git"
 
 # Upstream Rust crate we are verifying
@@ -17,7 +17,9 @@ charon:
   preset: "aeneas"
   hide_marker_traits: true
   cargo_args: ["--features", "extraction"]
-  start_from_pub: true
+  # trait issue means that we can't use start_from_pub
+  # https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/117
+  # start_from_pub: true
   exclude:
     - "spqr::encoding::gf::check_accelerated" # cpufeatures macro: arrow types unsupported by Aeneas
     - "spqr::encoding::gf::accelerated" # platform-specific SIMD intrinsics
@@ -36,6 +38,7 @@ charon:
     - "spqr::proto::_::_::_::{impl core::marker::StructuralPartialEq for _}"
     - "spqr::{impl core::fmt::Debug for spqr::Error}" # Aeneas assertion failure
     - "spqr::{impl core::fmt::Display for spqr::Error}" # Aeneas assertion failure
+    - "spqr::{impl core::error::Error for spqr::Error}"
     - "spqr::{impl core::fmt::Debug for spqr::CurrentVersion}" # Debug for Version (proto) is excluded, so this cascades
     - "spqr::{impl core::convert::From<spqr::serialize::Error> for spqr::Error}" # name clash
   opaque:
@@ -43,7 +46,6 @@ charon:
     - "spqr::kdf::hkdf_to_slice"
     - "spqr::incremental_mlkem768::potentially_fix_state_incorrectly_encoded_by_libcrux_issue_1275" # has log calls; kept opaque so encaps2 can call it
     - "spqr::encoding::gf::mul2_u16" # dispatches to excluded accelerated code
-    - "spqr::encoding::gf::{core::ops::arith::MulAssign<&spqr::encoding::gf::GF16> for spqr::encoding::gf::GF16}"
     # `decoded_message`: https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/103
     - "spqr::encoding::polynomial::{spqr::encoding::Decoder for spqr::encoding::polynomial::PolyDecoder}::decoded_message"
     - "spqr::proto::_::{impl prost::message::Message for _}"
@@ -72,14 +74,6 @@ tweaks:
         set_option linter.style.longLine false
         set_option linter.style.setOption false
         set_option linter.style.whitespace false
-
-    # Fix duplicate field name in ZeroablePrimitive: both Copy clauses get named markerCopyInst
-    # https://github.com/AeneasVerif/aeneas/issues/1051
-    - find: "(parentClauses := [\"markerCopyInst\", \"privateSealedInst\", \"markerCopyInst\"])"
-      replace: "(parentClauses := [\"markerCopyInst\", \"privateSealedInst\", \"markerCopyNonZeroInnerInst\"])"
-    # https://github.com/AeneasVerif/aeneas/issues/1051
-    - regex: "(privateSealedInst : core\\.num\\.nonzero\\.private\\.Sealed Self\\n)  markerCopyInst : core\\.marker\\.Copy Self_NonZeroInner"
-      replace: "$1  markerCopyNonZeroInnerInst : core.marker.Copy Self_NonZeroInner"
 
     # Sorry BytesBufBuf instance body: remaining/chunk/advance are fields of Buf,
     # so the self-referential struct literal causes termination errors.
@@ -145,11 +139,6 @@ tweaks:
     - regex: "\\n  collect := fun \\{B : Type\\}[\\s\\S]*?(?=\\n\\})"
       replace: "\n  take := sorry"
 
-    # Sorry loop bodies where Aeneas generates () instead of the correct typed value
-    # https://github.com/AeneasVerif/aeneas/issues/1044
-    - regex: "(def (?:encoding\\.gf\\.parallel_mult_loop\\.body|encoding\\.polynomial\\.lagrange_polys_for_complete_points_loop0\\.body|encoding\\.polynomial\\.PolyEncoder\\.from_pb_loop1\\.body|encoding\\.polynomial\\.PolyEncoder\\.encode_bytes_base_loop\\.body)\\n[\\s\\S]*?):= do[\\s\\S]*?(?=\\n/-- )"
-      replace: "$1:= sorry"
-
     # Sorry merge closure FnOnce call_once assignments (Aeneas types them wrong)
     # https://github.com/AeneasVerif/aeneas/issues/1046
     - regex: "call_once :=\\n    proto\\.pq_ratchet\\.\\S+\\.merge\\.closure\\S*\\.Insts\\.CoreOpsFunctionFnOnceTupleTupleTuple\\.call_once\\n    bytesbufbuf_implBufInst\\n}"
@@ -168,20 +157,3 @@ tweaks:
       replace: "$1 (val2 : proto.pq_ratchet.PolynomialDecoder) $2"
     - regex: "(\\| core\\.ops\\.control_flow\\.ControlFlow\\.Continue) val4 (=>\\n\\s+let \\S+ ← encoding\\.polynomial\\.PolyDecoder\\.from_pb val4)"
       replace: "$1 (val4 : proto.pq_ratchet.PolynomialDecoder) $2"
-
-    # The goal is to later replace the mul_assign axiom with a definition. This is currently blocked
-    # because it depends on unaccelerated::mul, which is generated after related functions due to function ordering.
-    # Reordering the Rust functions should resolve the issue.
-    - find: |
-        /-- [spqr::encoding::gf::{core::ops::arith::Mul<spqr::encoding::gf::GF16, spqr::encoding::gf::GF16> for spqr::encoding::gf::GF16}::mul]:
-      replace: |
-        /-- [spqr::encoding::gf::{core::ops::arith::MulAssign<&0 (spqr::encoding::gf::GF16)> for spqr::encoding::gf::GF16}::mul_assign]:
-            Source: 'src/encoding/gf.rs', lines 490:4-503:5 -/
-        def encoding.gf.GF16.Insts.CoreOpsArithMulAssignShared0GF16.mul_assign
-          (self : encoding.gf.GF16) (other : encoding.gf.GF16) :
-          Result encoding.gf.GF16
-          := do
-          let i ← encoding.gf.unaccelerated.mul self.value other.value
-          ok { value := i }
-
-        /-- [spqr::encoding::gf::{core::ops::arith::Mul<spqr::encoding::gf::GF16, spqr::encoding::gf::GF16> for spqr::encoding::gf::GF16}::mul]:

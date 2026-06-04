@@ -26,27 +26,8 @@ namespace spqr
 structure core.borrow.Borrow (Self : Type) (Borrowed : Type) where
   borrow : Self → Result Borrowed
 
-/-- Trait declaration: [core::num::nonzero::private::Sealed]
-    Source: '/rustc/library/core/src/num/nonzero.rs', lines 46:12-46:28
-    Name pattern: [core::num::nonzero::private::Sealed]
-    Visibility: public -/
-@[rust_trait "core::num::nonzero::private::Sealed"]
-structure core.num.nonzero.private.Sealed (Self : Type) where
-
-/-- Trait declaration: [core::num::nonzero::ZeroablePrimitive]
-    Source: '/rustc/library/core/src/num/nonzero.rs', lines 33:0-33:66
-    Name pattern: [core::num::nonzero::ZeroablePrimitive]
-    Visibility: public -/
-@[rust_trait "core::num::nonzero::ZeroablePrimitive"
-  (parentClauses := ["markerCopyInst", "privateSealedInst", "markerCopyNonZeroInnerInst"])]
-structure core.num.nonzero.ZeroablePrimitive (Self : Type) (Self_NonZeroInner :
-  Type) where
-  markerCopyInst : core.marker.Copy Self
-  privateSealedInst : core.num.nonzero.private.Sealed Self
-  markerCopyNonZeroInnerInst : core.marker.Copy Self_NonZeroInner
-
 /-- Trait declaration: [core::ops::arith::Add]
-    Source: '/rustc/library/core/src/ops/arith.rs', lines 77:0-77:31
+    Source: '/rustc/library/core/src/ops/arith.rs', lines 76:0-76:31
     Name pattern: [core::ops::arith::Add]
     Visibility: public -/
 @[rust_trait "core::ops::arith::Add"]
@@ -55,7 +36,7 @@ structure core.ops.arith.Add (Self : Type) (Rhs : Type) (Self_Output : Type)
   add : Self → Rhs → Result Self_Output
 
 /-- Trait declaration: [core::ops::arith::Sub]
-    Source: '/rustc/library/core/src/ops/arith.rs', lines 190:0-190:31
+    Source: '/rustc/library/core/src/ops/arith.rs', lines 188:0-188:31
     Name pattern: [core::ops::arith::Sub]
     Visibility: public -/
 @[rust_trait "core::ops::arith::Sub"]
@@ -64,7 +45,7 @@ structure core.ops.arith.Sub (Self : Type) (Rhs : Type) (Self_Output : Type)
   sub : Self → Rhs → Result Self_Output
 
 /-- Trait declaration: [core::ops::arith::Mul]
-    Source: '/rustc/library/core/src/ops/arith.rs', lines 324:0-324:31
+    Source: '/rustc/library/core/src/ops/arith.rs', lines 322:0-322:31
     Name pattern: [core::ops::arith::Mul]
     Visibility: public -/
 @[rust_trait "core::ops::arith::Mul"]
@@ -73,7 +54,7 @@ structure core.ops.arith.Mul (Self : Type) (Rhs : Type) (Self_Output : Type)
   mul : Self → Rhs → Result Self_Output
 
 /-- Trait declaration: [core::ops::arith::Div]
-    Source: '/rustc/library/core/src/ops/arith.rs', lines 462:0-462:31
+    Source: '/rustc/library/core/src/ops/arith.rs', lines 460:0-460:31
     Name pattern: [core::ops::arith::Div]
     Visibility: public -/
 @[rust_trait "core::ops::arith::Div"]
@@ -82,7 +63,7 @@ structure core.ops.arith.Div (Self : Type) (Rhs : Type) (Self_Output : Type)
   div : Self → Rhs → Result Self_Output
 
 /-- Trait declaration: [core::ops::arith::AddAssign]
-    Source: '/rustc/library/core/src/ops/arith.rs', lines 769:0-769:37
+    Source: '/rustc/library/core/src/ops/arith.rs', lines 768:0-768:37
     Name pattern: [core::ops::arith::AddAssign]
     Visibility: public -/
 @[rust_trait "core::ops::arith::AddAssign"]
@@ -90,7 +71,7 @@ structure core.ops.arith.AddAssign (Self : Type) (Rhs : Type) where
   add_assign : Self → Rhs → Result Self
 
 /-- Trait declaration: [core::ops::arith::SubAssign]
-    Source: '/rustc/library/core/src/ops/arith.rs', lines 840:0-840:37
+    Source: '/rustc/library/core/src/ops/arith.rs', lines 839:0-839:37
     Name pattern: [core::ops::arith::SubAssign]
     Visibility: public -/
 @[rust_trait "core::ops::arith::SubAssign"]
@@ -98,7 +79,7 @@ structure core.ops.arith.SubAssign (Self : Type) (Rhs : Type) where
   sub_assign : Self → Rhs → Result Self
 
 /-- Trait declaration: [core::ops::arith::MulAssign]
-    Source: '/rustc/library/core/src/ops/arith.rs', lines 902:0-902:37
+    Source: '/rustc/library/core/src/ops/arith.rs', lines 901:0-901:37
     Name pattern: [core::ops::arith::MulAssign]
     Visibility: public -/
 @[rust_trait "core::ops::arith::MulAssign"]
@@ -106,7 +87,7 @@ structure core.ops.arith.MulAssign (Self : Type) (Rhs : Type) where
   mul_assign : Self → Rhs → Result Self
 
 /-- Trait declaration: [core::ops::arith::DivAssign]
-    Source: '/rustc/library/core/src/ops/arith.rs', lines 964:0-964:37
+    Source: '/rustc/library/core/src/ops/arith.rs', lines 963:0-963:37
     Name pattern: [core::ops::arith::DivAssign]
     Visibility: public -/
 @[rust_trait "core::ops::arith::DivAssign"]
@@ -139,18 +120,8 @@ structure core.ops.range.RangeBounds (Self : Type) (T : Type) where
   start_bound : Self → Result (core.ops.range.Bound T)
   end_bound : Self → Result (core.ops.range.Bound T)
 
-/-- Trait declaration: [alloc::borrow::ToOwned]
-    Source: '/rustc/library/alloc/src/borrow.rs', lines 27:0-27:17
-    Name pattern: [alloc::borrow::ToOwned]
-    Visibility: public -/
-@[rust_trait "alloc::borrow::ToOwned"
-  (parentClauses := ["coreborrowBorrowInst"])]
-structure alloc.borrow.ToOwned (Self : Type) (Self_Owned : Type) where
-  coreborrowBorrowInst : core.borrow.Borrow Self_Owned Self
-  to_owned : Self → Result Self_Owned
-
 /-- Trait declaration: [alloc::slice::Concat]
-    Source: '/rustc/library/alloc/src/slice.rs', lines 703:0-703:30
+    Source: '/rustc/library/alloc/src/slice.rs', lines 702:0-702:30
     Name pattern: [alloc::slice::Concat]
     Visibility: public -/
 @[rust_trait "alloc::slice::Concat"]
@@ -178,15 +149,6 @@ structure bytes.buf.buf_mut.BufMut (Self : Type) where
   advance_mut : Self → Std.Usize → Result Self
   chunk_mut : Self → Result (bytes.buf.uninit_slice.UninitSlice ×
     (bytes.buf.uninit_slice.UninitSlice → Self))
-
-/-- [bytes::TryGetError]
-    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bytes-1.10.1/src/lib.rs', lines 140:0-140:22
-    Name pattern: [bytes::TryGetError]
-    Visibility: public -/
-@[rust_type "bytes::TryGetError"]
-structure bytes.TryGetError where
-  requested : Std.Usize
-  available : Std.Usize
 
 /-- [libcrux_hmac::Algorithm]
     Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libcrux-hmac-0.0.6/src/hmac.rs', lines 28:0-28:18
@@ -287,86 +249,6 @@ structure rand_core.RngCore (Self : Type) where
 structure rand.rng.Rng (Self : Type) where
   rand_coreRngCoreInst : rand_core.RngCore Self
 
-/-- Trait declaration: [rand::distr::distribution::Distribution]
-    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.9.1/src/distr/distribution.rs', lines 35:0-35:25
-    Name pattern: [rand::distr::distribution::Distribution]
-    Visibility: public -/
-@[rust_trait "rand::distr::distribution::Distribution"]
-structure rand.distr.distribution.Distribution (Self : Type) (T : Type) where
-  sample : forall {R : Type} (rngRngInst : rand.rng.Rng R), Self → R →
-    Result (T × R)
-
-/-- [rand::distr::StandardUniform]
-    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.9.1/src/distr/mod.rs', lines 214:0-214:26
-    Name pattern: [rand::distr::StandardUniform]
-    Visibility: public -/
-@[reducible, rust_type "rand::distr::StandardUniform"]
-def rand.distr.StandardUniform := Unit
-
-/-- [rand::distr::uniform::Error]
-    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.9.1/src/distr/uniform.rs', lines 120:0-120:14
-    Name pattern: [rand::distr::uniform::Error]
-    Visibility: public -/
-@[discriminant isize, rust_type "rand::distr::uniform::Error"]
-inductive rand.distr.uniform.Error where
-| EmptyRange : rand.distr.uniform.Error
-| NonFinite : rand.distr.uniform.Error
-
-/-- Trait declaration: [rand::distr::uniform::SampleBorrow]
-    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.9.1/src/distr/uniform.rs', lines 393:0-393:32
-    Name pattern: [rand::distr::uniform::SampleBorrow]
-    Visibility: public -/
-@[rust_trait "rand::distr::uniform::SampleBorrow"]
-structure rand.distr.uniform.SampleBorrow (Self : Type) (Borrowed : Type) where
-  borrow : Self → Result Borrowed
-
-/-- Trait declaration: [rand::distr::uniform::UniformSampler]
-    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.9.1/src/distr/uniform.rs', lines 283:0-283:31
-    Name pattern: [rand::distr::uniform::UniformSampler]
-    Visibility: public -/
-@[rust_trait "rand::distr::uniform::UniformSampler"]
-structure rand.distr.uniform.UniformSampler (Self : Type) (Self_X : Type) where
-  new : forall {B1 : Type} {B2 : Type} (SampleBorrowInst :
-    rand.distr.uniform.SampleBorrow B1 Self_X) (SampleBorrowInst1 :
-    rand.distr.uniform.SampleBorrow B2 Self_X), B1 → B2 → Result
-    (core.result.Result Self rand.distr.uniform.Error)
-  new_inclusive : forall {B1 : Type} {B2 : Type} (SampleBorrowInst :
-    rand.distr.uniform.SampleBorrow B1 Self_X) (SampleBorrowInst1 :
-    rand.distr.uniform.SampleBorrow B2 Self_X), B1 → B2 → Result
-    (core.result.Result Self rand.distr.uniform.Error)
-  sample : forall {R : Type} (rngRngInst : rand.rng.Rng R), Self → R →
-    Result (Self_X × R)
-
-/-- Trait declaration: [rand::distr::uniform::SampleUniform]
-    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.9.1/src/distr/uniform.rs', lines 268:0-268:30
-    Name pattern: [rand::distr::uniform::SampleUniform]
-    Visibility: public -/
-@[rust_trait "rand::distr::uniform::SampleUniform"
-  (parentClauses := ["UniformSamplerInst"])]
-structure rand.distr.uniform.SampleUniform (Self : Type) (Self_Sampler : Type)
-  where
-  UniformSamplerInst : rand.distr.uniform.UniformSampler Self_Sampler Self
-
-/-- Trait declaration: [rand::distr::uniform::SampleRange]
-    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.9.1/src/distr/uniform.rs', lines 422:0-422:24
-    Name pattern: [rand::distr::uniform::SampleRange]
-    Visibility: public -/
-@[rust_trait "rand::distr::uniform::SampleRange"]
-structure rand.distr.uniform.SampleRange (Self : Type) (T : Type) where
-  sample_single : forall {R : Type} (rand_coreRngCoreInst : rand_core.RngCore
-    R), Self → R → Result ((core.result.Result T rand.distr.uniform.Error)
-    × R)
-  is_empty : Self → Result Bool
-
-/-- Trait declaration: [rand::rng::Fill]
-    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.9.1/src/rng.rs', lines 366:0-366:14
-    Name pattern: [rand::rng::Fill]
-    Visibility: public -/
-@[rust_trait "rand::rng::Fill"]
-structure rand.rng.Fill (Self : Type) where
-  fill : forall {R : Type} (RngInst : rand.rng.Rng R), Self → R → Result
-    (Self × R)
-
 /-- Trait declaration: [rand_core::CryptoRng]
     Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.9.3/src/lib.rs', lines 204:0-204:28
     Name pattern: [rand_core::CryptoRng]
@@ -374,24 +256,6 @@ structure rand.rng.Fill (Self : Type) where
 @[rust_trait "rand_core::CryptoRng" (parentClauses := ["RngCoreInst"])]
 structure rand_core.CryptoRng (Self : Type) where
   RngCoreInst : rand_core.RngCore Self
-
-/-- Trait declaration: [thiserror::display::Sealed]
-    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.12/src/display.rs', lines 46:0-46:16
-    Name pattern: [thiserror::display::Sealed]
-    Visibility: public -/
-@[rust_trait "thiserror::display::Sealed"]
-structure thiserror.display.Sealed (Self : Type) where
-
-/-- Trait declaration: [thiserror::display::AsDisplay]
-    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.12/src/display.rs', lines 6:0-6:31
-    Name pattern: [thiserror::display::AsDisplay]
-    Visibility: public -/
-@[rust_trait "thiserror::display::AsDisplay"
-  (parentClauses := ["SealedInst", "corefmtDisplayInst"])]
-structure thiserror.display.AsDisplay (Self : Type) (Self_Target : Type) where
-  SealedInst : thiserror.display.Sealed Self
-  corefmtDisplayInst : core.fmt.Display Self_Target
-  as_display : Self → Result Self_Target
 
 /-- [spqr::proto::pq_ratchet::PolynomialEncoder]
     Source: 'target/out/signal.proto.pq_ratchet.rs', lines 3:0-13:1
@@ -1038,6 +902,14 @@ structure encoding.Chunk where
   index : Std.U16
   data : Array Std.U8 32#usize
 
+/-- Trait declaration: [spqr::encoding::Encoder]
+    Source: 'src/encoding.rs', lines 31:0-37:1
+    Visibility: public -/
+structure encoding.Encoder (Self : Type) where
+  encode_bytes : Slice Std.U8 → Result (core.result.Result Self
+    encoding.EncodingError)
+  next_chunk : Self → Result (encoding.Chunk × Self)
+
 /-- [spqr::encoding::polynomial::PolyDecoder]
     Source: 'src/encoding/polynomial.rs', lines 742:0-761:1
     Visibility: public -/
@@ -1050,14 +922,6 @@ structure encoding.polynomial.PolyDecoder where
     Source: 'src/encoding/polynomial.rs', lines 788:38-788:58 -/
 @[reducible]
 def encoding.polynomial.PolyDecoder.new_with_poly_count.closure := Unit
-
-/-- Trait declaration: [spqr::encoding::Encoder]
-    Source: 'src/encoding.rs', lines 31:0-37:1
-    Visibility: public -/
-structure encoding.Encoder (Self : Type) where
-  encode_bytes : Slice Std.U8 → Result (core.result.Result Self
-    encoding.EncodingError)
-  next_chunk : Self → Result (encoding.Chunk × Self)
 
 /-- Trait declaration: [spqr::encoding::Decoder]
     Source: 'src/encoding.rs', lines 40:0-47:1

@@ -122,8 +122,6 @@ theorem serialize_spec (self : spqr.encoding.polynomial.Pt) :
       (result[2]!).val * 256 + (result[3]!).val = self.y.value.val ⦄ := by
   unfold serialize
   step*
-  simp_all only [Array.to_slice]
-  simp_lists
-  grind
+  simp_all [List.setSlice!]
 
 end spqr.encoding.polynomial.Pt

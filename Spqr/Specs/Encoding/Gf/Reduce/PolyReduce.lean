@@ -246,6 +246,8 @@ theorem polyReduce_eq (v : Nat) (hv : v < 2 ^ 32)
     (Polynomial.modByMonic_eq_self_iff polyGF2_monic).mpr ha_deg
   rw [hmod_eq, ha_self]
 
+set_option maxHeartbeats 800000 in
+-- step* is heavy.
 /-- **Spec theorem for `spqr::encoding::gf::reduce::poly_reduce`**
 
 Table-based polynomial reduction of a 32-bit carry-less product modulo the irreducible polynomial
@@ -279,11 +281,11 @@ theorem poly_reduce_spec (v : U32) :
       rw [hi1_val, Nat.shiftRight_eq_div_pow]
       grind
     have hi2_eq : i2.val = reduceByteTable i1.val := by
-      have hi2_poly :
-          natToBinaryPoly i2.val = natToBinaryPoly i1.val * X ^ 16 %ₘ polyGF2 := by
-        grind
-      exact natToBinaryPoly_inj
-        (hi2_poly.trans (reduceByteTable_eq_poly_full i1.val hi1_lt).symm)
+      apply natToBinaryPoly_inj
+      have h := a_post i1 (by scalar_tac)
+      simp only [Array.getElem!_Usize_eq] at h
+      rw [i2_post, List.Inhabited_getElem_eq_getElem! _ _ (by scalar_tac)]
+      exact h.trans (reduceByteTable_eq_poly_full i1.val hi1_lt).symm
     have hi3_val : i3.val = i2.val := by
       rw [i3_post, U16.cast_U32_val_eq]
     have hi2_lt : i2.val < 2 ^ 16 := i2.hBounds
@@ -303,11 +305,12 @@ theorem poly_reduce_spec (v : U32) :
       rw [hi21_val]
       apply nat_and_255_lt_256 _
     have hi6_eq : i6.val = reduceByteTable i21.val := by
-      have hi6_poly :
-          natToBinaryPoly i6.val = natToBinaryPoly i21.val * X ^ 16 %ₘ polyGF2 := by
-        grind
-      exact natToBinaryPoly_inj
-        (hi6_poly.trans (reduceByteTable_eq_poly_full i21.val hi21_lt).symm)
+      apply natToBinaryPoly_inj
+      have h := a_post i21 hi21_lt
+      simp only [Array.getElem!_Usize_eq] at h
+      rw [i6_post, List.Inhabited_getElem_eq_getElem! a.val ↑i21
+        (by rw [Array.length_eq]; exact_mod_cast hi21_lt)]
+      exact h.trans (reduceByteTable_eq_poly_full i21.val hi21_lt).symm
     have hi7_val : i7.val = i6.val := by
       rw [i7_post, U16.cast_U32_val_eq]
     have hv2_val : v2.val = v1.val ^^^ i6.val := by
