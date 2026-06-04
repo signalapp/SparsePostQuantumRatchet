@@ -162,11 +162,45 @@ axiom I32.Insts.CoreIterRangeStep.backward_checked
 
 /-- [core::iter::range::{core::iter::range::Step for i32}::forward_checked]:
     Source: '/rustc/library/core/src/iter/range.rs', lines 319:16-319:73
-    Name pattern: [core::iter::range::{core::iter::range::Step<i32>}::forward_checked] -/
+    Name pattern: [core::iter::range::{core::iter::range::Step<i32>}::forward_checked]
+
+    Concrete model of Rust's `Step::forward_checked` for `i32`:
+    given `start : i32` and `count : usize`, compute the integer sum
+    `start + count` and return `Some(result)` if it fits in `i32`,
+    `None` otherwise.  The outer `Result` is always `ok` (the call
+    never panics). -/
 @[rust_fun
   "core::iter::range::{core::iter::range::Step<i32>}::forward_checked"]
-axiom I32.Insts.CoreIterRangeStep.forward_checked
-  : Std.I32 → Std.Usize → Result (Option Std.I32)
+def I32.Insts.CoreIterRangeStep.forward_checked
+  : Std.I32 → Std.Usize → Result (Option Std.I32) :=
+  fun start n => ok (IScalar.tryMkOpt .I32 (start.val + n.val))
+
+
+/-- **Spec theorem for `Step<i32>::forward_checked` with step 1**
+
+* if `start.val + 1 ≤ I32.max` the returned option is `some z` with `z.val = start.val + 1`;
+* otherwise the returned option is `none`. -/
+@[step]
+private theorem I32_forward_checked_one_spec
+    (start : I32) :
+     I32.Insts.CoreIterRangeStep.forward_checked start 1#usize ⦃ (opt : Option I32) =>
+      match opt with
+      | some z => start.val + 1 ≤ I32.max ∧ z.val = start.val + 1
+      | none   => ¬ start.val + 1 ≤ I32.max ⦄ := by
+  suffices h : ∃ opt,
+      I32.Insts.CoreIterRangeStep.forward_checked start 1#usize = ok opt ∧
+      (start.val + 1 ≤ I32.max →
+          ∃ z, opt = some z ∧ z.val = start.val + 1) ∧
+      (¬ start.val + 1 ≤ I32.max → opt = none) by grind
+  unfold  I32.Insts.CoreIterRangeStep.forward_checked
+  have htry := IScalar.tryMkOpt_eq .I32 (start.val + ↑(1#usize).val)
+  generalize IScalar.tryMkOpt .I32 (start.val + ↑(1#usize).val) = opt at htry ⊢
+  cases opt with
+  | none => grind
+  | some z =>
+    refine ⟨some z, rfl, fun _ => ⟨z, rfl, by grind⟩, fun h => by grind⟩
+
+
 
 /-- [core::iter::range::{core::iter::range::Step for i32}::steps_between]:
     Source: '/rustc/library/core/src/iter/range.rs', lines 304:16-304:84
