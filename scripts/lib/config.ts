@@ -22,6 +22,7 @@ export interface AeneasConfig {
     hide_marker_traits: boolean;
     cargo_args: string[];
     start_from: string[];
+    start_from_pub?: boolean;
     exclude: string[];
     opaque: string[];
   };
@@ -87,6 +88,7 @@ export function loadConfig(root?: string): { config: AeneasConfig; root: string 
   config.charon.hide_marker_traits = config.charon.hide_marker_traits ?? false;
   config.charon.cargo_args = config.charon.cargo_args ?? [];
   config.charon.start_from = config.charon.start_from ?? [];
+  config.charon.start_from_pub = config.charon.start_from_pub ?? false;
   config.charon.exclude = config.charon.exclude ?? [];
   config.charon.opaque = config.charon.opaque ?? [];
   config.aeneas_args = config.aeneas_args ?? {} as AeneasConfig["aeneas_args"];

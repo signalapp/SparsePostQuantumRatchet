@@ -454,6 +454,24 @@ diff -Naur --no-dereference a/src/lib.rs b/src/lib.rs
  pub(crate) mod authenticator;
  #[cfg(feature = "test-utils")]
  pub mod chain;
+@@ -208,7 +210,7 @@
+ }
+ 
+ pub fn initial_state(params: Params) -> Result<SerializedState, Error> {
+-    #[cfg(not(hax))]
++    #[cfg(not(feature = "extraction"))]
+     log::info!(
+         "spqr initiating state with version {:?} and direction {:?}",
+         params.version,
+@@ -385,7 +387,7 @@
+                         if (v as i32) < vn.min_version {
+                             return Err(Error::MinimumVersion);
+                         }
+-                        #[cfg(not(hax))]
++                        #[cfg(not(feature = "extraction"))]
+                         log::info!("spqr negotiating version down to {v:?}");
+                         pqrpb::PqRatchetState {
+                             inner: init_inner(
 diff -Naur --no-dereference a/src/v1/chunked/states/serialize.rs b/src/v1/chunked/states/serialize.rs
 --- a/src/v1/chunked/states/serialize.rs
 +++ b/src/v1/chunked/states/serialize.rs

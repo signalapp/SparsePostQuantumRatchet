@@ -67,4 +67,3 @@ axiom sorted_vec.SortedVec (T : Type) : Type
     Name pattern: [sorted_vec::SortedSet] -/
 @[rust_type "sorted_vec::SortedSet"]
 axiom sorted_vec.SortedSet (T : Type) : Type
-

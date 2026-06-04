@@ -17,21 +17,11 @@ charon:
   preset: "aeneas"
   hide_marker_traits: true
   cargo_args: ["--features", "extraction"]
-  start_from:
-    - "spqr::util"
-    - "spqr::encoding"
-    - "spqr::serialize"
-    - "spqr::incremental_mlkem768"
-    - "spqr::proto"
-    - "spqr::kdf"
-    - "spqr::chain"
-    - "spqr::authenticator"
-    - "spqr::v1"
+  start_from_pub: true
   exclude:
     - "spqr::encoding::gf::check_accelerated" # cpufeatures macro: arrow types unsupported by Aeneas
     - "spqr::encoding::gf::accelerated" # platform-specific SIMD intrinsics
     - "log" # log crate internals cause Aeneas error
-    - "spqr::incremental_mlkem768::potentially_fix_state_incorrectly_encoded_by_libcrux_issue_1275"
     - "spqr::proto::_::{impl core::fmt::Debug for _}"
     - "spqr::proto::_::_::{impl core::fmt::Debug for _}"
     - "spqr::proto::_::_::_::{impl core::fmt::Debug for _}"
@@ -44,14 +34,18 @@ charon:
     - "spqr::proto::_::_::_::{impl core::cmp::Eq for _}"
     - "spqr::proto::_::_::{impl core::marker::StructuralPartialEq for _}"
     - "spqr::proto::_::_::_::{impl core::marker::StructuralPartialEq for _}"
+    - "spqr::{impl core::fmt::Debug for spqr::Error}" # Aeneas assertion failure
+    - "spqr::{impl core::fmt::Display for spqr::Error}" # Aeneas assertion failure
+    - "spqr::{impl core::fmt::Debug for spqr::CurrentVersion}" # Debug for Version (proto) is excluded, so this cascades
+    - "spqr::{impl core::convert::From<spqr::serialize::Error> for spqr::Error}" # name clash
   opaque:
+    # `hkdf_to_slice`: https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/104
     - "spqr::kdf::hkdf_to_slice"
-    - "spqr::incremental_mlkem768::encaps2" # uses log macros internally
-    - "spqr::encoding::gf::check_accelerated"
-    - "spqr::encoding::gf::accelerated"
+    - "spqr::incremental_mlkem768::potentially_fix_state_incorrectly_encoded_by_libcrux_issue_1275" # has log calls; kept opaque so encaps2 can call it
     - "spqr::encoding::gf::mul2_u16" # dispatches to excluded accelerated code
     - "spqr::encoding::gf::{core::ops::arith::MulAssign<&spqr::encoding::gf::GF16> for spqr::encoding::gf::GF16}"
-    - "spqr::encoding::polynomial::{spqr::encoding::Decoder for spqr::encoding::polynomial::PolyDecoder}::decoded_message" # Aeneas internal error
+    # `decoded_message`: https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/103
+    - "spqr::encoding::polynomial::{spqr::encoding::Decoder for spqr::encoding::polynomial::PolyDecoder}::decoded_message"
     - "spqr::proto::_::{impl prost::message::Message for _}"
     - "spqr::proto::_::_::{impl prost::message::Message for _}"
     - "spqr::proto::_::_::_::{impl prost::message::Message for _}"
@@ -78,6 +72,68 @@ tweaks:
         set_option linter.style.longLine false
         set_option linter.style.setOption false
         set_option linter.style.whitespace false
+
+    # Fix duplicate field name in ZeroablePrimitive: both Copy clauses get named markerCopyInst
+    # https://github.com/AeneasVerif/aeneas/issues/1051
+    - find: "(parentClauses := [\"markerCopyInst\", \"privateSealedInst\", \"markerCopyInst\"])"
+      replace: "(parentClauses := [\"markerCopyInst\", \"privateSealedInst\", \"markerCopyNonZeroInnerInst\"])"
+    # https://github.com/AeneasVerif/aeneas/issues/1051
+    - regex: "(privateSealedInst : core\\.num\\.nonzero\\.private\\.Sealed Self\\n)  markerCopyInst : core\\.marker\\.Copy Self_NonZeroInner"
+      replace: "$1  markerCopyNonZeroInnerInst : core.marker.Copy Self_NonZeroInner"
+
+    # Sorry BytesBufBuf instance body: remaining/chunk/advance are fields of Buf,
+    # so the self-referential struct literal causes termination errors.
+    # https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/102
+    - regex: "(def Shared0SliceU8\\.Insts\\.BytesBufBuf_implBuf[\\s\\S]*?):= \\{[\\s\\S]*?\\n\\}"
+      replace: "$1:= sorry"
+
+    # Sorry all prost Message instance bodies: method names are fields of prost.message.Message,
+    # so the self-referential struct literal causes termination errors.
+    # https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/102
+    - regex: "(def\\s+[\\w.]+\\.Insts\\.ProstMessageMessage[\\s\\S]*?):= \\{[\\s\\S]*?\\n\\}"
+      replace: "$1:= sorry"
+
+    # Sorry VecDeque IntoIter Iterator instance body: next/step_by/enumerate are fields of Iterator.
+    # https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/102
+    - regex: "(def\\s+alloc\\.collections\\.vec_deque\\.into_iter\\.IntoIter\\.Insts\\.CoreIterTraitsIteratorIterator[\\s\\S]*?):= \\{[\\s\\S]*?\\n\\}"
+      replace: "$1:= sorry"
+
+    # Sorry VecDeque FromIterator instance body: from_iter is a field of FromIterator.
+    # https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/102
+    - regex: "(def\\s+alloc\\.collections\\.vec_deque\\.VecDequeTGlobal\\.Insts\\.CoreIterTraitsCollectFromIterator[\\s\\S]*?):= \\{[\\s\\S]*?\\n\\}"
+      replace: "$1:= sorry"
+
+    # Sorry Result FromIterator instance body: from_iter is a field of FromIterator.
+    # https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/102
+    - regex: "(def\\s+core\\.result\\.Result\\.Insts\\.CoreIterTraitsCollectFromIteratorResult[\\s\\S]*?):= \\{[\\s\\S]*?\\n\\}"
+      replace: "$1:= sorry"
+
+    # Fix local variable `chain` shadowing module namespace `chain.Chain` in `send`.
+    # https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/101
+    - find: "let chain ←\n                    match val2.key with"
+      replace: "let chain' ←\n                    match val2.key with"
+    - find: "let chain ←\n                match val2.key with"
+      replace: "let chain' ←\n                match val2.key with"
+    - find: "chain.Chain.send_key chain i3"
+      replace: "chain.Chain.send_key chain' i3"
+    - find: "chain.Chain.send_key chain i1"
+      replace: "chain.Chain.send_key chain' i1"
+
+    # Fix local variable `chain` shadowing module namespace `chain.Chain` in `recv`.
+    # https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/101
+    - find: "let chain ←\n                            match val5.key with"
+      replace: "let chain' ←\n                            match val5.key with"
+    - find: "let chain ←\n                    match val3.key with"
+      replace: "let chain' ←\n                    match val3.key with"
+    - find: "chain.Chain.into_pb chain\n"
+      replace: "chain.Chain.into_pb chain'\n"
+    - find: "chain.Chain.recv_key chain msg_key_epoch index"
+      replace: "chain.Chain.recv_key chain' msg_key_epoch index"
+
+    # Fix local variable `v1` shadowing module namespace `v1.chunked.states` in `recv`.
+    # https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/101
+    - find: "let v1 := read_discriminant v\n      let i ← lift (IScalar.hcast .U8 v1)"
+      replace: "let v1' := read_discriminant v\n      let i ← lift (IScalar.hcast .U8 v1')"
 
     # Strip map field from Iterator instances (Aeneas generates it but Lean backend doesn't have it)
     # https://github.com/AeneasVerif/aeneas/issues/1043
