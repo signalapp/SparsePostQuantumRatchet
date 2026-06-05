@@ -216,6 +216,7 @@ pub fn parallel_mult(a: GF16, into: &mut [GF16]) {
 fn mul2_u16(a: u16, b1: u16, b2: u16) -> (u16, u16) {
     #[cfg(all(
         not(hax),
+        not(feature = "extraction"),
         any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
     ))]
     if check_accelerated::TOKEN.get() {

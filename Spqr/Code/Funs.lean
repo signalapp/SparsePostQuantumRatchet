@@ -6279,7 +6279,7 @@ def encoding.gf.GF16.Insts.CoreOpsArithSubShared0GF16GF16 : core.ops.arith.Sub
 }
 
 /-- [spqr::encoding::gf::reduce::reduce_from_byte]: loop body 0:
-    Source: 'src/encoding/gf.rs', lines 505:8-513:9 -/
+    Source: 'src/encoding/gf.rs', lines 506:8-514:9 -/
 @[rust_loop_body]
 def encoding.gf.reduce.reduce_from_byte_loop.body
   (a : Std.U8) (out : Std.U32) (i : Std.U32) :
@@ -6302,7 +6302,7 @@ def encoding.gf.reduce.reduce_from_byte_loop.body
   else ok (done out)
 
 /-- [spqr::encoding::gf::reduce::reduce_from_byte]: loop 0:
-    Source: 'src/encoding/gf.rs', lines 505:8-513:9 -/
+    Source: 'src/encoding/gf.rs', lines 506:8-514:9 -/
 @[rust_loop]
 def encoding.gf.reduce.reduce_from_byte_loop
   (a : Std.U8) (out : Std.U32) (i : Std.U32) : Result Std.U32 := do
@@ -6312,13 +6312,13 @@ def encoding.gf.reduce.reduce_from_byte_loop
     (a, out, i)
 
 /-- [spqr::encoding::gf::reduce::reduce_from_byte]:
-    Source: 'src/encoding/gf.rs', lines 502:4-515:5 -/
+    Source: 'src/encoding/gf.rs', lines 503:4-516:5 -/
 @[reducible]
 def encoding.gf.reduce.reduce_from_byte (a : Std.U8) : Result Std.U32 := do
   encoding.gf.reduce.reduce_from_byte_loop a 0#u32 8#u32
 
 /-- [spqr::encoding::gf::reduce::reduce_bytes]: loop body 0:
-    Source: 'src/encoding/gf.rs', lines 522:8-533:9 -/
+    Source: 'src/encoding/gf.rs', lines 523:8-534:9 -/
 @[rust_loop_body]
 def encoding.gf.reduce.reduce_bytes_loop.body
   (out : Array Std.U16 256#usize) (i : Std.Usize) :
@@ -6336,7 +6336,7 @@ def encoding.gf.reduce.reduce_bytes_loop.body
   else ok (done out)
 
 /-- [spqr::encoding::gf::reduce::reduce_bytes]: loop 0:
-    Source: 'src/encoding/gf.rs', lines 522:8-533:9 -/
+    Source: 'src/encoding/gf.rs', lines 523:8-534:9 -/
 @[rust_loop]
 def encoding.gf.reduce.reduce_bytes_loop
   (out : Array Std.U16 256#usize) (i : Std.Usize) :
@@ -6347,19 +6347,19 @@ def encoding.gf.reduce.reduce_bytes_loop
     (out, i)
 
 /-- [spqr::encoding::gf::reduce::reduce_bytes]:
-    Source: 'src/encoding/gf.rs', lines 519:4-535:5 -/
+    Source: 'src/encoding/gf.rs', lines 520:4-536:5 -/
 def encoding.gf.reduce.reduce_bytes : Result (Array Std.U16 256#usize) := do
   let out := Array.repeat 256#usize 0#u16
   encoding.gf.reduce.reduce_bytes_loop out 0#usize
 
 /-- [spqr::encoding::gf::reduce::REDUCE_BYTES]
-    Source: 'src/encoding/gf.rs', lines 537:4-537:52 -/
+    Source: 'src/encoding/gf.rs', lines 538:4-538:52 -/
 @[global_simps, irreducible]
 def encoding.gf.reduce.REDUCE_BYTES : Result (Array Std.U16 256#usize) :=
   encoding.gf.reduce.reduce_bytes
 
 /-- [spqr::encoding::gf::reduce::poly_reduce]:
-    Source: 'src/encoding/gf.rs', lines 489:4-498:5
+    Source: 'src/encoding/gf.rs', lines 490:4-499:5
     Visibility: public -/
 def encoding.gf.reduce.poly_reduce (v : Std.U32) : Result Std.U16 := do
   let i ← v >>> 24#i32
@@ -6378,7 +6378,7 @@ def encoding.gf.reduce.poly_reduce (v : Std.U32) : Result Std.U16 := do
   ok (UScalar.cast .U16 v2)
 
 /-- [spqr::encoding::gf::unaccelerated::poly_mul]: loop body 0:
-    Source: 'src/encoding/gf.rs', lines 394:8-425:9 -/
+    Source: 'src/encoding/gf.rs', lines 395:8-426:9 -/
 @[rust_loop_body]
 def encoding.gf.unaccelerated.poly_mul_loop.body
   (b : Std.U16) (me : Std.U32) (acc : Std.U32) (shift : Std.U32) :
@@ -6399,7 +6399,7 @@ def encoding.gf.unaccelerated.poly_mul_loop.body
   else ok (done acc)
 
 /-- [spqr::encoding::gf::unaccelerated::poly_mul]: loop 0:
-    Source: 'src/encoding/gf.rs', lines 394:8-425:9 -/
+    Source: 'src/encoding/gf.rs', lines 395:8-426:9 -/
 @[rust_loop]
 def encoding.gf.unaccelerated.poly_mul_loop
   (b : Std.U16) (acc : Std.U32) (me : Std.U32) (shift : Std.U32) :
@@ -6411,14 +6411,14 @@ def encoding.gf.unaccelerated.poly_mul_loop
     (acc, shift)
 
 /-- [spqr::encoding::gf::unaccelerated::poly_mul]:
-    Source: 'src/encoding/gf.rs', lines 381:4-427:5 -/
+    Source: 'src/encoding/gf.rs', lines 382:4-428:5 -/
 def encoding.gf.unaccelerated.poly_mul
   (a : Std.U16) (b : Std.U16) : Result Std.U32 := do
   let me ← lift (UScalar.cast .U32 a)
   encoding.gf.unaccelerated.poly_mul_loop b 0#u32 me 0#u32
 
 /-- [spqr::encoding::gf::unaccelerated::mul]:
-    Source: 'src/encoding/gf.rs', lines 444:4-446:5
+    Source: 'src/encoding/gf.rs', lines 445:4-447:5
     Visibility: public -/
 def encoding.gf.unaccelerated.mul
   (a : Std.U16) (b : Std.U16) : Result Std.U16 := do
@@ -6496,7 +6496,7 @@ def encoding.gf.GF16.Insts.CoreOpsArithMulShared0GF16GF16 : core.ops.arith.Mul
 }
 
 /-- [spqr::encoding::gf::{spqr::encoding::gf::GF16}::div_impl]: loop body 0:
-    Source: 'src/encoding/gf.rs', lines 553:8-556:9 -/
+    Source: 'src/encoding/gf.rs', lines 554:8-557:9 -/
 @[rust_loop_body]
 def encoding.gf.GF16.div_impl_loop.body
   (iter : core.ops.range.Range Std.I32) (square : encoding.gf.GF16)
@@ -6516,7 +6516,7 @@ def encoding.gf.GF16.div_impl_loop.body
     ok (cont (iter1, square1, out1))
 
 /-- [spqr::encoding::gf::{spqr::encoding::gf::GF16}::div_impl]: loop 0:
-    Source: 'src/encoding/gf.rs', lines 553:8-556:9 -/
+    Source: 'src/encoding/gf.rs', lines 554:8-557:9 -/
 @[rust_loop]
 def encoding.gf.GF16.div_impl_loop
   (iter : core.ops.range.Range Std.I32) (square : encoding.gf.GF16)
@@ -6529,7 +6529,7 @@ def encoding.gf.GF16.div_impl_loop
     (iter, square, out)
 
 /-- [spqr::encoding::gf::{spqr::encoding::gf::GF16}::div_impl]:
-    Source: 'src/encoding/gf.rs', lines 548:4-558:5 -/
+    Source: 'src/encoding/gf.rs', lines 549:4-559:5 -/
 def encoding.gf.GF16.div_impl
   (self : encoding.gf.GF16) (other : encoding.gf.GF16) :
   Result encoding.gf.GF16
@@ -6607,6 +6607,16 @@ def encoding.gf.GF16.Insts.CoreOpsArithDivShared0GF16GF16 : core.ops.arith.Div
   div := encoding.gf.GF16.Insts.CoreOpsArithDivShared0GF16GF16.div
 }
 
+/-- [spqr::encoding::gf::mul2_u16]:
+    Source: 'src/encoding/gf.rs', lines 216:0-226:1 -/
+def encoding.gf.mul2_u16
+  (a : Std.U16) (b1 : Std.U16) (b2 : Std.U16) :
+  Result (Std.U16 × Std.U16)
+  := do
+  let i ← encoding.gf.unaccelerated.mul a b1
+  let i1 ← encoding.gf.unaccelerated.mul a b2
+  ok (i, i1)
+
 /-- [spqr::encoding::gf::parallel_mult]: loop body 0:
     Source: 'src/encoding/gf.rs', lines 205:4-210:5
     Visibility: public -/
@@ -6658,7 +6668,7 @@ def encoding.gf.parallel_mult
   else ok into1
 
 /-- [spqr::encoding::gf::unaccelerated::mul2]:
-    Source: 'src/encoding/gf.rs', lines 436:4-438:5
+    Source: 'src/encoding/gf.rs', lines 437:4-439:5
     Visibility: public -/
 def encoding.gf.unaccelerated.mul2
   (a : Std.U16) (b1 : Std.U16) (b2 : Std.U16) :
@@ -6669,25 +6679,25 @@ def encoding.gf.unaccelerated.mul2
   ok (i, i1)
 
 /-- [spqr::encoding::gf::{spqr::encoding::gf::GF16}::ZERO]
-    Source: 'src/encoding/gf.rs', lines 541:4-541:45
+    Source: 'src/encoding/gf.rs', lines 542:4-542:45
     Visibility: public -/
 @[global_simps, irreducible]
 def encoding.gf.GF16.ZERO : encoding.gf.GF16 := { value := 0#u16 }
 
 /-- [spqr::encoding::gf::{spqr::encoding::gf::GF16}::ONE]
-    Source: 'src/encoding/gf.rs', lines 542:4-542:44
+    Source: 'src/encoding/gf.rs', lines 543:4-543:44
     Visibility: public -/
 @[global_simps, irreducible]
 def encoding.gf.GF16.ONE : encoding.gf.GF16 := { value := 1#u16 }
 
 /-- [spqr::encoding::gf::{spqr::encoding::gf::GF16}::new]:
-    Source: 'src/encoding/gf.rs', lines 544:4-546:5
+    Source: 'src/encoding/gf.rs', lines 545:4-547:5
     Visibility: public -/
 def encoding.gf.GF16.new (value : Std.U16) : Result encoding.gf.GF16 := do
   ok { value }
 
 /-- [spqr::encoding::gf::{spqr::encoding::gf::GF16}::const_mul]:
-    Source: 'src/encoding/gf.rs', lines 560:4-564:5
+    Source: 'src/encoding/gf.rs', lines 561:4-565:5
     Visibility: public -/
 def encoding.gf.GF16.const_mul
   (self : encoding.gf.GF16) (other : encoding.gf.GF16) :
@@ -6697,7 +6707,7 @@ def encoding.gf.GF16.const_mul
   ok { value := i }
 
 /-- [spqr::encoding::gf::{spqr::encoding::gf::GF16}::const_sub]:
-    Source: 'src/encoding/gf.rs', lines 566:4-570:5
+    Source: 'src/encoding/gf.rs', lines 567:4-571:5
     Visibility: public -/
 def encoding.gf.GF16.const_sub
   (self : encoding.gf.GF16) (other : encoding.gf.GF16) :
@@ -6707,7 +6717,7 @@ def encoding.gf.GF16.const_sub
   ok { value := i }
 
 /-- [spqr::encoding::gf::{spqr::encoding::gf::GF16}::const_div]: loop body 0:
-    Source: 'src/encoding/gf.rs', lines 580:12-586:13
+    Source: 'src/encoding/gf.rs', lines 581:12-587:13
     Visibility: public -/
 @[rust_loop_body]
 def encoding.gf.GF16.const_div_loop.body
@@ -6724,7 +6734,7 @@ def encoding.gf.GF16.const_div_loop.body
   else ok (done out)
 
 /-- [spqr::encoding::gf::{spqr::encoding::gf::GF16}::const_div]: loop 0:
-    Source: 'src/encoding/gf.rs', lines 580:12-586:13
+    Source: 'src/encoding/gf.rs', lines 581:12-587:13
     Visibility: public -/
 @[rust_loop]
 def encoding.gf.GF16.const_div_loop
@@ -6737,7 +6747,7 @@ def encoding.gf.GF16.const_div_loop
     (square, out, i)
 
 /-- [spqr::encoding::gf::{spqr::encoding::gf::GF16}::const_div]:
-    Source: 'src/encoding/gf.rs', lines 572:4-589:5
+    Source: 'src/encoding/gf.rs', lines 573:4-590:5
     Visibility: public -/
 @[reducible]
 def encoding.gf.GF16.const_div
