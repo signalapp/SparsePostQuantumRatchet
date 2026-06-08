@@ -35,9 +35,21 @@ axiom core.array.from_fn
 
 /-- [core::borrow::{core::borrow::Borrow<T> for &0 (T)}::borrow]:
     Source: '/rustc/library/core/src/borrow.rs', lines 230:4-230:26
-    Name pattern: [core::borrow::{core::borrow::Borrow<&'0 @T, @T>}::borrow] -/
+    Name pattern: [core::borrow::{core::borrow::Borrow<&'0 @T, @T>}::borrow]
+
+    Concrete model of Rust's `Borrow::borrow` for a shared reference `&T`:
+    borrowing simply returns the value unchanged.  The outer `Result` is
+    always `ok` (the call never panics). -/
 @[rust_fun "core::borrow::{core::borrow::Borrow<&'0 @T, @T>}::borrow"]
-axiom Shared0T.Insts.CoreBorrowBorrow.borrow {T : Type} : T → Result T
+def Shared0T.Insts.CoreBorrowBorrow.borrow {T : Type} : T → Result T :=
+  fun x => ok x
+
+/-- **Spec theorem for `Borrow<&T>::borrow`**: borrowing returns the value unchanged. -/
+@[step]
+private theorem Shared0T_borrow_spec {T : Type} (x : T) :
+    Shared0T.Insts.CoreBorrowBorrow.borrow x ⦃ result => result = x ⦄ := by
+  unfold Shared0T.Insts.CoreBorrowBorrow.borrow
+  simp
 
 /-- [core::convert::num::{core::convert::TryFrom<u64, core::num::error::TryFromIntError> for u32}::try_from]:
     Source: '/rustc/library/core/src/convert/num.rs', lines 294:12-294:64
