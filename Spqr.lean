@@ -37,6 +37,7 @@ import Spqr.Specs.Encoding.Gf.Reduce.ReduceFromByte
 import Spqr.Specs.Encoding.Gf.Unaccelerated.Mul
 import Spqr.Specs.Encoding.Gf.Unaccelerated.Mul2
 import Spqr.Specs.Encoding.Gf.Unaccelerated.PolyMul
+import Spqr.Specs.Encoding.Polynomial.MAX_INTERMEDIATE_POLYNOMIAL_DEGREE_V1
 import Spqr.Specs.Encoding.Polynomial.Poly.Zero
 import Spqr.Specs.Encoding.Polynomial.Pt.Deserialize
 import Spqr.Specs.Encoding.Polynomial.Pt.Serialize
