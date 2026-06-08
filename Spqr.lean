@@ -9,6 +9,8 @@ import Spqr.Math.Gf16.Field
 import Spqr.Math.Gf16.Irreducible
 import Spqr.Math.Gf2Poly.Basic
 import Spqr.Math.Gf2Poly.NatRep
+import Spqr.Math.Poly.Basic.Defs
+import Spqr.Math.Poly.Basic.Zero
 import Spqr.Math.Poly.ModByMonic
 import Spqr.Specs.Encoding.Gf.GF16.Add
 import Spqr.Specs.Encoding.Gf.GF16.AddAssign
@@ -35,5 +37,6 @@ import Spqr.Specs.Encoding.Gf.Reduce.ReduceFromByte
 import Spqr.Specs.Encoding.Gf.Unaccelerated.Mul
 import Spqr.Specs.Encoding.Gf.Unaccelerated.Mul2
 import Spqr.Specs.Encoding.Gf.Unaccelerated.PolyMul
+import Spqr.Specs.Encoding.Polynomial.Poly.Zero
 import Spqr.Specs.Encoding.Polynomial.Pt.Deserialize
 import Spqr.Specs.Encoding.Polynomial.Pt.Serialize
