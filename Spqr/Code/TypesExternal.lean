@@ -19,6 +19,14 @@ set_option maxHeartbeats 1000000
 @[rust_type "core::num::error::TryFromIntError"]
 axiom core.num.error.TryFromIntError : Type
 
+/-- A distinguished inhabitant of `core::num::error::TryFromIntError`.
+
+    In Rust `TryFromIntError` is a zero-sized struct (a single, fieldless
+    constructor), so postulating one inhabitant of the opaque type is sound.  It
+    is needed so that fallible integer conversions (e.g. `u64 → u32`) can produce
+    a concrete error value on the overflow branch. -/
+axiom core.num.error.TryFromIntError.error : core.num.error.TryFromIntError
+
 /-- [alloc::collections::vec_deque::into_iter::IntoIter]
     Source: '/rustc/library/alloc/src/collections/vec_deque/into_iter.rs', lines 18:0-21:1
     Name pattern: [alloc::collections::vec_deque::into_iter::IntoIter] -/
