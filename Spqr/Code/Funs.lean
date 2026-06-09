@@ -165,7 +165,7 @@ def
   (alloc.collections.vec_deque.into_iter.IntoIter T A) T := sorry
 
 /-- Trait implementation: [alloc::collections::vec_deque::{impl core::iter::traits::collect::FromIterator<T> for alloc::collections::vec_deque::VecDeque<T, alloc::alloc::Global>}]
-    Source: '/rustc/library/alloc/src/collections/vec_deque/mod.rs', lines 3826:0-3826:39
+    Source: '/rustc/library/alloc/src/collections/vec_deque/mod.rs', lines 3824:0-3824:39
     Name pattern: [core::iter::traits::collect::FromIterator<alloc::collections::vec_deque::VecDeque<@T, alloc::alloc::Global>, @T>] -/
 @[reducible, rust_trait_impl
   "core::iter::traits::collect::FromIterator<alloc::collections::vec_deque::VecDeque<@T, alloc::alloc::Global>, @T>"]

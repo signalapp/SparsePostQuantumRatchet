@@ -12,7 +12,7 @@ maxRecDepth = 10000
 name = "aeneas"
 git = "https://github.com/AeneasVerif/aeneas.git"
 subDir = "backends/lean"
-rev = "ac9f1bc5"
+rev = "39c6a720"
 
 [[lean_lib]]
 name = "Spqr"
