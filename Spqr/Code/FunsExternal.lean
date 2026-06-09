@@ -229,14 +229,33 @@ axiom core.ops.range.RangeFrom.Insts.CoreOpsRangeRangeBounds.start_bound
     Source: '/rustc/library/core/src/option.rs', lines 744:4-744:44
     Name pattern: [core::option::{core::option::Option<@T>}::as_ref] -/
 @[rust_fun "core::option::{core::option::Option<@T>}::as_ref"]
-axiom core.option.Option.as_ref {T : Type} : Option T → Result (Option T)
+def core.option.Option.as_ref {T : Type} : Option T → Result (Option T) :=
+  fun o => ok o
+
+/-- **Spec theorem for `Option::as_ref`**: references are transparent in the Lean
+model, so `as_ref` is the identity. -/
+@[step]
+theorem core.option.Option.as_ref_spec {T : Type} (o : Option T) :
+    core.option.Option.as_ref o ⦃ r => r = o ⦄ := by
+  simp [core.option.Option.as_ref]
 
 /-- [core::option::{core::option::Option<T>}::ok_or]:
     Source: '/rustc/library/core/src/option.rs', lines 1337:4-1337:73
     Name pattern: [core::option::{core::option::Option<@T>}::ok_or] -/
 @[rust_fun "core::option::{core::option::Option<@T>}::ok_or"]
-axiom core.option.Option.ok_or
-  {T : Type} {E : Type} : Option T → E → Result (core.result.Result T E)
+def core.option.Option.ok_or
+  {T : Type} {E : Type} : Option T → E → Result (core.result.Result T E) :=
+  fun o e =>
+    match o with
+    | some v => ok (.Ok v)
+    | none => ok (.Err e)
+
+/-- **Spec theorem for `Option::ok_or`**: `some v` becomes `Ok v`; `none` becomes
+`Err e`. -/
+@[step]
+theorem core.option.Option.ok_or_spec {T E : Type} (o : Option T) (e : E) :
+    core.option.Option.ok_or o e ⦃ r => r = o.elim (.Err e) .Ok ⦄ := by
+  rcases o with _ | v <;> simp [core.option.Option.ok_or]
 
 /-- [core::option::{core::clone::Clone for core::option::Option<T>}::clone]:
     Source: '/rustc/library/core/src/option.rs', lines 2261:4-2261:27
@@ -260,9 +279,27 @@ axiom core.option.Option.Insts.CoreDefaultDefault.default
     Name pattern: [core::option::{core::cmp::PartialEq<core::option::Option<@T>, core::option::Option<@T>>}::eq] -/
 @[rust_fun
   "core::option::{core::cmp::PartialEq<core::option::Option<@T>, core::option::Option<@T>>}::eq"]
-axiom core.option.Option.Insts.CoreCmpPartialEqOption.eq
+def core.option.Option.Insts.CoreCmpPartialEqOption.eq
   {T : Type} (cmpPartialEqInst : core.cmp.PartialEq T T) :
-  Option T → Option T → Result Bool
+  Option T → Option T → Result Bool :=
+  fun o1 o2 =>
+    match o1, o2 with
+    | some a, some b => cmpPartialEqInst.eq a b
+    | none, none => ok true
+    | _, _ => ok false
+
+/-- **Spec theorem for `PartialEq::eq` on `Option<T>`**: structural equality —
+`none = none` is `true`, a `some`/`none` mismatch is `false`, and `some a = some b`
+delegates to the element instance `cmpPartialEqInst.eq a b`. -/
+@[simp]
+theorem core.option.Option.Insts.CoreCmpPartialEqOption.eq_eq
+    {T : Type} (cmpPartialEqInst : core.cmp.PartialEq T T) (o1 o2 : Option T) :
+    core.option.Option.Insts.CoreCmpPartialEqOption.eq cmpPartialEqInst o1 o2 =
+      match o1, o2 with
+      | some a, some b => cmpPartialEqInst.eq a b
+      | none, none => ok true
+      | _, _ => ok false := by
+  rfl
 
 /-- [core::result::{core::result::Result<T, E>}::is_ok]:
     Source: '/rustc/library/core/src/result.rs', lines 593:4-593:37
