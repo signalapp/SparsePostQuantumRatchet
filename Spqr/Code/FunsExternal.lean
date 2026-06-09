@@ -305,8 +305,19 @@ theorem core.option.Option.Insts.CoreCmpPartialEqOption.eq_eq
     Source: '/rustc/library/core/src/result.rs', lines 593:4-593:37
     Name pattern: [core::result::{core::result::Result<@T, @E>}::is_ok] -/
 @[rust_fun "core::result::{core::result::Result<@T, @E>}::is_ok"]
-axiom core.result.Result.is_ok
-  {T : Type} {E : Type} : core.result.Result T E → Result Bool
+def core.result.Result.is_ok
+  {T : Type} {E : Type} : core.result.Result T E → Result Bool :=
+  fun r =>
+    match r with
+    | .Ok _ => ok true
+    | .Err _ => ok false
+
+/-- **Spec theorem for `Result::is_ok`**: `true` on `Ok`, `false` on `Err`. -/
+@[step]
+theorem core.result.Result.is_ok_spec {T E : Type} (r : core.result.Result T E) :
+    core.result.Result.is_ok r ⦃ b =>
+      b = match r with | .Ok _ => true | .Err _ => false ⦄ := by
+  rcases r with v | e <;> simp [core.result.Result.is_ok]
 
 /-- [core::result::{core::result::Result<T, E>}::map]:
     Source: '/rustc/library/core/src/result.rs', lines 831:4-833:53
@@ -321,38 +332,103 @@ axiom core.result.Result.map
     Source: '/rustc/library/core/src/result.rs', lines 962:4-964:53
     Name pattern: [core::result::{core::result::Result<@T, @E>}::map_err] -/
 @[rust_fun "core::result::{core::result::Result<@T, @E>}::map_err"]
-axiom core.result.Result.map_err
+def core.result.Result.map_err
   {T : Type} {E : Type} {F : Type} {O : Type} (opsfunctionFnOnceOTupleEFInst :
   core.ops.function.FnOnce O E F) :
-  core.result.Result T E → O → Result (core.result.Result T F)
+  core.result.Result T E → O → Result (core.result.Result T F) :=
+  fun r op =>
+    match r with
+    | .Ok v => ok (.Ok v)
+    | .Err e => do
+      let f ← opsfunctionFnOnceOTupleEFInst.call_once op e
+      ok (.Err f)
+
+/-- **Spec theorems for `Result::map_err`**: `Ok` is unchanged; `Err e` applies the
+closure to `e` via `FnOnce::call_once`. The `Err` behaviour is definitional in the
+closure, so these are stated as unfolding lemmas on the constructors. -/
+@[simp]
+theorem core.result.Result.map_err_Ok
+    {T E F O : Type} (inst : core.ops.function.FnOnce O E F) (v : T) (op : O) :
+    core.result.Result.map_err inst (.Ok v) op = ok (.Ok v) := rfl
+
+@[simp]
+theorem core.result.Result.map_err_Err
+    {T E F O : Type} (inst : core.ops.function.FnOnce O E F) (e : E) (op : O) :
+    core.result.Result.map_err (T := T) inst (.Err e) op =
+      (do let f ← inst.call_once op e; ok (.Err f)) := rfl
 
 /-- [core::result::{core::result::Result<T, E>}::unwrap_or]:
     Source: '/rustc/library/core/src/result.rs', lines 1590:4-1593:28
     Name pattern: [core::result::{core::result::Result<@T, @E>}::unwrap_or] -/
 @[rust_fun "core::result::{core::result::Result<@T, @E>}::unwrap_or"]
-axiom core.result.Result.unwrap_or
-  {T : Type} {E : Type} : core.result.Result T E → T → Result T
+def core.result.Result.unwrap_or
+  {T : Type} {E : Type} : core.result.Result T E → T → Result T :=
+  fun r default =>
+    match r with
+    | .Ok v => ok v
+    | .Err _ => ok default
+
+/-- **Spec theorem for `Result::unwrap_or`**: returns the `Ok` payload, or the
+supplied default on `Err`. -/
+@[step]
+theorem core.result.Result.unwrap_or_spec {T E : Type}
+    (r : core.result.Result T E) (default : T) :
+    core.result.Result.unwrap_or r default ⦃ x =>
+      x = match r with | .Ok v => v | .Err _ => default ⦄ := by
+  rcases r with v | e <;> simp [core.result.Result.unwrap_or]
 
 /-- [core::result::{core::ops::try_trait::Try<T, core::result::Result<core::convert::Infallible, E>> for core::result::Result<T, E>}::branch]:
     Source: '/rustc/library/core/src/result.rs', lines 2172:4-2172:64
     Name pattern: [core::result::{core::ops::try_trait::Try<core::result::Result<@T, @E>, @T, core::result::Result<core::convert::Infallible, @E>>}::branch] -/
 @[rust_fun
   "core::result::{core::ops::try_trait::Try<core::result::Result<@T, @E>, @T, core::result::Result<core::convert::Infallible, @E>>}::branch"]
-axiom core.result.Result.Insts.CoreOpsTry_traitTry.branch
+def core.result.Result.Insts.CoreOpsTry_traitTry.branch
   {T : Type} {E : Type} :
   core.result.Result T E → Result (core.ops.control_flow.ControlFlow
-    (core.result.Result core.convert.Infallible E) T)
+    (core.result.Result core.convert.Infallible E) T) :=
+  fun r =>
+    match r with
+    | .Ok v => ok (.Continue v)
+    | .Err e => ok (.Break (.Err e))
+
+/-- **Spec theorem for `Try::branch` on `Result`** (the desugaring of `?`):
+`Ok v` continues with `v`; `Err e` breaks with the residual `Err e`. -/
+@[step]
+theorem core.result.Result.Insts.CoreOpsTry_traitTry.branch_spec
+    {T E : Type} (r : core.result.Result T E) :
+    core.result.Result.Insts.CoreOpsTry_traitTry.branch r ⦃ cf =>
+      cf = match r with
+        | .Ok v => .Continue v
+        | .Err e => .Break (.Err e) ⦄ := by
+  rcases r with v | e <;> simp [core.result.Result.Insts.CoreOpsTry_traitTry.branch]
 
 /-- [core::result::{core::ops::try_trait::FromResidual<core::result::Result<core::convert::Infallible, E>> for core::result::Result<T, F>}::from_residual]:
     Source: '/rustc/library/core/src/result.rs', lines 2187:4-2187:70
     Name pattern: [core::result::{core::ops::try_trait::FromResidual<core::result::Result<@T, @F>, core::result::Result<core::convert::Infallible, @E>>}::from_residual] -/
 @[rust_fun
   "core::result::{core::ops::try_trait::FromResidual<core::result::Result<@T, @F>, core::result::Result<core::convert::Infallible, @E>>}::from_residual"]
-axiom
+def
   core.result.Result.Insts.CoreOpsTry_traitFromResidualResultInfallibleE.from_residual
   (T : Type) {E : Type} {F : Type} (convertFromInst : core.convert.From F E) :
   core.result.Result core.convert.Infallible E → Result (core.result.Result T
-    F)
+    F) :=
+  fun r =>
+    match r with
+    | .Err e => do
+      let f ← convertFromInst.from_ e
+      ok (.Err f)
+    | .Ok x => nomatch x
+
+/-- **Spec theorem for `FromResidual::from_residual` on `Result`** (part of the `?`
+desugaring): the residual is always `Err e` (the `Ok` payload is `Infallible`), and
+the error is converted via the `From` instance. Stated as an unfolding lemma since
+the conversion is definitional in the instance. -/
+@[simp]
+theorem core.result.Result.Insts.CoreOpsTry_traitFromResidualResultInfallibleE.from_residual_Err
+    (T : Type) {E F : Type} (convertFromInst : core.convert.From F E) (e : E) :
+    core.result.Result.Insts.CoreOpsTry_traitFromResidualResultInfallibleE.from_residual
+      T convertFromInst (.Err e) =
+      (do let f ← convertFromInst.from_ e; ok (.Err f)) := rfl
 
 /-- [core::slice::cmp::{core::cmp::Ord for [T]}::cmp]:
     Source: '/rustc/library/core/src/slice/cmp.rs', lines 37:4-37:42
