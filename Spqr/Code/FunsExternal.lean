@@ -214,16 +214,36 @@ axiom I32.Insts.CoreIterRangeStep.steps_between
     Name pattern: [core::ops::range::{core::ops::range::RangeBounds<core::ops::range::RangeFrom<@T>, @T>}::end_bound] -/
 @[rust_fun
   "core::ops::range::{core::ops::range::RangeBounds<core::ops::range::RangeFrom<@T>, @T>}::end_bound"]
-axiom core.ops.range.RangeFrom.Insts.CoreOpsRangeRangeBounds.end_bound
-  {T : Type} : core.ops.range.RangeFrom T → Result (core.ops.range.Bound T)
+def core.ops.range.RangeFrom.Insts.CoreOpsRangeRangeBounds.end_bound
+  {T : Type} : core.ops.range.RangeFrom T → Result (core.ops.range.Bound T) :=
+  fun _ => ok .Unbounded
+
+/-- **Spec theorem for `RangeBounds<RangeFrom>::end_bound`**: a `start..` range is
+unbounded above. -/
+@[step]
+theorem core.ops.range.RangeFrom.Insts.CoreOpsRangeRangeBounds.end_bound_spec
+    {T : Type} (rf : core.ops.range.RangeFrom T) :
+    core.ops.range.RangeFrom.Insts.CoreOpsRangeRangeBounds.end_bound rf
+      ⦃ b => b = .Unbounded ⦄ := by
+  simp [core.ops.range.RangeFrom.Insts.CoreOpsRangeRangeBounds.end_bound]
 
 /-- [core::ops::range::{core::ops::range::RangeBounds<T> for core::ops::range::RangeFrom<T>}::start_bound]:
     Source: '/rustc/library/core/src/ops/range.rs', lines 1068:4-1068:38
     Name pattern: [core::ops::range::{core::ops::range::RangeBounds<core::ops::range::RangeFrom<@T>, @T>}::start_bound] -/
 @[rust_fun
   "core::ops::range::{core::ops::range::RangeBounds<core::ops::range::RangeFrom<@T>, @T>}::start_bound"]
-axiom core.ops.range.RangeFrom.Insts.CoreOpsRangeRangeBounds.start_bound
-  {T : Type} : core.ops.range.RangeFrom T → Result (core.ops.range.Bound T)
+def core.ops.range.RangeFrom.Insts.CoreOpsRangeRangeBounds.start_bound
+  {T : Type} : core.ops.range.RangeFrom T → Result (core.ops.range.Bound T) :=
+  fun rf => ok (.Included rf.start)
+
+/-- **Spec theorem for `RangeBounds<RangeFrom>::start_bound`**: a `start..` range is
+bounded below, inclusively, by `start`. -/
+@[step]
+theorem core.ops.range.RangeFrom.Insts.CoreOpsRangeRangeBounds.start_bound_spec
+    {T : Type} (rf : core.ops.range.RangeFrom T) :
+    core.ops.range.RangeFrom.Insts.CoreOpsRangeRangeBounds.start_bound rf
+      ⦃ b => b = .Included rf.start ⦄ := by
+  simp [core.ops.range.RangeFrom.Insts.CoreOpsRangeRangeBounds.start_bound]
 
 /-- [core::option::{core::option::Option<T>}::as_ref]:
     Source: '/rustc/library/core/src/option.rs', lines 744:4-744:44
@@ -443,11 +463,21 @@ axiom Slice.Insts.CoreCmpOrd.cmp
     Name pattern: [core::slice::index::{core::slice::index::SliceIndex<core::ops::range::RangeFull, [@T], [@T]>}::index_mut] -/
 @[rust_fun
   "core::slice::index::{core::slice::index::SliceIndex<core::ops::range::RangeFull, [@T], [@T]>}::index_mut"]
-axiom
+def
   core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.index_mut
   {T : Type} :
   core.ops.range.RangeFull → Slice T → Result ((Slice T) × (Slice T →
-    Slice T))
+    Slice T)) :=
+  fun _ s => ok (s, fun s' => s')
+
+/-- **Spec theorem for `SliceIndex<RangeFull>::index_mut`**: the whole-slice
+mutable borrow returns the slice unchanged with an identity write-back. -/
+@[step]
+theorem core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.index_mut_spec
+    {T : Type} (r : core.ops.range.RangeFull) (s : Slice T) :
+    core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.index_mut r s
+      ⦃ (s', back) => s' = s ∧ ∀ x, back x = x ⦄ := by
+  simp [core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.index_mut]
 
 /-- [core::slice::index::{core::slice::index::SliceIndex<[T], [T]> for core::ops::range::RangeFull}::index]:
     Source: '/rustc/library/core/src/slice/index.rs', lines 655:4-655:39
@@ -457,6 +487,15 @@ axiom
 def core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.index
   {T : Type} : core.ops.range.RangeFull → Slice T → Result (Slice T) :=
   fun _ s => ok s
+
+/-- **Spec theorem for `SliceIndex<RangeFull>::index`**: indexing by `..` returns
+the whole slice unchanged. -/
+@[step]
+theorem core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.index_spec
+    {T : Type} (r : core.ops.range.RangeFull) (s : Slice T) :
+    core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.index r s
+      ⦃ r' => r' = s ⦄ := by
+  simp [core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.index]
 
 /-- [core::slice::index::{core::slice::index::SliceIndex<[T], [T]> for core::ops::range::RangeFull}::get_unchecked_mut]:
     Source: '/rustc/library/core/src/slice/index.rs', lines 650:4-650:66
@@ -485,19 +524,40 @@ axiom
     Name pattern: [core::slice::index::{core::slice::index::SliceIndex<core::ops::range::RangeFull, [@T], [@T]>}::get_mut] -/
 @[rust_fun
   "core::slice::index::{core::slice::index::SliceIndex<core::ops::range::RangeFull, [@T], [@T]>}::get_mut"]
-axiom core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.get_mut
+def core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.get_mut
   {T : Type} :
   core.ops.range.RangeFull → Slice T → Result ((Option (Slice T)) ×
-    (Option (Slice T) → Slice T))
+    (Option (Slice T) → Slice T)) :=
+  fun _ s => ok (some s, fun o => o.getD s)
+
+/-- **Spec theorem for `SliceIndex<RangeFull>::get_mut`**: the whole slice is always
+in bounds, so this returns `some s` plus a write-back that installs the new slice
+(keeping the original when given `none`). -/
+@[step]
+theorem core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.get_mut_spec
+    {T : Type} (r : core.ops.range.RangeFull) (s : Slice T) :
+    core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.get_mut r s
+      ⦃ (o, back) => o = some s ∧ ∀ x, back x = x.getD s ⦄ := by
+  simp [core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.get_mut]
 
 /-- [core::slice::index::{core::slice::index::SliceIndex<[T], [T]> for core::ops::range::RangeFull}::get]:
     Source: '/rustc/library/core/src/slice/index.rs', lines 635:4-635:45
     Name pattern: [core::slice::index::{core::slice::index::SliceIndex<core::ops::range::RangeFull, [@T], [@T]>}::get] -/
 @[rust_fun
   "core::slice::index::{core::slice::index::SliceIndex<core::ops::range::RangeFull, [@T], [@T]>}::get"]
-axiom core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.get
+def core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.get
   {T : Type} :
-  core.ops.range.RangeFull → Slice T → Result (Option (Slice T))
+  core.ops.range.RangeFull → Slice T → Result (Option (Slice T)) :=
+  fun _ s => ok (some s)
+
+/-- **Spec theorem for `SliceIndex<RangeFull>::get`**: the whole slice is always in
+bounds, so `get` by `..` returns `some s`. -/
+@[step]
+theorem core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.get_spec
+    {T : Type} (r : core.ops.range.RangeFull) (s : Slice T) :
+    core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.get r s
+      ⦃ o => o = some s ⦄ := by
+  simp [core.ops.range.RangeFull.Insts.CoreSliceIndexSliceIndexSliceSlice.get]
 
 /-- [core::slice::iter::{core::iter::traits::iterator::Iterator<&'a (T)> for core::slice::iter::Iter<'a, T>}::map]:
     Source: '/rustc/library/core/src/slice/iter/macros.rs', lines 153:8-153:45
