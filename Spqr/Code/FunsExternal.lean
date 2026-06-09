@@ -536,64 +536,160 @@ axiom Str.Insts.AllocBorrowToOwnedString.to_owned : Str → Result String
     Source: '/rustc/library/alloc/src/vec/mod.rs', lines 1696:4-1696:42
     Name pattern: [alloc::vec::{alloc::vec::Vec<@T>}::truncate] -/
 @[rust_fun "alloc::vec::{alloc::vec::Vec<@T>}::truncate"]
-axiom alloc.vec.Vec.truncate
+def alloc.vec.Vec.truncate
   {T : Type} (A : Type) :
-  alloc.vec.Vec T → Std.Usize → Result (alloc.vec.Vec T)
+  alloc.vec.Vec T → Std.Usize → Result (alloc.vec.Vec T) :=
+  fun v n => ok ⟨v.val.take n.val, by
+    have := v.property; simp only [List.length_take]; omega⟩
+
+/-- **Spec theorem for `Vec::truncate`**: keeps the first `n` elements. -/
+@[step]
+theorem alloc.vec.Vec.truncate_spec
+    {T : Type} (A : Type) (v : alloc.vec.Vec T) (n : Std.Usize) :
+    alloc.vec.Vec.truncate A v n ⦃ nv => nv.val = v.val.take n.val ⦄ := by
+  simp [alloc.vec.Vec.truncate]
 
 /-- [alloc::vec::{alloc::vec::Vec<T>}::as_slice]:
     Source: '/rustc/library/alloc/src/vec/mod.rs', lines 1733:4-1733:40
     Name pattern: [alloc::vec::{alloc::vec::Vec<@T>}::as_slice] -/
 @[rust_fun "alloc::vec::{alloc::vec::Vec<@T>}::as_slice"]
-axiom alloc.vec.Vec.as_slice
-  {T : Type} (A : Type) : alloc.vec.Vec T → Result (Slice T)
+def alloc.vec.Vec.as_slice
+  {T : Type} (A : Type) : alloc.vec.Vec T → Result (Slice T) :=
+  fun v => ok ⟨v.val, v.property⟩
+
+/-- **Spec theorem for `Vec::as_slice`**: the slice view shares the vector's
+elements. -/
+@[step]
+theorem alloc.vec.Vec.as_slice_spec
+    {T : Type} (A : Type) (v : alloc.vec.Vec T) :
+    alloc.vec.Vec.as_slice A v ⦃ s => s.val = v.val ⦄ := by
+  simp [alloc.vec.Vec.as_slice]
 
 /-- [alloc::vec::{alloc::vec::Vec<T>}::remove]:
     Source: '/rustc/library/alloc/src/vec/mod.rs', lines 2276:4-2276:47
     Name pattern: [alloc::vec::{alloc::vec::Vec<@T>}::remove] -/
 @[rust_fun "alloc::vec::{alloc::vec::Vec<@T>}::remove"]
-axiom alloc.vec.Vec.remove
+def alloc.vec.Vec.remove
   {T : Type} (A : Type) :
-  alloc.vec.Vec T → Std.Usize → Result (T × (alloc.vec.Vec T))
+  alloc.vec.Vec T → Std.Usize → Result (T × (alloc.vec.Vec T)) :=
+  fun v i =>
+    if h : i.val < v.val.length then
+      ok (v.val[i.val]'h, ⟨v.val.eraseIdx i.val, by
+        have := v.property; have := List.length_eraseIdx_le v.val i.val; omega⟩)
+    else
+      fail .arrayOutOfBounds
+
+/-- **Spec theorem for `Vec::remove`**: removes (and returns) the element at index
+`i`, shifting the remaining elements left. Panics (here: fails) when out of bounds. -/
+@[step]
+theorem alloc.vec.Vec.remove_spec
+    {T : Type} (A : Type) (v : alloc.vec.Vec T) (i : Std.Usize)
+    (hbound : i.val < v.val.length) :
+    alloc.vec.Vec.remove A v i ⦃ (x, nv) =>
+      x = v.val[i.val] ∧ nv.val = v.val.eraseIdx i.val ⦄ := by
+  simp [alloc.vec.Vec.remove, hbound]
 
 /-- [alloc::vec::{alloc::vec::Vec<T>}::append]:
     Source: '/rustc/library/alloc/src/vec/mod.rs', lines 2802:4-2802:46
     Name pattern: [alloc::vec::{alloc::vec::Vec<@T>}::append] -/
 @[rust_fun "alloc::vec::{alloc::vec::Vec<@T>}::append"]
-axiom alloc.vec.Vec.append
+def alloc.vec.Vec.append
   {T : Type} (A : Type) :
   alloc.vec.Vec T → alloc.vec.Vec T → Result ((alloc.vec.Vec T) ×
-    (alloc.vec.Vec T))
+    (alloc.vec.Vec T)) :=
+  fun v1 v2 =>
+    if h : v1.val.length + v2.val.length ≤ Std.Usize.max then
+      ok (⟨v1.val ++ v2.val, by simp only [List.length_append]; omega⟩,
+          alloc.vec.Vec.new T)
+    else
+      fail .panic
+
+/-- **Spec theorem for `Vec::append`**: drains all of `v2` onto the end of `v1`;
+following Aeneas's mutable-reference convention it returns both the extended `v1`
+and the now-empty `v2`. -/
+@[step]
+theorem alloc.vec.Vec.append_spec
+    {T : Type} (A : Type) (v1 v2 : alloc.vec.Vec T)
+    (h : v1.val.length + v2.val.length ≤ Std.Usize.max) :
+    alloc.vec.Vec.append A v1 v2 ⦃ (r1, r2) =>
+      r1.val = v1.val ++ v2.val ∧ r2.val = [] ⦄ := by
+  simp [alloc.vec.Vec.append, h, alloc.vec.Vec.new]
 
 /-- [alloc::vec::{alloc::vec::Vec<T>}::clear]:
     Source: '/rustc/library/alloc/src/vec/mod.rs', lines 2903:4-2903:27
     Name pattern: [alloc::vec::{alloc::vec::Vec<@T>}::clear] -/
 @[rust_fun "alloc::vec::{alloc::vec::Vec<@T>}::clear"]
-axiom alloc.vec.Vec.clear
-  {T : Type} (A : Type) : alloc.vec.Vec T → Result (alloc.vec.Vec T)
+def alloc.vec.Vec.clear
+  {T : Type} (A : Type) : alloc.vec.Vec T → Result (alloc.vec.Vec T) :=
+  fun _ => ok (alloc.vec.Vec.new T)
+
+/-- **Spec theorem for `Vec::clear`**: empties the vector. -/
+@[step]
+theorem alloc.vec.Vec.clear_spec
+    {T : Type} (A : Type) (v : alloc.vec.Vec T) :
+    alloc.vec.Vec.clear A v ⦃ nv => nv.val = [] ⦄ := by
+  simp [alloc.vec.Vec.clear, alloc.vec.Vec.new]
 
 /-- [alloc::vec::{alloc::vec::Vec<T>}::is_empty]:
     Source: '/rustc/library/alloc/src/vec/mod.rs', lines 2956:4-2956:40
     Name pattern: [alloc::vec::{alloc::vec::Vec<@T>}::is_empty] -/
 @[rust_fun "alloc::vec::{alloc::vec::Vec<@T>}::is_empty"]
-axiom alloc.vec.Vec.is_empty
-  {T : Type} (A : Type) : alloc.vec.Vec T → Result Bool
+def alloc.vec.Vec.is_empty
+  {T : Type} (A : Type) : alloc.vec.Vec T → Result Bool :=
+  fun v => ok v.val.isEmpty
+
+/-- **Spec theorem for `Vec::is_empty`**: `true` iff the underlying list is empty. -/
+@[step]
+theorem alloc.vec.Vec.is_empty_spec
+    {T : Type} (A : Type) (v : alloc.vec.Vec T) :
+    alloc.vec.Vec.is_empty A v ⦃ b => b = v.val.isEmpty ⦄ := by
+  simp [alloc.vec.Vec.is_empty]
 
 /-- [alloc::vec::{alloc::vec::Vec<T>}::split_off]:
     Source: '/rustc/library/alloc/src/vec/mod.rs', lines 2989:4-2991:17
     Name pattern: [alloc::vec::{alloc::vec::Vec<@T>}::split_off] -/
 @[rust_fun "alloc::vec::{alloc::vec::Vec<@T>}::split_off"]
-axiom alloc.vec.Vec.split_off
+def alloc.vec.Vec.split_off
   {T : Type} {A : Type} (corecloneCloneInst : core.clone.Clone A) :
   alloc.vec.Vec T → Std.Usize → Result ((alloc.vec.Vec T) × (alloc.vec.Vec
-    T))
+    T)) :=
+  fun v at_ =>
+    if h : at_.val ≤ v.val.length then
+      -- Aeneas `&mut self` convention: `(return_value, updated_self)`.
+      -- `split_off` returns the suffix `[at_, len)` and leaves `self = [0, at_)`.
+      ok (⟨v.val.drop at_.val, by
+            have := v.property; simp only [List.length_drop]; omega⟩,
+          ⟨v.val.take at_.val, by
+            have := v.property; simp only [List.length_take]; omega⟩)
+    else
+      fail .panic
+
+/-- **Spec theorem for `Vec::split_off`**: splits at index `at_`. Following Aeneas's
+mutable-reference convention `(return_value, updated_self)`, the first component is
+the returned suffix `[at_, len)` and the second is the truncated `self` `[0, at_)`.
+Panics (here: fails) when `at_` exceeds the length. -/
+@[step]
+theorem alloc.vec.Vec.split_off_spec
+    {T A : Type} (corecloneCloneInst : core.clone.Clone A)
+    (v : alloc.vec.Vec T) (at_ : Std.Usize) (hbound : at_.val ≤ v.val.length) :
+    alloc.vec.Vec.split_off corecloneCloneInst v at_ ⦃ (r1, r2) =>
+      r1.val = v.val.drop at_.val ∧ r2.val = v.val.take at_.val ⦄ := by
+  simp [alloc.vec.Vec.split_off, hbound]
 
 /-- [alloc::vec::{core::default::Default for alloc::vec::Vec<T>}::default]:
     Source: '/rustc/library/alloc/src/vec/mod.rs', lines 4171:4-4171:26
     Name pattern: [alloc::vec::{core::default::Default<alloc::vec::Vec<@T>>}::default] -/
 @[rust_fun
   "alloc::vec::{core::default::Default<alloc::vec::Vec<@T>>}::default"]
-axiom alloc.vec.Vec.Insts.CoreDefaultDefault.default
-  (T : Type) : Result (alloc.vec.Vec T)
+def alloc.vec.Vec.Insts.CoreDefaultDefault.default
+  (T : Type) : Result (alloc.vec.Vec T) :=
+  ok (alloc.vec.Vec.new T)
+
+/-- **Spec theorem for `Default for Vec<T>`**: the default vector is empty. -/
+@[step]
+theorem alloc.vec.Vec.Insts.CoreDefaultDefault.default_spec (T : Type) :
+    alloc.vec.Vec.Insts.CoreDefaultDefault.default T ⦃ v => v.val = [] ⦄ := by
+  simp [alloc.vec.Vec.Insts.CoreDefaultDefault.default, alloc.vec.Vec.new]
 
 /-- [bytes::buf::buf_impl::{bytes::buf::buf_impl::Buf for &0 ([u8])}::advance]:
     Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bytes-1.10.1/src/buf/buf_impl.rs', lines 2901:4-2901:37
