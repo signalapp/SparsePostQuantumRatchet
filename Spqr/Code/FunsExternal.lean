@@ -99,7 +99,16 @@ axiom Shared0T.Insts.CoreFmtDisplay.fmt
     Source: '/rustc/library/core/src/hint.rs', lines 490:0-490:40
     Name pattern: [core::hint::black_box] -/
 @[rust_fun "core::hint::black_box"]
-axiom core.hint.black_box {T : Type} : T → Result T
+def core.hint.black_box {T : Type} : T → Result T :=
+  fun x => ok x
+
+/-- **Spec theorem for `core::hint::black_box`**: `black_box` is documented as
+an identity function on values; its compile-time effect in Rust is making its
+argument opaque to the optimiser, which has no semantic content in the Lean model. -/
+@[step]
+theorem core.hint.black_box_spec {T : Type} (x : T) :
+    core.hint.black_box x ⦃ (r : T) => r = x ⦄ := by
+  simp [core.hint.black_box]
 
 /-- [core::iter::adapters::enumerate::{core::iter::traits::iterator::Iterator<(usize, Clause0_Item)> for core::iter::adapters::enumerate::Enumerate<I>}::next]:
     Source: '/rustc/library/core/src/iter/adapters/enumerate.rs', lines 79:4-79:64
