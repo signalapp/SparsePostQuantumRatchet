@@ -18,10 +18,7 @@ strides of two, then a `MulAssign` fix-up for the trailing element if length is 
 
 open Aeneas Aeneas.Std
 
-deriving instance Inhabited for spqr.encoding.gf.GF16
-
 namespace spqr.encoding.gf
-
 
 /-- **Spec theorem for `encoding.gf.parallel_mult_loop.body`**:
 
