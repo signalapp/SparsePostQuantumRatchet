@@ -15,4 +15,7 @@ subDir = "backends/lean"
 rev = "39c6a720"
 
 [[lean_lib]]
+name = "SrcTranslated"
+
+[[lean_lib]]
 name = "Spqr"

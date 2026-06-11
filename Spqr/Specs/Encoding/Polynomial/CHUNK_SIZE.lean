@@ -3,7 +3,7 @@ Copyright 2026 The Beneficial AI Foundation. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE-APACHE.
 Authors: Hoang Le Truong
 -/
-import Spqr.Code.Funs
+import SrcTranslated.Funs
 /-! # Spec theorem for `spqr::encoding::polynomial::CHUNK_SIZE`
 
 In Protocol V1, plaintext data is split into fixed-size chunks of 32 bytes before being encoded via

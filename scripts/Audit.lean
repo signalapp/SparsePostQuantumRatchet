@@ -38,7 +38,7 @@ run_cmd liftTermElabM do
   let mut specsModuleNames : Array Name := #[]
   for h : i in [:moduleNames.size] do
     let m := moduleNames[i]
-    if m == `Spqr || m.getRoot == `Spqr then
+    if m.getRoot == `Spqr || m.getRoot == `SrcTranslated then
       projectModuleIdxs := projectModuleIdxs.insert i
       projectModuleNames := projectModuleNames.push m
       if m.toString.startsWith "Spqr.Specs" then
