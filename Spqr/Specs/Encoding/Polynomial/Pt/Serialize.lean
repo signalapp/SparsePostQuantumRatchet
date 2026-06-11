@@ -57,7 +57,6 @@ natural language specs:
     `Pt::deserialize(pt.serialize()) = ok pt`
 -/
 
-
 /-- `RangeFull` indexing on a slice is the identity: `slice[..] = slice`. -/
 private theorem rangeFull_index_eq {T : Type}
     (r : core.ops.range.RangeFull) (s : Slice T) :
@@ -74,20 +73,6 @@ private theorem array_index_rangeFull_ok {T : Type} {N : Usize}
       a () =
     ok a.to_slice :=
   rangeFull_index_eq () a.to_slice
-
-/-- `clone_from_slice` for `u8` copies the source slice into the destination, returning a slice
-    whose contents and length equal those of the source. -/
-@[step]
-private lemma clone_from_slice_U8_spec
-    (dst src : Slice Std.U8) :
-    core.slice.Slice.clone_from_slice core.clone.CloneU8 dst src
-    ⦃ result =>
-      result.val = src.val ∧ result.length = src.length ⦄ := by
-  unfold core.slice.Slice.clone_from_slice
-  apply WP.spec_mono (Slice.clone_spec (fun x _ => by simp))
-  intro s' h
-  subst h
-  exact ⟨rfl, rfl⟩
 
 /- **Spec for `U16::to_be_bytes`**:
 The two-byte big-endian encoding of a `u16` value `x` satisfies

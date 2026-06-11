@@ -682,24 +682,39 @@ def core.result.Result.ok {T E : Type} (r : core.result.Result T E) :
   | core.result.Result.Ok v => _root_.Aeneas.Std.Result.ok (some v)
   | core.result.Result.Err _ => _root_.Aeneas.Std.Result.ok none
 
+namespace core.slice.Slice
+
 /-- [core::slice::{[T]}::clone_from_slice]:
     Source: '/rustc/library/core/src/slice/mod.rs', lines 4254:4-4256:44
     Name pattern: [core::slice::{[@T]}::clone_from_slice] -/
 @[rust_fun "core::slice::{[@T]}::clone_from_slice"]
-def core.slice.Slice.clone_from_slice
-  {T : Type} (cloneCloneInst : core.clone.Clone T) :
+def clone_from_slice {T : Type} (cloneCloneInst : core.clone.Clone T) :
   Slice T → Slice T → Result (Slice T) :=
-  fun dst src => Slice.clone cloneCloneInst.clone src
+  fun dst src =>
+    -- Rust panics when the destination and source lengths differ.
+    if dst.length = src.length then Slice.clone cloneCloneInst.clone src
+    else fail .panic
 
-/-- **Spec theorem for `<[T]>::clone_from_slice`**: when the element `Clone` instance
-acts as the identity (the usual case), the destination becomes a copy of the source. -/
+/-- **Spec theorem for `<[T]>::clone_from_slice`**: requires the destination and source to have
+equal length (Rust panics otherwise); when the element `Clone` instance acts as the identity
+(the usual case), the destination becomes a copy of the source. -/
 @[step]
-theorem core.slice.Slice.clone_from_slice_spec
-    {T : Type} (cloneCloneInst : core.clone.Clone T) (dst src : Slice T)
-    (h : ∀ x ∈ src.val, cloneCloneInst.clone x = ok x) :
-    core.slice.Slice.clone_from_slice cloneCloneInst dst src ⦃ r => src = r ⦄ := by
-  simp only [core.slice.Slice.clone_from_slice]
-  exact Slice.clone_spec h
+theorem clone_from_slice_spec {T : Type} (cloneCloneInst : core.clone.Clone T) (dst src : Slice T)
+    (hlen : dst.length = src.length) (h : ∀ x ∈ src.val, cloneCloneInst.clone x = ok x) :
+    clone_from_slice cloneCloneInst dst src ⦃ (r : Slice T) => src = r ⦄ := by
+  simpa [clone_from_slice, if_pos hlen] using Slice.clone_spec h
+
+/-- `clone_from_slice` for `u8` copies the source slice into the destination, returning a slice
+whose contents and length equal those of the source. Requires the destination and source to have
+equal length (Rust panics otherwise). -/
+@[step]
+lemma clone_from_slice_U8_spec (dst src : Slice Std.U8) (hlen : dst.length = src.length) :
+    clone_from_slice core.clone.CloneU8 dst src ⦃ (result : Slice U8) =>
+      result.val = src.val ∧ result.length = src.length ⦄ := by
+  unfold clone_from_slice
+  step*
+
+end core.slice.Slice
 
 /-- Implementation helper for `core.slice.Slice.copy_within`
 (`[core::slice::{[@T]}::copy_within]`,
