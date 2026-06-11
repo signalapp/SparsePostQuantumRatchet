@@ -13,7 +13,7 @@ Maintained by [The Beneficial AI Foundation](https://www.beneficialaifoundation.
 | Path | Contents |
 |---|---|
 | [`src/`](./src/) | Rust source of the SPQR crate (pinned upstream commit, with any local edits captured in [`src-modifications.diff`](./src-modifications.diff)). |
-| [`Spqr/Code/`](./Spqr/Code/) | Aeneas-auto-generated Lean files (`Types.lean`, `Funs.lean`, never edited by hand) plus hand-written externals (`TypesExternal.lean`, `FunsExternal.lean`). |
+| [`SrcTranslated/`](./SrcTranslated/) | Aeneas-auto-generated Lean files (`Types.lean`, `Funs.lean`, never edited by hand) plus hand-written externals (`TypesExternal.lean`, `FunsExternal.lean`). |
 | [`Spqr/Math/`](./Spqr/Math/) | Project-wide mathematical infrastructure, implemented in Lean. |
 | [`Spqr/Specs/`](./Spqr/Specs/) | Lean spec theorem files for individual Rust functions, organised to mirror the Rust module tree. |
 | [`aeneas-config.yml`](./aeneas-config.yml) | Aeneas extraction configuration. |
@@ -41,7 +41,7 @@ This repository is dual-licensed:
   [AGPL-3.0-only](./LICENSE), inherited from
   [signalapp/SparsePostQuantumRatchet](https://github.com/signalapp/SparsePostQuantumRatchet).
   The [Aeneas](https://github.com/AeneasVerif/aeneas)-generated Lean translation
-  in `Types.lean` and `Funs.lean` in [`Spqr/Code/`](./Spqr/Code/) is a derivative of that source
+  in `Types.lean` and `Funs.lean` in [`SrcTranslated/`](./SrcTranslated/) is a derivative of that source
   and is therefore also covered by [AGPL-3.0-only](./LICENSE).
 
 - **Other contributions** (such as hand-written Lean code under

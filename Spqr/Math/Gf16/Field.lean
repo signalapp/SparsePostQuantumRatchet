@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE-APACHE.
 Authors: Hoang Le Truong
 -/
 import Spqr.Math.Gf16.Irreducible
-import Spqr.Code.Types
+import SrcTranslated.Types
 import Mathlib.FieldTheory.Finite.GaloisField
 
 /-!

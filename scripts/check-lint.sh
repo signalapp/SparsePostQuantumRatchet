@@ -12,9 +12,9 @@ echo "PASS"
 
 echo "=== Lint check ==="
 lake exe runLinter Spqr 2>&1 | tee /tmp/lake-lint.log || true
-if grep 'error:' /tmp/lake-lint.log | grep -qv 'Spqr/Code/'; then
+if grep -q 'error:' /tmp/lake-lint.log; then
   echo "FAIL: lint errors in hand-written code:"
-  grep 'error:' /tmp/lake-lint.log | grep -v 'Spqr/Code/'
+  grep 'error:' /tmp/lake-lint.log
   exit 1
 fi
 echo "PASS"

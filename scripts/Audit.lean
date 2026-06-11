@@ -21,6 +21,7 @@ Section 4 writes `sorry-manifest.txt` (machine-readable, one line per
 Reference: https://lean-lang.org/doc/reference/latest/ValidatingProofs/
 -/
 import Spqr
+import SrcTranslated
 
 open Lean Elab Command
 
@@ -38,7 +39,7 @@ run_cmd liftTermElabM do
   let mut specsModuleNames : Array Name := #[]
   for h : i in [:moduleNames.size] do
     let m := moduleNames[i]
-    if m == `Spqr || m.getRoot == `Spqr then
+    if m.getRoot == `Spqr || m.getRoot == `SrcTranslated then
       projectModuleIdxs := projectModuleIdxs.insert i
       projectModuleNames := projectModuleNames.push m
       if m.toString.startsWith "Spqr.Specs" then
