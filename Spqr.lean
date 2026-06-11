@@ -1,9 +1,5 @@
 import Spqr.Aux.Aeneas.StdNextCoreIterRangeStep
 import Spqr.Aux.Aeneas.StdNextStepUsize
-import SrcTranslated.Funs
-import SrcTranslated.FunsExternal
-import SrcTranslated.Types
-import SrcTranslated.TypesExternal
 import Spqr.Math.Gf16.Basic
 import Spqr.Math.Gf16.Field
 import Spqr.Math.Gf16.Irreducible
@@ -67,5 +63,6 @@ import Spqr.Specs.Encoding.Polynomial.Poly.Zero
 import Spqr.Specs.Encoding.Polynomial.PolyConstN.ZEROS
 import Spqr.Specs.Encoding.Polynomial.Pt.Deserialize
 import Spqr.Specs.Encoding.Polynomial.Pt.Serialize
+import Spqr.Specs.Util.Compare
 import Spqr.Specs.Util.Inz
 import Spqr.Specs.Util.IsNonZero
