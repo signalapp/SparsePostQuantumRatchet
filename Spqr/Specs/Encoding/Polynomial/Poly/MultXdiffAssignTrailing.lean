@@ -51,7 +51,7 @@ theorem body_spec
             (v1.val.get ⟨iter.start.val - 1, h_idx⟩).toGF216 =
               (v.val[iter.start.val - 1]!).toGF216 -
               (v.val[iter.start.val]!).toGF216 * difference.toGF216) ∧
-          (∀ j ≠ iter.start.val - 1, v1.val[j]? = v.val[j]?) ⦄ := by
+          (∀ j ≠ iter.start.val - 1, v1.val[j]! = v.val[j]!) ⦄ := by
   unfold body
   obtain ⟨opt, iter1, hnext, h_none, h_some⟩ := core.iter.range.IteratorRange.next_Usize_spec iter
   rw [hnext]
@@ -99,7 +99,7 @@ theorem loop_spec
           (result.val.get ⟨j, hj⟩).toGF216 =
             (v.val[j]!).toGF216 - (v.val[j + 1]!).toGF216 * difference.toGF216) ∧
       (∀ (j : Nat), ¬(iter.start.val ≤ j + 1 ∧ j + 1 < iter.end.val) →
-        result.val[j]? = v.val[j]?) ⦄ := by
+        result.val[j]! = v.val[j]!) ⦄ := by
   unfold mult_xdiff_assign_trailing_loop
   apply loop.spec_decr_nat
     (measure := fun (p : core.ops.range.Range Usize × alloc.vec.Vec GF16) =>
@@ -115,7 +115,7 @@ theorem loop_spec
             (v.val[j]!).toGF216 - (v.val[j + 1]!).toGF216 * difference.toGF216) ∧
         (∀ (j : Nat),
           ¬(iter.start.val ≤ j + 1 ∧ j + 1 < p.1.start.val) →
-          p.2.val[j]? = v.val[j]?))
+          p.2.val[j]! = v.val[j]!))
   · rintro ⟨iter', v'⟩ ⟨h_end', h_ge', h_le', h_len', h_processed, h_unchanged⟩
     step*
     split
@@ -158,7 +158,7 @@ open Polynomial
 `result.toGF216.coefficients[j] =
   self.toGF216.coefficients[j] − self.toGF216.coefficients[j+1] * difference.toGF216`
 • All other coefficients remain unchanged:
-`result.coefficients[j]? = self.coefficients[j]?`.
+`result.coefficients[j]! = self.coefficients[j]!`.
 • Polynomial identity:
 `result.toGF216Poly =
       self.toGF216Poly −
@@ -183,7 +183,7 @@ theorem mult_xdiff_assign_trailing_spec
             (self.coefficients.val[j + 1]!).toGF216 * difference.toGF216) ∧
       (∀ (j : Nat),
         ¬(start.val ≤ j + 1 ∧ j + 1 < self.coefficients.val.length) →
-        result.coefficients.val[j]? = self.coefficients.val[j]?) ∧
+        result.coefficients.val[j]! = self.coefficients.val[j]!) ∧
       result.toGF216Poly = self.toGF216Poly -
         C (difference.toGF216) * X ^ (start.val - 1) *
           listToGF216Poly (self.coefficients.val.drop start.val) ⦄ := by
