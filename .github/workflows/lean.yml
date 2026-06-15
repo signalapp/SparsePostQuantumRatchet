@@ -15,7 +15,7 @@ on:
   # check as "not passed").  Restricting `push` to main avoids duplicate
   # runs on PR branches while keeping the sorry-manifest cache working.
   # See https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
-  pull_request: 
+  pull_request:
     branches: [ '**' ]
   workflow_dispatch:
 
@@ -53,6 +53,7 @@ jobs:
 
       - name: Lint hand-written code
         run: |
+          # Lint ONLY the hand-written `Spqr` library.
           lake exe runLinter Spqr 2>&1 | tee /tmp/lake-lint.log || true
           if grep -q 'error:' /tmp/lake-lint.log; then
             echo "::error::Lint errors in hand-written code. Please fix them."

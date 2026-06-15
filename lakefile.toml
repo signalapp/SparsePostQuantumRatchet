@@ -1,6 +1,6 @@
 name = "Spqr"
 version = "0.1.0"
-defaultTargets = ["Spqr"]
+defaultTargets = ["Spqr", "SrcTranslated"]
 
 [leanOptions]
 autoImplicit = false

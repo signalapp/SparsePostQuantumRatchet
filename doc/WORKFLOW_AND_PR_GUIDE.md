@@ -18,6 +18,10 @@ lake exe mk_all
 
 to regenerate the root import file that lists every module in the project.
 
+## Linting
+
+To lint the Lean code, use `lake exe runLinter Spqr`.
+
 ## PR Workflow and Formatting
 
 All PRs, unless special circumstances are justified, must close an open issue in the project.
