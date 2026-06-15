@@ -56,16 +56,12 @@ The expected format for PR title, body, and footer is:
 
 All PRs are expected to consider the performance impact they may have on verification time/CI.
 
-Upon opening a PR, you may call `[command]` (TODO #11), to invoke our performance analysis tool.
+Upon opening a PR, you may call `!radar`, to invoke our performance analysis tool.
 
-See our performance tracking guidelines for more information: [TODO #11: write, then link to, the doc on performance tracking and expectations.]
+See our [performance tracking guidelines](./PERFORMANCE.md) for more information.
 
 ## AI contributions
 
 **Specifications:** PRs introducing AI-generated specifications of any kind are strictly prohibited, and their submission may result in a contribution ban at the maintainers' discretion.
 
-**Proofs:** AI-generated proofs are welcome, as long as they are compliant with the style guide and requirements listed in this document. The human submitting the PR is held responsible for the contents of the PR, in particular its adherence to style and contribution guidelines, as well as the performance impact outlined above. 
-
-
-
-
+**Proofs:** AI-generated proofs are welcome, as long as they are compliant with the style guide and requirements listed in this document. The human submitting the PR is held responsible for the contents of the PR, in particular its adherence to style and contribution guidelines, as well as the performance impact outlined above.
