@@ -2,6 +2,7 @@
 -- [spqr]: external types.
 -- This is a template file: rename it to "TypesExternal.lean" and fill the holes.
 import Aeneas
+import Spqr.Lint.Basic
 open Aeneas Aeneas.Std Result ControlFlow Error
 set_option linter.dupNamespace false
 set_option linter.hashCommand false

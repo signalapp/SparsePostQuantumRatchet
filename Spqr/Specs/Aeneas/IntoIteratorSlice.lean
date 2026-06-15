@@ -42,10 +42,9 @@ The function always succeeds (no panic) for any `Slice T` input.
 -/
 @[step]
 theorem into_iter_spec {T : Type} (s : Slice T) :
-    SharedASlice.Insts.CoreIterTraitsCollectIntoIteratorSharedATIter.into_iter
-      s
-      ⦃ (iter : core.slice.iter.Iter T) =>
-        iter.slice = s ∧ iter.i = 0 ⦄ := by
+    SharedASlice.Insts.CoreIterTraitsCollectIntoIteratorSharedATIter.into_iter s ⦃
+      (iter : core.slice.iter.Iter T) =>
+      iter.slice = s ∧ iter.i = 0 ⦄ := by
   unfold SharedASlice.Insts.CoreIterTraitsCollectIntoIteratorSharedATIter.into_iter
   simp [WP.spec_ok]
 

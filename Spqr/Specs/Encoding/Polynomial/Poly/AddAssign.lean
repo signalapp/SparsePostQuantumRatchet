@@ -228,8 +228,8 @@ theorem loop_spec
     (h_start : iter.iter.i = 0)
     (h_len : max self.degree other.length < Usize.max) :
     add_assign_loop iter self ⦃ (result : Poly) =>
-        result.degree = max self.degree other.length ∧
-        result.toGF216Poly = self.toGF216Poly + listToGF216Poly other ⦄ := by
+      result.degree = max self.degree other.length ∧
+      result.toGF216Poly = self.toGF216Poly + listToGF216Poly other ⦄ := by
   unfold add_assign_loop
   apply loop.spec_decr_nat
     (measure := fun (p : Enumerate (Iter GF16) × Poly) => p.1.iter.slice.length - p.1.iter.i)

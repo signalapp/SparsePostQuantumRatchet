@@ -44,14 +44,13 @@ The slice iterator `next` always succeeds and either:
 @[step]
 theorem next_spec {T : Type}
     (iter : core.slice.iter.Iter T) :
-    core.slice.iter.IteratorSliceIter.next iter
-      ⦃ (opt, iter') =>
-        match opt with
-        | none => ¬ iter.i < iter.slice.len ∧ iter' = iter
-        | some _ =>
-            iter.i < iter.slice.len ∧
-            iter'.slice = iter.slice ∧
-            iter'.i = iter.i + 1 ⦄ := by
+    core.slice.iter.IteratorSliceIter.next iter ⦃ (opt, iter') =>
+      match opt with
+      | none => ¬ iter.i < iter.slice.len ∧ iter' = iter
+      | some _ =>
+          iter.i < iter.slice.len ∧
+          iter'.slice = iter.slice ∧
+          iter'.i = iter.i + 1 ⦄ := by
   suffices h : ∃ opt iter',
       core.slice.iter.IteratorSliceIter.next iter
         = ok (opt, iter') ∧

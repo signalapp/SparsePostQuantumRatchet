@@ -19,3 +19,9 @@ name = "SrcTranslated"
 
 [[lean_lib]]
 name = "Spqr"
+
+# Test suites: the project-linter `#guard_msgs` tests (`Tests.LinterTest.*`) and the
+# property-based Plausible tests (`Tests.PlausibleTests.*`).  Deliberately NOT in
+# `defaultTargets`, so neither the dummy `@[step]` linter theorems nor the randomized
+[[lean_lib]]
+name = "Tests"

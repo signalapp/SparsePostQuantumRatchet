@@ -232,7 +232,7 @@ def I32.Insts.CoreIterRangeStep.forward_checked
 @[step]
 private theorem I32_forward_checked_one_spec
     (start : I32) :
-     I32.Insts.CoreIterRangeStep.forward_checked start 1#usize ⦃ (opt : Option I32) =>
+    I32.Insts.CoreIterRangeStep.forward_checked start 1#usize ⦃ (opt : Option I32) =>
       match opt with
       | some z => start.val + 1 ≤ I32.max ∧ z.val = start.val + 1
       | none   => ¬ start.val + 1 ≤ I32.max ⦄ := by
@@ -661,7 +661,7 @@ theorem into_iter_spec {T : Type} (s : Slice T) :
     SharedASlice.Insts.CoreIterTraitsCollectIntoIteratorSharedATIter.into_iter
       s
       ⦃ (iter : core.slice.iter.Iter T) =>
-        iter.slice = s ∧ iter.i = 0 ⦄ := by
+      iter.slice = s ∧ iter.i = 0 ⦄ := by
   unfold SharedASlice.Insts.CoreIterTraitsCollectIntoIteratorSharedATIter.into_iter
   simp [WP.spec_ok]
 

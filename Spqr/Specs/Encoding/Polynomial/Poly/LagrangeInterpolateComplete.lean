@@ -78,9 +78,9 @@ theorem loop0_spec
     (pi : Pt)
     (denominator : GF16) :
     lagrange_interpolate_complete_loop0 iter pi denominator ⦃ (result : Pt × GF16) =>
-        result.1 = pi ∧
-        result.2.toGF216 = denominator.toGF216 *
-          lagrangeDenomProd pi.x iter.slice.val iter.i ⦄ := by
+      result.1 = pi ∧
+      result.2.toGF216 = denominator.toGF216 *
+        lagrangeDenomProd pi.x iter.slice.val iter.i ⦄ := by
   unfold lagrange_interpolate_complete_loop0
   apply loop.spec_decr_nat
     (measure := fun (p : core.slice.iter.Iter Pt × GF16) =>
@@ -153,15 +153,14 @@ theorem loop1_spec
     (scale : spqr.encoding.gf.GF16)
     (h_start : iter.start.val = 1)
     (h_end : iter.«end».val = v.val.length) :
-    lagrange_interpolate_complete_loop1 iter v g scale
-      ⦃ (result : alloc.vec.Vec GF16) =>
-        result.val.length = v.val.length ∧
-        (∀ k (hk : k < result.val.length),
-          0 < k →
-            (result.val.get ⟨k, hk⟩).toGF216 =
-              scale.toGF216 * hornerAccum g v.val k) ∧
-        (∀ (h0 : 0 < result.val.length),
-        (result.val.get ⟨0, h0⟩).toGF216 = hornerAccum g v.val 0) ⦄ := by
+    lagrange_interpolate_complete_loop1 iter v g scale ⦃ (result : alloc.vec.Vec GF16) =>
+      result.val.length = v.val.length ∧
+      (∀ k (hk : k < result.val.length),
+        0 < k →
+          (result.val.get ⟨k, hk⟩).toGF216 =
+            scale.toGF216 * hornerAccum g v.val k) ∧
+      (∀ (h0 : 0 < result.val.length),
+      (result.val.get ⟨0, h0⟩).toGF216 = hornerAccum g v.val 0) ⦄ := by
   unfold lagrange_interpolate_complete_loop1
   apply loop.spec_decr_nat
     (measure := fun (p : core.ops.range.Range Std.Usize ×
@@ -238,11 +237,10 @@ theorem lagrange_interpolate_complete_spec
     (hi : i.val < pts.val.length)
     (hlen : 0 < self.coefficients.val.length)
     (heval : self.evalAt (pts.val.get ⟨i.val, hi⟩).x = 0) :
-    lagrange_interpolate_complete self pts i
-      ⦃ (result : Poly) =>
-        result.coefficients.val.length = self.coefficients.val.length ∧
-        result.toGF216Poly * (X - C (GF16.toGF216 (pts.val.get ⟨i.val, hi⟩).x)) =
-          X * C (lagrangeScaleGF216 (pts.val.get ⟨i.val, hi⟩) pts.val) * self.toGF216Poly ⦄ := by
+    lagrange_interpolate_complete self pts i ⦃ (result : Poly) =>
+      result.coefficients.val.length = self.coefficients.val.length ∧
+      result.toGF216Poly * (X - C (GF16.toGF216 (pts.val.get ⟨i.val, hi⟩).x)) =
+        X * C (lagrangeScaleGF216 (pts.val.get ⟨i.val, hi⟩) pts.val) * self.toGF216Poly ⦄ := by
   unfold lagrange_interpolate_complete
   step*
   · -- success path (b = true)
