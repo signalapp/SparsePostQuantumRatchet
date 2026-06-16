@@ -33,6 +33,7 @@ import Spqr.Specs.Aeneas.IntoIteratorSlice
 import Spqr.Specs.Aeneas.RangeIteratorNext
 import Spqr.Specs.Aeneas.SliceIteratorNext
 import Spqr.Specs.Authenticator.Authenticator.MACSIZE
+import Spqr.Specs.Authenticator.Serialize.Authenticator.IntoPb
 import Spqr.Specs.Encoding.Gf.GF16.Add
 import Spqr.Specs.Encoding.Gf.GF16.AddAssign
 import Spqr.Specs.Encoding.Gf.GF16.ConstDiv
