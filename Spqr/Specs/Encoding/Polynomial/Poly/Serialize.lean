@@ -102,10 +102,7 @@ theorem body_spec
     · simp_all [Array.to_slice]
     · have e0 : (a[0]!).val = b0.val := by simp [Array.getElem!_Nat_eq, h_a_eq]
       have e1 : (a[1]!).val = b1.val := by simp [Array.getElem!_Nat_eq, h_a_eq]
-      have ev : (v.val[iter.start.val]!) = c := by
-        rw [← List.Inhabited_getElem_eq_getElem! v.val iter.start.val h_i_lt]
-        exact c_post.symm
-      rw [ev]; omega
+      grind
   · grind
 
 end spqr.encoding.polynomial.Poly.serialize_loop
