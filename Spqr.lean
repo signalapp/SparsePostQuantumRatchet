@@ -17,6 +17,8 @@ import Spqr.Math.Poly.Coeff.Basic
 import Spqr.Math.Poly.Coeff.ListOps
 import Spqr.Math.Poly.Coeff.MultXdiffPolyIdentity
 import Spqr.Math.Poly.Eval
+import Spqr.Math.Poly.Eval.DotProduct
+import Spqr.Math.Poly.Eval.PowerVector
 import Spqr.Math.Poly.ExpectedTrailing.Basic
 import Spqr.Math.Poly.ExpectedTrailing.Defs
 import Spqr.Math.Poly.Horner.Defs
@@ -65,6 +67,7 @@ import Spqr.Specs.Encoding.Polynomial.MAX_INTERMEDIATE_POLYNOMIAL_DEGREE_V1
 import Spqr.Specs.Encoding.Polynomial.MAX_STORED_POLYNOMIAL_DEGREE_V1
 import Spqr.Specs.Encoding.Polynomial.NUM_POLYS
 import Spqr.Specs.Encoding.Polynomial.Poly.AddAssign
+import Spqr.Specs.Encoding.Polynomial.Poly.ComputeAt
 import Spqr.Specs.Encoding.Polynomial.Poly.Deserialize
 import Spqr.Specs.Encoding.Polynomial.Poly.LagrangeInterpolateComplete
 import Spqr.Specs.Encoding.Polynomial.Poly.MultAssign
