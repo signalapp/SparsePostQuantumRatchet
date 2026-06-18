@@ -306,18 +306,20 @@ namespace I32.Insts.CoreIterRangeStep
 def backward_checked (start: Std.I32) (n : Std.Usize) : Result (Option Std.I32) :=
   ok (IScalar.tryMkOpt .I32 (start.val - n.val))
 
-/-- **Spec theorem for `Step<i32>::backward_checked` with step 1**
+/-- **Spec theorem for `Step<i32>::backward_checked` with an arbitrary step `n`**
 
-* if `I32.min ≤ start.val - 1` the returned option is `some z` with `z.val = start.val - 1`;
-* otherwise the returned option is `none`. -/
+- Since `n.val ≥ 0`, the difference `start.val - n.val ≤ start.val ≤ I32.max` always satisfies the
+  upper bound, so only the lower bound is relevant.
+- If `I32.min ≤ start.val - n.val` the returned option is `some z` with `z.val = start.val - n.val`.
+- Otherwise the returned option is `none`. -/
 @[step]
-theorem backward_checked_one_spec (start : I32) :
-    backward_checked start 1#usize ⦃ (opt : Option I32) =>
+theorem backward_checked_spec (start : I32) (n : Usize) :
+    backward_checked start n ⦃ (opt : Option I32) =>
       match opt with
-      | some z => I32.min ≤ start.val - 1 ∧ z.val = start.val - 1
-      | none   => ¬ I32.min ≤ start.val - 1 ⦄ := by
+      | some z => I32.min ≤ start.val - n.val ∧ z.val = start.val - n.val
+      | none   => ¬ I32.min ≤ start.val - n.val ⦄ := by
   unfold  I32.Insts.CoreIterRangeStep.backward_checked
-  have htry := IScalar.tryMkOpt_eq .I32 (start.val - ↑(1#usize).val)
+  have htry := IScalar.tryMkOpt_eq .I32 (start.val - ↑n.val)
   step*
   grind
 
@@ -335,23 +337,26 @@ theorem backward_checked_one_spec (start : I32) :
 def forward_checked (start: Std.I32) (n : Std.Usize) : Result (Option Std.I32) :=
   ok (IScalar.tryMkOpt .I32 (start.val + n.val))
 
-/-- **Spec theorem for `Step<i32>::forward_checked` with step 1**
-- if `start.val + 1 ≤ I32.max` the returned option is `some z` with `z.val = start.val + 1`;
-- otherwise the returned option is `none`. -/
+/-- **Spec theorem for `Step<i32>::forward_checked` with an arbitrary step `n`**
+
+- Since `n.val ≥ 0`, the sum `start.val + n.val ≥ start.val ≥ I32.min` always satisfies the lower
+  bound, so only the upper bound is relevant.
+- If `start.val + n.val ≤ I32.max` the returned option is `some z` with `z.val = start.val + n.val`;
+- Otherwise the returned option is `none`. -/
 @[step]
-theorem forward_checked_one_spec (start : I32) :
-    forward_checked start 1#usize ⦃ (opt : Option I32) =>
+theorem forward_checked_spec (start : I32) (n : Usize) :
+    forward_checked start n ⦃ (opt : Option I32) =>
       match opt with
-      | some z => start.val + 1 ≤ I32.max ∧ z.val = start.val + 1
-      | none   => ¬ start.val + 1 ≤ I32.max ⦄ := by
+      | some z => start.val + n.val ≤ I32.max ∧ z.val = start.val + n.val
+      | none   => ¬ start.val + n.val ≤ I32.max ⦄ := by
   suffices h : ∃ opt,
-      I32.Insts.CoreIterRangeStep.forward_checked start 1#usize = ok opt ∧
-      (start.val + 1 ≤ I32.max →
-          ∃ z, opt = some z ∧ z.val = start.val + 1) ∧
-      (¬ start.val + 1 ≤ I32.max → opt = none) by grind
+      I32.Insts.CoreIterRangeStep.forward_checked start n = ok opt ∧
+      (start.val + n.val ≤ I32.max →
+          ∃ z, opt = some z ∧ z.val = start.val + n.val) ∧
+      (¬ start.val + n.val ≤ I32.max → opt = none) by grind
   unfold  I32.Insts.CoreIterRangeStep.forward_checked
-  have htry := IScalar.tryMkOpt_eq .I32 (start.val + ↑(1#usize).val)
-  generalize IScalar.tryMkOpt .I32 (start.val + ↑(1#usize).val) = opt at htry ⊢
+  have htry := IScalar.tryMkOpt_eq .I32 (start.val + ↑n.val)
+  generalize IScalar.tryMkOpt .I32 (start.val + ↑n.val) = opt at htry ⊢
   cases opt with
   | none => grind
   | some z =>
