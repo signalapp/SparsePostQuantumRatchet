@@ -20,18 +20,22 @@ set_option maxHeartbeats 1000000
 @[rust_type "core::num::error::TryFromIntError"]
 structure core.num.error.TryFromIntError deriving Inhabited, DecidableEq
 
-/-- [alloc::collections::vec_deque::into_iter::IntoIter]
-    Source: '/rustc/library/alloc/src/collections/vec_deque/into_iter.rs', lines 18:0-21:1
-    Name pattern: [alloc::collections::vec_deque::into_iter::IntoIter] -/
-@[rust_type "alloc::collections::vec_deque::into_iter::IntoIter"]
-axiom alloc.collections.vec_deque.into_iter.IntoIter (T : Type) (A : Type) :
-  Type
-
 /-- [alloc::collections::vec_deque::VecDeque]
     Source: '/rustc/library/alloc/src/collections/vec_deque/mod.rs', lines 104:0-107:1
     Name pattern: [alloc::collections::vec_deque::VecDeque] -/
 @[rust_type "alloc::collections::vec_deque::VecDeque"]
-axiom alloc.collections.vec_deque.VecDeque (T : Type) (A : Type) : Type
+structure alloc.collections.vec_deque.VecDeque (T : Type) (A : Type) where
+  buf  : alloc.vec.Vec T
+  head : Std.Usize
+  length  : Std.Usize
+
+/-- [alloc::collections::vec_deque::into_iter::IntoIter]
+    Source: '/rustc/library/alloc/src/collections/vec_deque/into_iter.rs', lines 18:0-21:1
+    Name pattern: [alloc::collections::vec_deque::into_iter::IntoIter] -/
+@[rust_type "alloc::collections::vec_deque::into_iter::IntoIter"]
+structure alloc.collections.vec_deque.into_iter.IntoIter (T : Type) (A : Type)
+    where
+  inner : alloc.collections.vec_deque.VecDeque T A
 
 /-- [bytes::buf::uninit_slice::UninitSlice]
     Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bytes-1.10.1/src/buf/uninit_slice.rs', lines 22:0-22:22

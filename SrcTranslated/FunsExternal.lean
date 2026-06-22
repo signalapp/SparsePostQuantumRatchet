@@ -940,50 +940,202 @@ theorem core.slice.Slice.copy_within_eq
     Name pattern: [alloc::collections::vec_deque::{alloc::collections::vec_deque::VecDeque<@T, @A>}::len] -/
 @[rust_fun
   "alloc::collections::vec_deque::{alloc::collections::vec_deque::VecDeque<@T, @A>}::len"]
-axiom alloc.collections.vec_deque.VecDeque.len
+def alloc.collections.vec_deque.VecDeque.len
   {T : Type} {A : Type} :
-  alloc.collections.vec_deque.VecDeque T A → Result Std.Usize
+  alloc.collections.vec_deque.VecDeque T A → Result Std.Usize :=
+  fun self => ok self.length
+
+/-- Spec: `VecDeque::len` returns `self.length`. -/
+@[step]
+theorem alloc.collections.vec_deque.VecDeque.len_spec
+    {T : Type} {A : Type} (self : alloc.collections.vec_deque.VecDeque T A) :
+    alloc.collections.vec_deque.VecDeque.len self
+      ⦃ (n : Std.Usize) => n = self.length ⦄ := by
+  simp [alloc.collections.vec_deque.VecDeque.len]
 
 /-- [alloc::collections::vec_deque::{alloc::collections::vec_deque::VecDeque<T, A>}::pop_front]:
     Source: '/rustc/library/alloc/src/collections/vec_deque/mod.rs', lines 2064:4-2064:44
     Name pattern: [alloc::collections::vec_deque::{alloc::collections::vec_deque::VecDeque<@T, @A>}::pop_front] -/
 @[rust_fun
   "alloc::collections::vec_deque::{alloc::collections::vec_deque::VecDeque<@T, @A>}::pop_front"]
-axiom alloc.collections.vec_deque.VecDeque.pop_front
+def alloc.collections.vec_deque.VecDeque.pop_front
   {T : Type} {A : Type} :
   alloc.collections.vec_deque.VecDeque T A → Result ((Option T) ×
-    (alloc.collections.vec_deque.VecDeque T A))
+    (alloc.collections.vec_deque.VecDeque T A)) :=
+  fun self =>
+    if self.length = 0#usize then
+      ok (none, self)
+    else
+      if hidx : self.head < self.buf.length then
+        let elem := self.buf.val[self.head.val]'hidx
+        do
+          let head' ← self.head + 1#usize
+          let len' ← self.length - 1#usize
+          ok (some elem, { self with head := head', length := len' })
+      else
+        fail .panic
+
+/-- `pop_front` on an empty deque returns `(none, self)`.
+  `pop_front` on a non-empty deque returns `(some elem, self')`
+  where `elem = buf[head]`, `self'.head = head + 1`,
+  `self'.length = length - 1`, and `self'.buf` is unchanged.
+
+  Growing-list model: `head` advances linearly (no wrap-around). -/
+@[step]
+theorem alloc.collections.vec_deque.VecDeque.pop_front_spec_nonempty
+    {T : Type} {A : Type} (self : alloc.collections.vec_deque.VecDeque T A)
+    (hidx : self.head < self.buf.length):
+    alloc.collections.vec_deque.VecDeque.pop_front self ⦃ (res : (Option T) × (alloc.collections.vec_deque.VecDeque T A)) =>
+      (self.length = 0#usize → res.1 = none ∧ res.2 = self) ∧
+      (self.length ≠ 0#usize →
+        res.1 = (self.buf.val[self.head.val]'hidx) ∧
+        res.2.head.val = self.head + 1 ∧
+        res.2.length = self.length.val - 1 ∧
+        res.2.buf = self.buf) ⦄ := by
+  unfold alloc.collections.vec_deque.VecDeque.pop_front
+  split
+  · rename_i hempty
+    simp [hempty]
+  · rename_i hne
+    simp only
+    have : self.head + (1#usize).val ≤ Usize.max := by
+      have := self.buf.property; scalar_tac
+    have : (1#usize).val ≤ self.length := by scalar_tac
+    step*
 
 /-- [alloc::collections::vec_deque::{alloc::collections::vec_deque::VecDeque<T, A>}::push_back]:
     Source: '/rustc/library/alloc/src/collections/vec_deque/mod.rs', lines 2205:4-2205:41
-    Name pattern: [alloc::collections::vec_deque::{alloc::collections::vec_deque::VecDeque<@T, @A>}::push_back] -/
+    Name pattern: [alloc::collections::vec_deque::{alloc::collections::vec_deque::VecDeque<@T, @A>}::push_back]
+
+    Growing-list model: appends `value` to the physical buffer and
+    increments `length`. The buffer grows on every call (no fixed-capacity
+    ring); this is observationally equivalent to Rust's `push_back` at
+    the value level and consistent with the capacity-free `Vec` model
+    used elsewhere in this codebase. -/
 @[rust_fun
   "alloc::collections::vec_deque::{alloc::collections::vec_deque::VecDeque<@T, @A>}::push_back"]
-axiom alloc.collections.vec_deque.VecDeque.push_back
+def alloc.collections.vec_deque.VecDeque.push_back
   {T : Type} {A : Type} :
   alloc.collections.vec_deque.VecDeque T A → T → Result
-    (alloc.collections.vec_deque.VecDeque T A)
+    (alloc.collections.vec_deque.VecDeque T A) :=
+  fun self value =>
+    if h : self.buf.val.length + 1 ≤ Usize.max then
+      do
+        let len' ← self.length + 1#usize
+        ok { self with
+          buf := ⟨self.buf ++ [value], by simp [List.length_append]; omega⟩
+          length := len' }
+    else
+      fail .panic
+
+/-- Spec: `push_back` appends `value` to the physical buffer, keeps `head`
+    unchanged, and increments `length` by one.
+
+    Growing-list model: no capacity wraparound. -/
+@[step]
+theorem alloc.collections.vec_deque.VecDeque.push_back_spec
+    {T : Type} {A : Type} (self : alloc.collections.vec_deque.VecDeque T A)
+    (value : T)
+    (hlen : self.length + 1 ≤ Usize.max)
+    (hbuf : self.buf.length + 1 ≤ Usize.max) :
+    alloc.collections.vec_deque.VecDeque.push_back self value ⦃ (self' : alloc.collections.vec_deque.VecDeque T A) =>
+      self'.buf = self.buf ++ [value] ∧
+      self'.head = self.head ∧
+      self'.length = self.length.val + 1 ⦄ := by
+  unfold alloc.collections.vec_deque.VecDeque.push_back
+  simp only [dif_pos hbuf]
+  step*
 
 /-- [alloc::collections::vec_deque::{core::ops::index::IndexMut<usize, T> for alloc::collections::vec_deque::VecDeque<T, A>}::index_mut]:
     Source: '/rustc/library/alloc/src/collections/vec_deque/mod.rs', lines 3634:4-3634:51
-    Name pattern: [alloc::collections::vec_deque::{core::ops::index::IndexMut<alloc::collections::vec_deque::VecDeque<@T, @A>, usize, @T>}::index_mut] -/
+    Name pattern: [alloc::collections::vec_deque::{core::ops::index::IndexMut<alloc::collections::vec_deque::VecDeque<@T, @A>, usize, @T>}::index_mut]
+
+    Growing-list model: physical position is `head + idx` (no modular
+    wrap-around), consistent with the growing-buffer `push_back` and
+    linear-advance `pop_front`. -/
 @[rust_fun
   "alloc::collections::vec_deque::{core::ops::index::IndexMut<alloc::collections::vec_deque::VecDeque<@T, @A>, usize, @T>}::index_mut"]
-axiom
+def
   alloc.collections.vec_deque.VecDeque.Insts.CoreOpsIndexIndexMutUsizeT.index_mut
   {T : Type} {A : Type} :
   alloc.collections.vec_deque.VecDeque T A → Std.Usize → Result (T × (T
-    → alloc.collections.vec_deque.VecDeque T A))
+    → alloc.collections.vec_deque.VecDeque T A)) :=
+  fun self idx =>
+    if idx.val < self.length then
+      if hphys : self.head + idx.val < self.buf.length then
+        let elem := self.buf[self.head.val + idx]'hphys
+        ok (elem, fun new_elem =>
+          { self with buf := ⟨self.buf.val.set (self.head.val + idx) new_elem, by
+              have := self.buf.property
+              simp only [List.length_set]; omega⟩ })
+      else
+        fail .panic
+    else
+      fail .panic
+
+/-- Spec: `index_mut` (in-bounds) returns `(elem, back)` where
+    `elem = buf[head + idx]` and `back x` updates that position to
+    `x`, keeping `head` and `length` unchanged.
+
+    Growing-list model: physical position is `head + idx` (linear, no
+    modular wrap-around). -/
+@[step]
+theorem alloc.collections.vec_deque.VecDeque.Insts.CoreOpsIndexIndexMutUsizeT.index_mut_spec
+    {T : Type} {A : Type} (self : alloc.collections.vec_deque.VecDeque T A)
+    (idx : Std.Usize)
+    (hidx : idx.val < self.length)
+    (hphys : self.head + idx < self.buf.length) :
+    alloc.collections.vec_deque.VecDeque.Insts.CoreOpsIndexIndexMutUsizeT.index_mut
+      self idx ⦃ (res : T × (T → alloc.collections.vec_deque.VecDeque T A)) =>
+      let phys := self.head + idx.val
+      match self.buf.val[phys]? with
+        | some elem =>
+          res.1 = elem ∧
+          ∀ x, (res.2 x).buf = self.buf.val.set phys x ∧
+               (res.2 x).head = self.head ∧
+               (res.2 x).length = self.length
+        | none => False ⦄ := by
+  unfold alloc.collections.vec_deque.VecDeque.Insts.CoreOpsIndexIndexMutUsizeT.index_mut
+  simp only [if_pos hidx, dif_pos hphys]
+  simp only [List.getElem?_eq_getElem hphys, WP.spec_ok]
+  simp
+
+/-- Models Rust's `<T>::IS_ZST` associated constant; we default to `false`
+    since our model does not distinguish zero-sized types. -/
+def alloc.collections.vec_deque.IS_ZST (_T : Type) : Bool := false
 
 /-- [alloc::collections::vec_deque::{core::convert::From<[T; N]> for alloc::collections::vec_deque::VecDeque<T, alloc::alloc::Global>}::from]:
     Source: '/rustc/library/alloc/src/collections/vec_deque/mod.rs', lines 3812:4-3812:32
     Name pattern: [alloc::collections::vec_deque::{core::convert::From<alloc::collections::vec_deque::VecDeque<@T, alloc::alloc::Global>, [@T; @N]>}::from] -/
 @[rust_fun
   "alloc::collections::vec_deque::{core::convert::From<alloc::collections::vec_deque::VecDeque<@T, alloc::alloc::Global>, [@T; @N]>}::from"]
-axiom
+def
   alloc.collections.vec_deque.VecDequeTGlobal.Insts.CoreConvertFromArray.from
   {T : Type} {N : Std.Usize} :
-  Array T N → Result (alloc.collections.vec_deque.VecDeque T Global)
+  Array T N → Result (alloc.collections.vec_deque.VecDeque T Global) :=
+  fun arr =>
+    -- `let mut deq = VecDeque::with_capacity(N);`
+    let deq : alloc.collections.vec_deque.VecDeque T Global :=
+      { buf := alloc.vec.Vec.new T, head := 0#usize, length := 0#usize }
+    -- `if !<T>::IS_ZST { ptr::copy_nonoverlapping(arr.as_ptr(), deq.ptr(), N); }`
+    let deq : alloc.collections.vec_deque.VecDeque T Global :=
+      if alloc.collections.vec_deque.IS_ZST T then
+        deq
+      else
+        { deq with buf := ⟨arr.val, by have := arr.property; scalar_tac⟩ }
+    -- `deq.head = 0; deq.len = N;`
+    ok { deq with head := 0#usize, length := N }
+
+/-- Spec: `From<[T;N]>::from` returns a deque with `buf.val = arr.val`,
+    `head = 0`, and `length = N`. -/
+@[step]
+theorem alloc.collections.vec_deque.VecDequeTGlobal.Insts.CoreConvertFromArray.from_spec
+    {T : Type} {N : Std.Usize} (arr : Array T N) :
+    alloc.collections.vec_deque.VecDequeTGlobal.Insts.CoreConvertFromArray.from arr ⦃ (vd : alloc.collections.vec_deque.VecDeque T Global) =>
+      vd.buf.val = arr.val ∧ vd.head = 0#usize ∧ vd.length = N ⦄ := by
+  simp [alloc.collections.vec_deque.VecDequeTGlobal.Insts.CoreConvertFromArray.from,
+    alloc.collections.vec_deque.IS_ZST]
+
 
 /-- [alloc::slice::{[T]}::concat]:
     Source: '/rustc/library/alloc/src/slice.rs', lines 578:4-580:27
@@ -2770,20 +2922,71 @@ axiom
     Name pattern: [alloc::collections::vec_deque::{core::iter::traits::collect::FromIterator<alloc::collections::vec_deque::VecDeque<@T, alloc::alloc::Global>, @T>}::from_iter] -/
 @[rust_fun
   "alloc::collections::vec_deque::{core::iter::traits::collect::FromIterator<alloc::collections::vec_deque::VecDeque<@T, alloc::alloc::Global>, @T>}::from_iter"]
-axiom
+def
   alloc.collections.vec_deque.VecDequeTGlobal.Insts.CoreIterTraitsCollectFromIterator.from_iter
   {T : Type} {I : Type} {Clause0_IntoIter : Type}
   (coreitertraitscollectIntoIteratorInst :
   core.iter.traits.collect.IntoIterator I T Clause0_IntoIter) :
-  I → Result (alloc.collections.vec_deque.VecDeque T Global)
+  I → Result (alloc.collections.vec_deque.VecDeque T Global) :=
+  fun input => do
+    let v ← alloc.vec.FromIteratorVec.from_iter
+              coreitertraitscollectIntoIteratorInst input
+    ok ({ buf := v,
+          head := 0#usize,
+          length := Std.Usize.ofNatCore v.length
+            (by have := v.property; scalar_tac) }
+        : alloc.collections.vec_deque.VecDeque T Global)
+
+/-- Spec for `VecDeque::from_iter`: if the underlying `Vec` collection
+    yields `v`, the returned deque has `buf = v`, `head = 0`, and
+    `length = v.length`. -/
+@[step]
+theorem alloc.collections.vec_deque.VecDequeTGlobal.Insts.CoreIterTraitsCollectFromIterator.from_iter_spec
+    {T I Clause0_IntoIter : Type}
+    (inst : core.iter.traits.collect.IntoIterator I T Clause0_IntoIter)
+    (input : I) (v : alloc.vec.Vec T)
+    (hv : alloc.vec.FromIteratorVec.from_iter inst input = ok v) :
+    alloc.collections.vec_deque.VecDequeTGlobal.Insts.CoreIterTraitsCollectFromIterator.from_iter
+      inst input ⦃ (vd : alloc.collections.vec_deque.VecDeque T Global) =>
+      vd.buf = v ∧
+      vd.head = 0#usize ∧
+      vd.length.val = v.val.length ⦄ := by
+  unfold alloc.collections.vec_deque.VecDequeTGlobal.Insts.CoreIterTraitsCollectFromIterator.from_iter
+  rw [hv]
+  simp
+
+
+/-- `IntoIter::new`: wraps a `VecDeque T A` into the opaque `IntoIter T A`. -/
+def alloc.collections.vec_deque.into_iter.IntoIter.new
+  {T A : Type} :
+  alloc.collections.vec_deque.VecDeque T A →
+    alloc.collections.vec_deque.into_iter.IntoIter T A :=
+  fun vd => ⟨vd⟩
+
+/-- Spec for `IntoIter::new`: returns the structure `⟨vd⟩`. -/
+@[simp, step_simps]
+theorem alloc.collections.vec_deque.into_iter.IntoIter.new_spec
+    {T A : Type} (vd : alloc.collections.vec_deque.VecDeque T A) :
+    alloc.collections.vec_deque.into_iter.IntoIter.new vd = ⟨vd⟩ := rfl
 
 /-- [alloc::collections::vec_deque::{core::iter::traits::collect::IntoIterator<T, alloc::collections::vec_deque::into_iter::IntoIter<T, A>> for alloc::collections::vec_deque::VecDeque<T, A>}::into_iter]:
     Source: '/rustc/library/alloc/src/collections/vec_deque/mod.rs', lines 3653:4-3653:40
     Name pattern: [alloc::collections::vec_deque::{core::iter::traits::collect::IntoIterator<alloc::collections::vec_deque::VecDeque<@T, @A>, @T, alloc::collections::vec_deque::into_iter::IntoIter<@T, @A>>}::into_iter] -/
 @[rust_fun
   "alloc::collections::vec_deque::{core::iter::traits::collect::IntoIterator<alloc::collections::vec_deque::VecDeque<@T, @A>, @T, alloc::collections::vec_deque::into_iter::IntoIter<@T, @A>>}::into_iter"]
-axiom
-  alloc.collections.vec_deque.VecDeque.Insts.CoreIterTraitsCollectIntoIteratorTIntoIter.into_iter
+def alloc.collections.vec_deque.VecDeque.Insts.CoreIterTraitsCollectIntoIteratorTIntoIter.into_iter
   {T : Type} {A : Type} :
   alloc.collections.vec_deque.VecDeque T A → Result
-    (alloc.collections.vec_deque.into_iter.IntoIter T A)
+    (alloc.collections.vec_deque.into_iter.IntoIter T A) :=
+  fun self => ok (alloc.collections.vec_deque.into_iter.IntoIter.new self)
+
+/-- Spec for `VecDeque::into_iter`: always returns `IntoIter.new vd`. -/
+@[simp, step_simps]
+theorem
+  alloc.collections.vec_deque.VecDeque.Insts.CoreIterTraitsCollectIntoIteratorTIntoIter.into_iter_spec
+    {T A : Type} (vd : alloc.collections.vec_deque.VecDeque T A) :
+    alloc.collections.vec_deque.VecDeque.Insts.CoreIterTraitsCollectIntoIteratorTIntoIter.into_iter
+        vd
+      ⦃ (iter : alloc.collections.vec_deque.into_iter.IntoIter T A) =>
+        iter = alloc.collections.vec_deque.into_iter.IntoIter.new vd ⦄ := by
+  simp [alloc.collections.vec_deque.VecDeque.Insts.CoreIterTraitsCollectIntoIteratorTIntoIter.into_iter]
