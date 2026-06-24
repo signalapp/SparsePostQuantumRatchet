@@ -50,7 +50,8 @@ theorem compare_loop_spec
       simp only [r1_post1, hor, i3_post1, hxor, hstart1, Nat.forall_lt_succ_right,
                  getElem!_pos, show iter'.start.val < lhs.length by scalar_tac, ← hlen,
                  ← i1_post, ← i2_post, ← UScalar.eq_equiv, ← h_inv']
-    · simp [core.iter.range.IteratorRange.next, core.cmp.impls.PartialOrdUsize.lt, hLt]
+    · simp [core.iter.range.IteratorRange.next, core.iter.range.UScalarStep,
+        core.cmp.impls.PartialOrdUsize.lt, hLt]
       simp_all [show iter'.start.val = lhs.length by scalar_tac]
   · exact ⟨hstart, hend, hinv⟩
 

@@ -36,10 +36,10 @@ lemma EnumerateSliceIter_next_post
     (h_bound : iter.iter.i < iter.iter.slice.length → iter.count.val + 1 ≤ Usize.max) :
     ∃ (opt : Option (Usize × GF16))
       (iter' : Enumerate (Iter GF16)),
-      Enumerate.Insts.CoreIterTraitsIteratorIteratorPairUsizeClause0_Item.next
+      IteratorEnumerate.next
         (core.iter.traits.iterator.IteratorSliceIter GF16) iter =
           ok (opt, iter') := by
-  simp only [Enumerate.Insts.CoreIterTraitsIteratorIteratorPairUsizeClause0_Item.next,
+  simp only [IteratorEnumerate.next,
     IteratorSliceIter.next]
   split
   · have h_add_bound : iter.count.val + 1 ≤ Usize.max := h_bound (by scalar_tac)
@@ -148,14 +148,14 @@ lemma enumerate_sliceiter_next_some
     (h_count : iter.count = iter.iter.i)
     (h_bound : iter.iter.slice.length ≤ Usize.max) :
     ∃ (iter1 : Enumerate (Iter GF16)),
-      Enumerate.Insts.CoreIterTraitsIteratorIteratorPairUsizeClause0_Item.next
+      IteratorEnumerate.next
         (core.iter.traits.iterator.IteratorSliceIter GF16) iter =
           ok (some (iter.count, iter.iter.slice.val[iter.iter.i]), iter1) ∧
       iter1.iter.slice = iter.iter.slice ∧
       iter1.iter.i = iter.iter.i + 1 ∧
       iter1.count.val = iter.iter.i + 1 := by
   simp only [
-    Enumerate.Insts.CoreIterTraitsIteratorIteratorPairUsizeClause0_Item.next,
+    IteratorEnumerate.next,
     IteratorSliceIter.next]
   have h_lt' : iter.iter.i < (↑iter.iter.slice.len : Nat) := by scalar_tac
   rw [dif_pos h_lt']
@@ -205,8 +205,7 @@ private theorem body_test_done_spec
       | ControlFlow.done result => result = self'
       | ControlFlow.cont _ => False ⦄ := by
   unfold body
-  simp only [ Enumerate.Insts.CoreIterTraitsIteratorIteratorPairUsizeClause0_Item.next,
-    IteratorSliceIter.next]
+  simp only [IteratorEnumerate.next, IteratorSliceIter.next]
   split
   · rename_i h_lt
     exact absurd h_lt h_not_lt

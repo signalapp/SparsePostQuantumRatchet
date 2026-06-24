@@ -18,6 +18,12 @@ level: on a `range : Range Usize`, `next` returns `(opt, range')` where:
 
 open Aeneas Aeneas.Std Result core.ops.range core.iter.range
 
+-- TODO: restate this for core.cmp.PartialOrdUsize.lt so it is general
+@[step]
+theorem core.iter.range.StepUsize.partialOrdInst_lt_spec (x y : Usize) :
+    StepUsize.partialOrdInst.lt x y ⦃ (b : Bool) => b ↔ x.val < y.val ⦄ := by
+  simp [core.iter.range.UScalarStep, core.cmp.impls.PartialOrdUsize.lt]
+
 namespace core.iter.range.IteratorRange
 
 /-- **Spec theorem for `core.iter.range.IteratorRange.next core.iter.range.StepUsize`**:
@@ -34,43 +40,10 @@ level: on a `range : Range Usize`, `next` returns `(opt, range')` where:
 theorem next_spec (range : Range Usize) :
     IteratorRange.next StepUsize range ⦃ (opt, range') =>
       (¬ range.start.val < range.end.val → opt = none ∧ range' = range) ∧
-      (range.start.val < range.end.val →
-            opt = some range.start ∧
-            range'.start.val = range.start.val + 1 ∧
-            range'.end = range.end) ⦄ := by
-  suffices h : ∃ opt range',
-      IteratorRange.next StepUsize range
-        = ok (opt, range') ∧
-      (¬ range.start.val < range.end.val → opt = none ∧ range' = range) ∧
-      (range.start.val < range.end.val →
-          opt = some range.start ∧
-          range'.start.val = range.start.val + 1 ∧
-          range'.end = range.end) by grind
-  simp only [IteratorRange.next]
-  simp only [liftFun2, liftFun1, core.clone.impls.CloneUsize.clone, bind_tc_ok, not_lt]
-  have h_lt_iff :
-      (core.cmp.impls.PartialOrdUsize.lt range.start range.end = true) =
-      (range.start.val < range.end.val) := by
-    simp [core.cmp.impls.PartialOrdUsize.lt]
-  simp only [h_lt_iff]
-  by_cases hlt : range.start.val < range.end.val
-  · rw [if_pos hlt]
-    have hbound : range.start.val + 1 ≤ Usize.max := by scalar_tac
-    refine ⟨some range.start,
-            {range with start := ⟨range.start.val + 1, by scalar_tac⟩},
-            ?_, ?_, ?_⟩
-    · simp only [core.iter.range.StepUsize.forward_checked, bind_tc_ok]
-      have hca := Usize.checked_add_bv_spec range.start 1#usize
-      rcases heq : Usize.checked_add range.start 1#usize with _ | z
-      · scalar_tac
-      · simp only
-        have hzval : z.val = range.start.val + 1 := by scalar_tac
-        congr 4
-        exact UScalar.eq_of_val_eq hzval
-    · grind
-    · intro _
-      exact ⟨rfl, rfl, rfl⟩
-  · rw [if_neg hlt]
-    exact ⟨none, range, rfl, fun _ => ⟨rfl, rfl⟩, fun h => absurd h hlt⟩
+      (range.start.val < range.end.val → opt = some range.start ∧
+      range'.start.val = range.start.val + 1 ∧ range'.end = range.end) ⦄ := by
+  by_cases range.start.val < range.end.val
+  · step*
+  · unfold IteratorRange.next; step*
 
 end core.iter.range.IteratorRange

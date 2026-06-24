@@ -45,7 +45,8 @@ theorem body_spec
             g.toGF216 =
               (xs[xs.length / 2]!).toGF216 * (xs[xs.length / 2 + xs.length % 2]!).toGF216 ⦄ := by
   unfold body
-  obtain ⟨opt, iter1', hnext, h_none, h_some⟩ := core.iter.range.IteratorRange.next_Usize_spec iter
+  obtain ⟨⟨opt, iter1'⟩, hnext, h_none, h_some⟩ :=
+    WP.spec_imp_exists (core.iter.range.IteratorRange.next_Usize_spec' iter)
   rw [hnext]
   simp only [bind_tc_ok]
   by_cases h_lt : iter.start < iter.end
@@ -131,7 +132,8 @@ theorem body_spec
           iter1.end = iter.end ∧
           out1.toGF216 = out.toGF216 + (v[iter.start]!).toGF216 * (xs[iter.start]!).toGF216 ⦄ := by
   unfold body
-  obtain ⟨opt, iter1', hnext, h_none, h_some⟩ := core.iter.range.IteratorRange.next_Usize_spec iter
+  obtain ⟨⟨opt, iter1'⟩, hnext, h_none, h_some⟩ :=
+    WP.spec_imp_exists (core.iter.range.IteratorRange.next_Usize_spec' iter)
   rw [hnext]
   simp only [bind_tc_ok]
   by_cases h_lt : iter.start < iter.end

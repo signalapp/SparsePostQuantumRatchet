@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE-APACHE.
 Authors: Hoang Le Truong
 -/
 import SrcTranslated.Funs
+import Spqr.Aux.Aeneas.StdNextStepUsize
 
 /-!
 # Spec theorem for `core::ops::range::{Iterator for Range<usize>}::next`
@@ -44,45 +45,15 @@ The range iterator `next` always returns `ok` and either provides the current `s
       `range'.«end» = range.«end»`.
 
 **Source**: core/src/ops/range.rs (Iterator impl for Range)
+Note: Aeneas provides `core.iter.range.IteratorRange.next_Usize_spec` but is only for one branch.
 -/
-theorem next_Usize_spec
-    (range : core.ops.range.Range Std.Usize) :
-    ∃ opt range',
-      core.iter.range.IteratorRange.next core.iter.range.StepUsize range
-        = ok (opt, range') ∧
-      (¬ range.start.val < range.«end».val →
-          opt = none ∧ range' = range) ∧
-      (range.start.val < range.«end».val →
-          opt = some range.start ∧
-          range'.start.val = range.start.val + 1 ∧
-          range'.«end» = range.«end») := by
-  simp only [core.iter.range.IteratorRange.next]
-  simp only [liftFun2, liftFun1, core.clone.impls.CloneUsize.clone, bind_tc_ok, not_lt]
-  have h_lt_iff :
-      (core.cmp.impls.PartialOrdUsize.lt range.start range.«end» = true) =
-      (range.start.val < range.«end».val) := by
-    simp [core.cmp.impls.PartialOrdUsize.lt]
-  simp only [h_lt_iff]
-  by_cases hlt : range.start.val < range.«end».val
-  · rw [if_pos hlt]
-    have hbound : range.start.val + 1 ≤ Usize.max := by
-      have := range.«end».hBounds; scalar_tac
-    refine ⟨some range.start,
-            {range with start := ⟨range.start.val + 1, by scalar_tac⟩},
-            ?_, ?_, ?_⟩
-    · simp only [core.iter.range.StepUsize.forward_checked, bind_tc_ok]
-      have hca := Usize.checked_add_bv_spec range.start 1#usize
-      rcases heq : Usize.checked_add range.start 1#usize with _ | z
-      · rw [heq] at hca; scalar_tac
-      · simp only
-        rw [heq] at hca
-        obtain ⟨_, hval, _⟩ := hca
-        have hzval : z.val = range.start.val + 1 := by scalar_tac
-        congr 4
-        exact UScalar.eq_of_val_eq hzval
-    · intro h; omega
-    · intro _; exact ⟨rfl, rfl, rfl⟩
-  · rw [if_neg hlt]
-    exact ⟨none, range, rfl, fun _ => ⟨rfl, rfl⟩, fun h => absurd h hlt⟩
+theorem next_Usize_spec' (range : core.ops.range.Range Std.Usize) :
+    next core.iter.range.StepUsize range ⦃ (opt, range') =>
+      (¬ range.start.val < range.end.val → opt = none ∧ range' = range) ∧
+      (range.start.val < range.end.val → opt = some range.start ∧
+      range'.start.val = range.start.val + 1 ∧ range'.end = range.end) ⦄ := by
+  by_cases range.start.val < range.end.val
+  · step*
+  · unfold next; step*
 
 end Aeneas.Std.core.iter.range.IteratorRange

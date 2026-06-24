@@ -45,6 +45,9 @@ async function main(): Promise<void> {
   if (config.charon.preset) {
     charonArgs.push(`--preset=${config.charon.preset}`);
   }
+  if (config.charon.sysroot) {
+    charonArgs.push(`--sysroot=${config.charon.sysroot}`);
+  }
   if (config.charon.hide_marker_traits) {
     charonArgs.push("--hide-marker-traits");
   }

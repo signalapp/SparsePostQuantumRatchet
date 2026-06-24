@@ -19,6 +19,7 @@ export interface AeneasConfig {
   };
   charon: {
     preset: string;
+    sysroot: string;
     hide_marker_traits: boolean;
     cargo_args: string[];
     start_from: string[];
@@ -85,6 +86,7 @@ export function loadConfig(root?: string): { config: AeneasConfig; root: string 
   config.upstream = config.upstream ?? { repo: "", commit: "" };
   config.charon = config.charon ?? {} as AeneasConfig["charon"];
   config.charon.preset = config.charon.preset ?? "aeneas";
+  config.charon.sysroot = config.charon.sysroot ?? "default";
   config.charon.hide_marker_traits = config.charon.hide_marker_traits ?? false;
   config.charon.cargo_args = config.charon.cargo_args ?? [];
   config.charon.start_from = config.charon.start_from ?? [];

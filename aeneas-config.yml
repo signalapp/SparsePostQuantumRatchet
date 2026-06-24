@@ -1,7 +1,7 @@
 # Aeneas extraction configuration
 
 aeneas:
-  commit: "39c6a720" # pinned commit hash
+  commit: "34d3b272" # pinned commit hash
   repo: "https://github.com/AeneasVerif/aeneas.git"
 
 # Upstream Rust crate we are verifying
@@ -15,6 +15,7 @@ crate:
 
 charon:
   preset: "aeneas"
+  sysroot: "default"
   hide_marker_traits: true
   cargo_args: ["--features", "extraction"]
   # trait issue means that we can't use start_from_pub
@@ -127,16 +128,6 @@ tweaks:
     # https://github.com/Beneficial-AI-Foundation/SparsePostQuantumRatchet-verify/issues/101
     - find: "let v1 := read_discriminant v\n      let i ← lift (IScalar.hcast .U8 v1)"
       replace: "let v1' := read_discriminant v\n      let i ← lift (IScalar.hcast .U8 v1')"
-
-    # Strip map field from Iterator instances (Aeneas generates it but Lean backend doesn't have it)
-    # https://github.com/AeneasVerif/aeneas/issues/1043
-    - regex: "\\n  map := fun \\{B : Type\\} \\{F : Type\\}[\\s\\S]*?(?=\\n  enumerate)"
-      replace: ""
-
-    # Replace collect field with take := sorry in Iterator instances
-    # https://github.com/AeneasVerif/aeneas/issues/1043
-    - regex: "\\n  collect := fun \\{B : Type\\}[\\s\\S]*?(?=\\n\\})"
-      replace: "\n  take := sorry"
 
     # Sorry merge closure FnOnce call_once assignments (Aeneas types them wrong)
     # https://github.com/AeneasVerif/aeneas/issues/1046

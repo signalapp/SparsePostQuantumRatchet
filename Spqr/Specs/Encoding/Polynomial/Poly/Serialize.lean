@@ -88,7 +88,8 @@ theorem body_spec
             out1.val = out.val ++ [hi, lo] ∧
             256 * hi  + lo = (v.val[iter.start.val]!).value.val ⦄ := by
   unfold body
-  obtain ⟨opt, iter1', hnext, h_none, h_some⟩ := core.iter.range.IteratorRange.next_Usize_spec iter
+  obtain ⟨⟨opt, iter1'⟩, hnext, h_none, h_some⟩ :=
+    WP.spec_imp_exists (core.iter.range.IteratorRange.next_Usize_spec' iter)
   rw [hnext]
   simp only [bind_tc_ok]
   by_cases h_lt : iter.start < iter.end.val

@@ -15,6 +15,75 @@ set_option linter.style.whitespace false
 set_option maxHeartbeats 1000000
 open spqr
 
+/-- [core::cmp::impls::{impl core::cmp::Eq for u8}::assert_fields_are_eq]:
+    Source: '/rustc/library/core/src/cmp.rs', lines 1906:12-1906:32
+    Name pattern: [core::cmp::impls::{core::cmp::Eq<u8>}::assert_fields_are_eq]
+    Visibility: public -/
+@[rust_fun "core::cmp::impls::{core::cmp::Eq<u8>}::assert_fields_are_eq"]
+axiom U8.Insts.CoreCmpEq.assert_fields_are_eq : Std.U8 → Result Unit
+
+/-- [core::cmp::impls::{impl core::cmp::Eq for usize}::assert_fields_are_eq]:
+    Source: '/rustc/library/core/src/cmp.rs', lines 1906:12-1906:32
+    Name pattern: [core::cmp::impls::{core::cmp::Eq<usize>}::assert_fields_are_eq]
+    Visibility: public -/
+@[rust_fun "core::cmp::impls::{core::cmp::Eq<usize>}::assert_fields_are_eq"]
+axiom Usize.Insts.CoreCmpEq.assert_fields_are_eq : Std.Usize → Result Unit
+
+/-- [core::iter::traits::iterator::Iterator::map]:
+    Source: '/rustc/library/core/src/iter/traits/iterator.rs', lines 831:4-834:34
+    Name pattern: [core::iter::traits::iterator::Iterator::map]
+    Visibility: public -/
+@[rust_fun "core::iter::traits::iterator::Iterator::map"]
+axiom core.iter.traits.iterator.Iterator.map.default
+  {Self : Type} {B : Type} {F : Type} {Clause0_Item : Type} (IteratorInst :
+  core.iter.traits.iterator.Iterator Self Clause0_Item)
+  (opsfunctionFnMutFTupleClause0_ItemBInst : core.ops.function.FnMut F
+  Clause0_Item B) :
+  Self → F → Result (core.iter.adapters.map.Map Self F)
+
+/-- [prost::encoding::bool::merge]:
+    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/prost-0.14.1/src/encoding.rs', lines 268:12-268:130
+    Name pattern: [prost::encoding::bool::merge]
+    Visibility: public -/
+@[rust_fun "prost::encoding::bool::merge"]
+axiom prost.encoding.bool.merge
+  {T0 : Type} (bytesbufbuf_implBufInst : bytes.buf.buf_impl.Buf T0) :
+  prost.encoding.wire_type.WireType → Bool → T0 →
+    prost.encoding.DecodeContext → Result ((core.result.Result Unit
+    prost.error.DecodeError) × Bool × T0)
+
+/-- [prost::encoding::message::merge]:
+    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/prost-0.14.1/src/encoding.rs', lines 796:4-804:15
+    Name pattern: [prost::encoding::message::merge]
+    Visibility: public -/
+@[rust_fun "prost::encoding::message::merge"]
+axiom prost.encoding.message.merge
+  {M : Type} {B : Type} (messageMessageInst : prost.message.Message M)
+  (bytesbufbuf_implBufInst : bytes.buf.buf_impl.Buf B) :
+  prost.encoding.wire_type.WireType → M → B →
+    prost.encoding.DecodeContext → Result ((core.result.Result Unit
+    prost.error.DecodeError) × M × B)
+
+/-- [prost::message::Message::encode_to_vec]:
+    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/prost-0.14.1/src/message.rs', lines 61:4-63:20
+    Name pattern: [prost::message::Message::encode_to_vec]
+    Visibility: public -/
+@[rust_fun "prost::message::Message::encode_to_vec"]
+axiom prost.message.Message.encode_to_vec.default
+  {Self : Type} (MessageInst : prost.message.Message Self) :
+  Self → Result (alloc.vec.Vec Std.U8)
+
+/-- [prost::message::Message::decode]:
+    Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/prost-0.14.1/src/message.rs', lines 105:4-107:22
+    Name pattern: [prost::message::Message::decode]
+    Visibility: public -/
+@[rust_fun "prost::message::Message::decode"]
+axiom prost.message.Message.decode.default
+  {Self : Type} {T1 : Type} (MessageInst : prost.message.Message Self)
+  (coredefaultDefaultInst : core.default.Default Self) (bytesbufbuf_implBufInst
+  : bytes.buf.buf_impl.Buf T1) :
+  T1 → Result (core.result.Result Self prost.error.DecodeError)
+
 /-- Implementation helper for `Slice.Insts.CoreCmpPartialEqArray.eq`
 (`[core::array::equality::{core::cmp::PartialEq<[@T], [@U; @N]>}::eq]`,
 Source: '/rustc/library/core/src/array/equality.rs', lines 48:4-48:40).
@@ -834,7 +903,13 @@ axiom
   core.slice.iter.ChunksExact T → F → Result (core.iter.adapters.map.Map
     (core.slice.iter.ChunksExact T) F)
 
--- Rust's Result::ok() method: converts Result<T,E> to Option<T>, discarding the error.
+
+/-- [core::result::{core::result::Result<T, E>}::ok]:
+    Source: '/rustc/library/core/src/result.rs', lines 708:4-711:28
+    Name pattern: [core::result::{core::result::Result<@T, @E>}::ok]
+    Visibility: public
+    Rust's Result::ok() method: converts Result<T,E> to Option<T>, discarding the error. -/
+@[rust_fun "core::result::{core::result::Result<@T, @E>}::ok"]
 def core.result.Result.ok {T E : Type} (r : core.result.Result T E) :
     Result (Option T) :=
   match r with
