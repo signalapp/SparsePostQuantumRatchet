@@ -218,17 +218,6 @@ theorem core.hint.black_box_spec {T : Type} (x : T) :
 namespace core.iter
 namespace traits.iterator.Iterator
 
--- Default implementations for Iterator fields
-def enumerate.default
-  {Self : Type} (self: Self) :
-  Result (core.iter.adapters.enumerate.Enumerate Self) :=
-  .ok ⟨ self, 0#usize ⟩
-
-def take.default
-  {Self : Type} (self: Self) (n: Usize):
-  Result (core.iter.adapters.take.Take Self) :=
-  .ok ⟨ self, n ⟩
-
 -- Since `next` is often the only custom method, we define a way to construct an entire
 -- `Iterator` from just the `next` function, and populate the rest with defaults.
 def fromNext
@@ -238,8 +227,8 @@ def fromNext
   {
     next := nextFn,
     step_by := core.iter.traits.iterator.Iterator.step_by.default,
-    enumerate := enumerate.default,
-    take := take.default
+    enumerate := core.iter.traits.iterator.Iterator.enumerate.default,
+    take := core.iter.traits.iterator.Iterator.take.default
   }
 
 end traits.iterator.Iterator
@@ -293,31 +282,18 @@ def
       let count' ← i + 1#usize
       ok (some (i, val), ⟨iter', count'⟩)
 
-/-- [core::iter::adapters::enumerate::{core::iter::traits::iterator::Iterator<(usize, Clause0_Item)> for core::iter::adapters::enumerate::Enumerate<I>}::collect]:
-    Source: '/rustc/library/core/src/iter/adapters/enumerate.rs', lines 62:0-64:16
-    Name pattern: [core::iter::adapters::enumerate::{core::iter::traits::iterator::Iterator<core::iter::adapters::enumerate::Enumerate<@I>, (usize, @Clause0_Item)>}::collect] -/
-@[rust_fun
-  "core::iter::adapters::enumerate::{core::iter::traits::iterator::Iterator<core::iter::adapters::enumerate::Enumerate<@I>, (usize, @Clause0_Item)>}::collect"]
-axiom
-  core.iter.adapters.enumerate.Enumerate.Insts.CoreIterTraitsIteratorIteratorPairUsizeClause0_Item.collect
-  {I : Type} {B : Type} {Clause0_Item : Type} (traitsiteratorIteratorInst :
-  core.iter.traits.iterator.Iterator I Clause0_Item)
-  (traitscollectFromIteratorBPairUsizeClause0_ItemInst :
-  core.iter.traits.collect.FromIterator B (Std.Usize × Clause0_Item)) :
-  core.iter.adapters.enumerate.Enumerate I → Result B
-
 /-- [core::iter::adapters::enumerate::{core::iter::traits::iterator::Iterator<(usize, Clause0_Item)> for core::iter::adapters::enumerate::Enumerate<I>}::enumerate]:
     Source: '/rustc/library/core/src/iter/adapters/enumerate.rs', lines 62:0-64:16
     Name pattern: [core::iter::adapters::enumerate::{core::iter::traits::iterator::Iterator<core::iter::adapters::enumerate::Enumerate<@I>, (usize, @Clause0_Item)>}::enumerate] -/
 @[rust_fun
   "core::iter::adapters::enumerate::{core::iter::traits::iterator::Iterator<core::iter::adapters::enumerate::Enumerate<@I>, (usize, @Clause0_Item)>}::enumerate"]
-axiom
+def
   core.iter.adapters.enumerate.Enumerate.Insts.CoreIterTraitsIteratorIteratorPairUsizeClause0_Item.enumerate
-  {I : Type} {Clause0_Item : Type} (traitsiteratorIteratorInst :
-  core.iter.traits.iterator.Iterator I Clause0_Item) :
-  core.iter.adapters.enumerate.Enumerate I → Result
-    (core.iter.adapters.enumerate.Enumerate
-    (core.iter.adapters.enumerate.Enumerate I))
+  {I : Type} {Clause0_Item : Type}
+  (traitsiteratorIteratorInst : core.iter.traits.iterator.Iterator I Clause0_Item)
+  (self: core.iter.adapters.enumerate.Enumerate I):
+  Result (core.iter.adapters.enumerate.Enumerate (core.iter.adapters.enumerate.Enumerate I)) :=
+    core.iter.traits.iterator.Iterator.enumerate.default self
 
 /-- [core::iter::adapters::enumerate::{core::iter::traits::iterator::Iterator<(usize, Clause0_Item)> for core::iter::adapters::enumerate::Enumerate<I>}::map]:
     Source: '/rustc/library/core/src/iter/adapters/enumerate.rs', lines 62:0-64:16
@@ -339,26 +315,32 @@ def
     Name pattern: [core::iter::adapters::enumerate::{core::iter::traits::iterator::Iterator<core::iter::adapters::enumerate::Enumerate<@I>, (usize, @Clause0_Item)>}::step_by] -/
 @[rust_fun
   "core::iter::adapters::enumerate::{core::iter::traits::iterator::Iterator<core::iter::adapters::enumerate::Enumerate<@I>, (usize, @Clause0_Item)>}::step_by"]
-axiom
+def
   core.iter.adapters.enumerate.Enumerate.Insts.CoreIterTraitsIteratorIteratorPairUsizeClause0_Item.step_by
-  {I : Type} {Clause0_Item : Type} (traitsiteratorIteratorInst :
-  core.iter.traits.iterator.Iterator I Clause0_Item) :
-  core.iter.adapters.enumerate.Enumerate I → Std.Usize → Result
-    (core.iter.adapters.step_by.StepBy (core.iter.adapters.enumerate.Enumerate
-    I))
+  {I : Type} {Clause0_Item : Type}
+  (traitsiteratorIteratorInst: core.iter.traits.iterator.Iterator I Clause0_Item)
+  (self: core.iter.adapters.enumerate.Enumerate I)
+  (n: Std.Usize):
+    Result (core.iter.adapters.step_by.StepBy (core.iter.adapters.enumerate.Enumerate I)) :=
+      core.iter.traits.iterator.Iterator.step_by.default self n
 
 /-- [core::iter::adapters::map::{core::iter::traits::iterator::Iterator<B> for core::iter::adapters::map::Map<I, F>}::collect]:
     Source: '/rustc/library/core/src/iter/adapters/map.rs', lines 99:0-101:27
     Name pattern: [core::iter::adapters::map::{core::iter::traits::iterator::Iterator<core::iter::adapters::map::Map<@I, @F>, @B>}::collect] -/
 @[rust_fun
   "core::iter::adapters::map::{core::iter::traits::iterator::Iterator<core::iter::adapters::map::Map<@I, @F>, @B>}::collect"]
-axiom core.iter.adapters.map.Map.Insts.CoreIterTraitsIteratorIterator.collect
+def core.iter.adapters.map.Map.Insts.CoreIterTraitsIteratorIterator.collect
   {B : Type} {I : Type} {F : Type} {B1 : Type} {Clause0_Item : Type}
-  (traitsiteratorIteratorInst : core.iter.traits.iterator.Iterator I
-  Clause0_Item) (opsfunctionFnMutFTupleClause0_ItemBInst :
-  core.ops.function.FnMut F Clause0_Item B) (traitscollectFromIteratorInst :
-  core.iter.traits.collect.FromIterator B1 B) :
-  core.iter.adapters.map.Map I F → Result B1
+  (traitsiteratorIteratorInst: core.iter.traits.iterator.Iterator I Clause0_Item)
+  (opsfunctionFnMutFTupleClause0_ItemBInst: core.ops.function.FnMut F Clause0_Item B)
+  (traitscollectFromIteratorInst: core.iter.traits.collect.FromIterator B1 B)
+  (map: core.iter.adapters.map.Map I F): Result B1 :=
+    core.iter.traits.iterator.Iterator.collect.default
+      -- mapIteratorTransformer turns an A-iterator into a B-iterator, given f: A → B
+      (mapIteratorTransformer map traitsiteratorIteratorInst opsfunctionFnMutFTupleClause0_ItemBInst)
+      traitscollectFromIteratorInst
+      map.iter
+
 
 namespace I32.Insts.CoreIterRangeStep
 /-- [core::iter::range::{core::iter::range::Step for i32}::backward_checked]:
