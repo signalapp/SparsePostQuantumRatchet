@@ -1462,6 +1462,55 @@ axiom libcrux_hmac.hmac
   libcrux_hmac.Algorithm → Slice Std.U8 → Slice Std.U8 → Option Std.Usize
     → Result (alloc.vec.Vec Std.U8)
 
+/-- **Axiom claim:** If `key.length ≤ u32::MAX` and `data.length ≤ u32::MAX`, then
+`libcrux_hmac::hmac(Sha256, key, data, Some(32))` is panic-free and returns an
+`alloc::vec::Vec<u8>` of length exactly `32`.
+
+**External source references (libcrux-hmac 0.0.6):**
+
+* wrapper, `src/hmac.rs`:
+  <https://docs.rs/libcrux-hmac/0.0.6/src/libcrux_hmac/hmac.rs.html>
+
+* glue, `src/impl_hacl.rs`:
+  <https://docs.rs/libcrux-hmac/0.0.6/src/libcrux_hmac/impl_hacl.rs.html>
+
+This axiom is designed to maximise three desiderata simultaneously:
+
+**(a) Sufficiency for downstream specs:** This axiom allows to formulate and
+prove spec theorems for `mac_ct` and `mac_hdr`, which in turn unblock a variety
+of dependent spec theorems.
+
+**(b) Faithfulness to the external sources:** Both halves of the claim follow
+from inspecting the external source references:
+
+  * *Panic-freedom (no panic under the given settings).* The only potential
+    panic sites sit in the glue layer `src/impl_hacl.rs`, namely the two
+    `usize → u32` casts `key.len().try_into().unwrap()` and
+    `data.len().try_into().unwrap()`. The hypotheses
+    `key.length ≤ u32::MAX` and `data.length ≤ u32::MAX` ensure that neither
+    `try_into` returns `Err`, so the two `unwrap()` calls (and hence the
+    whole call) cannot panic.
+
+  * *Output length is `32` (under the given settings).* For
+    `Algorithm.Sha256`, the wrapper calls `wrap_bufalloc(|buf| hmac_sha2_256(buf, …))`,
+    which allocates a stack buffer `[u8; 32]`, lets `hmac_sha2_256` fill it
+    through the `&mut [u8; 32]` parameter, and returns it as `buf.to_vec()`, which is
+    a `Vec<u8>` of length `32`. The wrapper then calls `dst.truncate(32)`.
+    Since `Vec::truncate(n)` is a no-op when the vector already has length
+    `≤ n`, the returned vector has length exactly `32`.
+
+**(c) Minimality of trust base extension:** Both call sites of `libcrux_hmac.hmac`
+in `Funs.lean` use precisely `Algorithm.Sha256` and `some MACSIZE` with
+`MACSIZE = 32`, so the axiom is specialised to exactly the shape that occurs
+in this codebase and adds no surplus assumptions. -/
+@[step]
+axiom libcrux_hmac.hmac_sha256_tag32_length_eq_32
+    (key data : Slice Std.U8)
+    (hkey  : key.length  ≤ Std.U32.max)
+    (hdata : data.length ≤ Std.U32.max) :
+    libcrux_hmac.hmac libcrux_hmac.Algorithm.Sha256 key data (some 32#usize)
+      ⦃ (r : alloc.vec.Vec Std.U8) => r.length = 32 ⦄
+
 /-- [libcrux_ml_kem::constants::SHARED_SECRET_SIZE]
     Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libcrux-ml-kem-0.0.7/src/constants.rs', lines 14:0-14:35
     Name pattern: [libcrux_ml_kem::constants::SHARED_SECRET_SIZE] -/
