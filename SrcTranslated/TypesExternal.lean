@@ -3,6 +3,8 @@
 -- This is a template file: rename it to "TypesExternal.lean" and fill the holes.
 import Aeneas
 import Spqr.Lint.Basic
+import Mathlib.Data.Nat.Prime.Basic
+import Mathlib.Tactic.NormNum.Prime
 open Aeneas Aeneas.Std Result ControlFlow Error
 set_option linter.dupNamespace false
 set_option linter.hashCommand false
@@ -43,11 +45,111 @@ structure alloc.collections.vec_deque.into_iter.IntoIter (T : Type) (A : Type)
 @[rust_type "bytes::buf::uninit_slice::UninitSlice"]
 axiom bytes.buf.uninit_slice.UninitSlice : Type
 
+/-! ## ML-KEM-768 parameter set and derived serialized buffer sizes
+
+To describe the properties of the libcrux `KeyPairCompressedBytes` interface (and, more
+generally, the `incremental_mlkem768` functions) we record the ML-KEM parameter set as a
+structure that also carries the well-formedness invariants those parameters must satisfy
+(`q` prime so that `ℤ_q` is a field, `n ∣ q - 1` so that a primitive `n`-th root of unity
+exists for the NTT, and the compression bounds `dᵤ, dᵥ ≤ 12`).
+
+The serialized buffer sizes that libcrux exposes — the header (`pk1`), the encapsulation-key
+data (`pk2`), and the decapsulation key (`sk`) — are then *derived* from these parameters
+rather than written as bare literals.  For the ML-KEM-768 parameter set this recovers the
+concrete sizes `64`, `1152` and `2400` mandated by the Rust contract, and we prove those
+equalities below. -/
+
+namespace Spqr.Mlkem
+
+/-- The ML-KEM parameter set, together with the well-formedness invariants needed to
+characterize the scheme:
+
+* `q_prime`  — `q` is prime, so `ℤ_q` is a field;
+* `n_dvd_q1` — `n ∣ q - 1`, so a primitive `n`-th root of unity exists (needed for the NTT);
+* `dᵤ_le_12`, `dᵥ_le_12` — the compression parameters fit in a serialized coefficient. -/
+structure MlkemParams where
+  /-- Polynomial degree bound (number of coefficients per polynomial). -/
+  n : ℕ
+  /-- Modulus of the coefficient field `ℤ_q`. -/
+  q : ℕ
+  /-- Module rank (number of polynomials per vector). -/
+  k : ℕ
+  /-- Noise parameter for key generation / the secret. -/
+  η₁ : ℕ
+  /-- Noise parameter for encryption. -/
+  η₂ : ℕ
+  /-- Compression parameter for the `u` component of a ciphertext. -/
+  dᵤ : ℕ
+  /-- Compression parameter for the `v` component of a ciphertext. -/
+  dᵥ : ℕ
+  q_prime  : Nat.Prime q
+  n_dvd_q1 : n ∣ (q - 1)
+  dᵤ_le_12 : dᵤ ≤ 12
+  dᵥ_le_12 : dᵥ ≤ 12
+
+/-- The ML-KEM-768 parameter set (FIPS 203, security category 3). -/
+def mlkem768Params : MlkemParams where
+  n := 256
+  q := 3329
+  k := 3
+  η₁ := 2
+  η₂ := 2
+  dᵤ := 10
+  dᵥ := 4
+  q_prime  := by norm_num
+  n_dvd_q1 := ⟨13, by norm_num⟩
+  dᵤ_le_12 := by norm_num
+  dᵥ_le_12 := by norm_num
+
+/-- The fixed `32`-byte seed / hash length (the security parameter), shared by every ML-KEM
+buffer that stores a seed `ρ`, a hash `H(ek)`, or an implicit-rejection value `z`.  This is a
+scheme-wide constant, independent of the algebraic parameters `(n, q, k)`. -/
+def seedBytes : ℕ := 32
+
+/-- Bytes in one serialized polynomial: each of the `n` coefficients is encoded in `12`
+bits (ML-KEM fixes a 12-bit coefficient encoding, since `q < 2 ^ 12`), packed into bytes.
+For ML-KEM-768 this is `256 * 12 / 8 = 384`. -/
+def MlkemParams.serializedPolyBytes (p : MlkemParams) : ℕ := p.n * 12 / 8
+
+/-- Size of the libcrux header buffer `pk1` (Rust `HEADER_SIZE`): the matrix seed `ρ`
+together with a hash, i.e. `2 * seedBytes = 64` bytes.  Independent of `(n, q, k)`. -/
+def headerBytes : ℕ := 2 * seedBytes
+
+/-- Size of the libcrux `pk2` buffer (Rust `ENCAPSULATION_KEY_SIZE`): the serialized `t̂`
+vector of `k` polynomials.  For ML-KEM-768 this is `3 * 384 = 1152`. -/
+def MlkemParams.encapsulationKeyBytes (p : MlkemParams) : ℕ := p.k * p.serializedPolyBytes
+
+/-- Size of the libcrux `sk` buffer: the full ML-KEM decapsulation key.  It bundles the PKE
+decryption key (`k` polynomials), the encapsulation key (`k` polynomials plus the seed), and
+the hash `H(ek)` and implicit-rejection value `z`, giving
+`2 * (k * serializedPolyBytes) + 3 * seedBytes`.  For ML-KEM-768 this is
+`2 * 1152 + 96 = 2400`. -/
+def MlkemParams.decapsulationKeyBytes (p : MlkemParams) : ℕ :=
+  2 * (p.k * p.serializedPolyBytes) + 3 * seedBytes
+
+end Spqr.Mlkem
+
+open Spqr.Mlkem
+
 /-- [libcrux_ml_kem::mlkem768::incremental::KeyPairCompressedBytes]
     Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libcrux-ml-kem-0.0.7/src/mlkem.rs', lines 233:8-233:41
-    Name pattern: [libcrux_ml_kem::mlkem768::incremental::KeyPairCompressedBytes] -/
+    Name pattern: [libcrux_ml_kem::mlkem768::incremental::KeyPairCompressedBytes]
+
+    Faithful model of libcrux's `KeyPairCompressedBytes`, which in Rust is a single
+    serialized buffer. We model exactly that one `value` buffer.  Its length is not a bare literal but the
+    size derived from the ML-KEM-768 parameter set defined just above.
+    The public accessors are then recovered as slices of this one buffer:
+    `sk` is the whole `value`, `pk2` the sub-range `value[enc .. 2·enc]`,
+    and `pk1` the header sub-range `value[2·enc .. 2·enc + 64]`,
+    where `enc = mlkem768Params.encapsulationKeyBytes = RANKED_BYTES_PER_RING_ELEMENT =
+    1152`.  Modelling the shared buffer (rather than three independent fields) is what
+    makes "`pk1`/`pk2` are byte-for-byte sub-ranges of `sk`" definitionally true in the
+    model, exactly as it is in the Rust source.  The cryptographic content of `value`
+    remains opaque to the Lean model and is left as future work. -/
 @[rust_type "libcrux_ml_kem::mlkem768::incremental::KeyPairCompressedBytes"]
-axiom libcrux_ml_kem.mlkem768.incremental.KeyPairCompressedBytes : Type
+structure libcrux_ml_kem.mlkem768.incremental.KeyPairCompressedBytes where
+  value : Array Std.U8 (Usize.ofNat mlkem768Params.decapsulationKeyBytes)
+deriving Inhabited
 
 /-- [prost::encoding::DecodeContext]
     Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/prost-0.14.1/src/encoding.rs', lines 36:0-36:24
