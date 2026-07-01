@@ -26,10 +26,10 @@ namespace spqr.encoding.polynomial
 lemma prodLinearFactors_eval_root (pts : List Pt) (start stop : Nat)
     (j : Nat) (hj1 : start ≤ j) (hj2 : j < stop) (hj3 : j < pts.length) :
     (prodLinearFactors pts start stop).eval
-      ((pts.get ⟨j, hj3⟩).x.toGF216) = 0 := by
+      ((pts[j]!).x.toGF216) = 0 := by
   suffices h : ∀ (d : Nat) (start : Nat), stop - start = d → start ≤ j →
       (prodLinearFactors pts start stop).eval
-        ((pts.get ⟨j, hj3⟩).x.toGF216) = 0 from
+        ((pts[j]!).x.toGF216) = 0 from
     h (stop - start) start rfl hj1
   intro d
   induction d with
@@ -39,7 +39,7 @@ lemma prodLinearFactors_eval_root (pts : List Pt) (start stop : Nat)
     rw [prodLinearFactors_step pts start stop (by omega) (by omega)]
     simp only [eval_mul]
     by_cases hjs : j = start
-    · subst hjs; simp [eval_sub, eval_X, eval_C]
+    · grind [eval_sub, eval_X, eval_C]
     · have := ih (start + 1) (by omega) (by omega)
       rw [this]; ring
 

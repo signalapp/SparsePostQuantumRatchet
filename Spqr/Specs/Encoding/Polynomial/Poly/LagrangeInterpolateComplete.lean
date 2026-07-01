@@ -215,7 +215,6 @@ theorem loop1_spec
 
 end spqr.encoding.polynomial.Poly.lagrange_interpolate_complete_loop1
 
-
 namespace spqr.encoding.polynomial.Poly
 
 /-! ## Spec theorem for `spqr.encoding.polynomial.Poly.lagrange_interpolate_complete`
@@ -230,26 +229,26 @@ index `i`, then:
 3. Divides out `(X − pᵢ.x)` by Horner-style synthetic division, scaling each coefficient by
    `scale` (loop 1). The result is shifted up by one degree (multiplied by `X`).
 4. Asserts `coefficients[0] == ZERO` (exact division check). -/
-
 @[step]
 theorem lagrange_interpolate_complete_spec
     (self : Poly) (pts : Slice Pt) (i : Usize)
     (hi : i.val < pts.val.length)
-    (hlen : 0 < self.coefficients.val.length)
-    (heval : self.evalAt (pts.val.get ⟨i.val, hi⟩).x = 0) :
+    (hlen : 0 < self.degree)
+    (heval : self.evalAt (pts[i]!).x = 0) :
     lagrange_interpolate_complete self pts i ⦃ (result : Poly) =>
-      result.coefficients.val.length = self.coefficients.val.length ∧
-      result.toGF216Poly * (X - C (GF16.toGF216 (pts.val.get ⟨i.val, hi⟩).x)) =
-        X * C (lagrangeScaleGF216 (pts.val.get ⟨i.val, hi⟩) pts.val) * self.toGF216Poly ⦄ := by
-  unfold lagrange_interpolate_complete
+      result.degree = self.degree ∧
+      result.toGF216Poly * (X - C (GF16.toGF216 (pts[i]!).x)) =
+        X * C (lagrangeScaleGF216 (pts[i]!) pts) * self.toGF216Poly ⦄ := by
+  unfold lagrange_interpolate_complete degree
   step*
+  · grind[degree]
   · -- success path (b = true)
     rename_i _ _ _ _ _ _ hb
-    have hpi_eq : pi = pts.val.get ⟨i.val, hi⟩ := by grind
+    have hpi_eq : pi = pts[i]! := by grind
     have hlv_zero := b_post.mp hb
     have hH0 : hornerAccum pi1.x self.coefficients.val 0 = 0 := by
-      rw [← v_post3 (by omega)]
-      have hlv_get : left_val = v.val.get ⟨0, by omega⟩ := by grind
+      rw [← v_post3 (by grind)]
+      have hlv_get : left_val = v.val.get ⟨0, by grind⟩ := by grind
       rw [← hlv_get]
       have hval_zero : left_val.value.val = 0 := by
         have := congr_arg UScalar.val hlv_zero
@@ -257,39 +256,39 @@ theorem lagrange_interpolate_complete_spec
         exact this
       exact spqr.encoding.gf.GF16.toGF216_eq_zero left_val hval_zero
     have hscale_eq : scale.toGF216 =
-        lagrangeScaleGF216 (pts.val.get ⟨i.val, hi⟩)
+        lagrangeScaleGF216 (pts[i])
           pts.val := by
       unfold lagrangeScaleGF216
       rw [pi1_post1] at scale_post
       rw [scale_post]
       rw [iter_post1, iter_post2] at pi1_post2
-      simp only [spqr.encoding.gf.GF16.ONE_toGF216,
+      simp only [GF16.ONE_toGF216,
         one_mul] at pi1_post2
-      rw [pi1_post2, hpi_eq]
+      grind
     rw [pi1_post1] at v_post2 v_post3 hH0
     rw [hpi_eq] at v_post2 v_post3 hH0
     constructor
     · exact v_post1
     · unfold Poly.toGF216Poly
       apply poly_identity_from
-        self.coefficients.val v.val
-        (pts.val.get ⟨i.val, hi⟩).x
-        (lagrangeScaleGF216
-          (pts.val.get ⟨i.val, hi⟩) pts.val)
       · exact v_post1
       · exact hlen
-      · intro h0; rw [v_post3 h0, hH0]
-      · exact hH0
-      · intro k hk hk_pos
-        rw [v_post2 k hk hk_pos, hscale_eq]
-  · -- panic path (¬b = true): derive contradiction
-    simp only [WP.spec_fail]
-    have hpi_eq : pi = pts.val.get ⟨i.val, hi⟩ := by grind
+      · grind
+      · grind
+      · intro k hk
+        by_cases hk_lt : k < v.val.length
+        · grind
+        · have h1 : (v.val[k]! : GF16).toGF216 = 0 := by
+            have : (v.val[k]! : GF16) = default := by grind
+            rw [this]; exact GF16.toGF216_eq_zero _ (by rfl)
+          grind[hornerAccum_eq_zero_of_le]
+  · simp only [WP.spec_fail]
+    have hpi_eq : pi = pts[i] := by grind
     have hH0 : hornerAccum
-        (pts.val.get ⟨i.val, hi⟩).x self.coefficients.val 0 = 0 := by
+        (pts[i]).x self.coefficients.val 0 = 0 := by
       rw [hornerAccum_zero_eq_eval]
       unfold Poly.evalAt Poly.toGF216Poly at heval
-      exact heval
+      grind
     have hlv_val_zero : left_val.value.val = 0 :=
       GF16_toGF216_eq_zero_imp left_val (by grind)
     have hlv_eq_zero : left_val.value = spqr.encoding.gf.GF16.ZERO.value :=
