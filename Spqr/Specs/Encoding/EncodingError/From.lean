@@ -1,7 +1,7 @@
 /-
 Copyright 2026 The Beneficial AI Foundation. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE-APACHE.
-Authors: Zhang Liao
+Authors: Liao Zhang
 -/
 import SrcTranslated.Funs
 
@@ -11,13 +11,6 @@ import SrcTranslated.Funs
 This is the `From` conversion that lifts a `polynomial::PolynomialError` into the wider
 `EncodingError` type, letting the `?` operator turn a polynomial-layer error into an
 encoding-layer error automatically.
-
-The extracted Lean body is the trivial, total wrapper
-  `from value = ok (EncodingError.PolynomialError value)`
-It never fails, takes no preconditions, and performs no computation on `value`: it merely
-tags the incoming `PolynomialError` with the `EncodingError.PolynomialError` constructor.
-The conversion is therefore injective and loses no information — the original error can be
-read back from the `PolynomialError` field of the result.
 
 **Source**: src/encoding.rs (lines 18:0-22:1)
 -/
