@@ -304,7 +304,7 @@ theorem loop_spec
 
 end spqr.encoding.polynomial.Poly.add_assign_loop
 
-namespace spqr.encoding.polynomial.Poly.test
+namespace spqr.encoding.polynomial.Poly
 
 /-- **Spec theorem for `encoding.polynomial.Poly.add_assign`**:
 
@@ -325,4 +325,4 @@ theorem add_assign_spec
   intro result h
   exact h
 
-end spqr.encoding.polynomial.Poly.test
+end spqr.encoding.polynomial.Poly
