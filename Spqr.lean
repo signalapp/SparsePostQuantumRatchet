@@ -24,6 +24,7 @@ import Spqr.Math.Poly.ExpectedTrailing.Defs
 import Spqr.Math.Poly.Horner.Defs
 import Spqr.Math.Poly.Horner.Eval
 import Spqr.Math.Poly.Identities.Basic
+import Spqr.Math.Poly.Identities.MultXdiff
 import Spqr.Math.Poly.Lagrange.BasisPoly
 import Spqr.Math.Poly.Lagrange.DenomProd
 import Spqr.Math.Poly.Lagrange.InterpolantSum

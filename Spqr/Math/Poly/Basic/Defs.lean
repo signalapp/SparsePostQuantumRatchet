@@ -56,3 +56,29 @@ namespace spqr.encoding.polynomial.Poly
 def degree (g : Poly) : Nat := g.coefficients.length
 
 end spqr.encoding.polynomial.Poly
+
+/-! ## `degree` of GF(2¹⁶) polynomials
+
+Abbreviations for the mathematical `natDegree` of the GF(2¹⁶)[X] polynomial obtained via
+the `listToGF216Poly` bridge.  These mirror `Poly.degree` (which counts coefficient-list
+length) but instead report the Mathlib `Polynomial.natDegree` of the bridged polynomial. -/
+
+namespace spqr.encoding.polynomial
+
+/-- The `degree` of a list of `GF16` coefficients viewed as a polynomial in `GF(2¹⁶)[X]`
+via `listToGF216Poly`. -/
+noncomputable abbrev listGF216Degree (cs : List spqr.encoding.gf.GF16) : Nat :=
+  (listToGF216Poly cs).natDegree
+
+end spqr.encoding.polynomial
+
+namespace spqr.encoding.polynomial.PolyConst
+
+open Aeneas Aeneas.Std
+
+/-- The `degree` of a `PolyConst N` polynomial viewed as a polynomial in `GF(2¹⁶)[X]`
+via `listToGF216Poly`. -/
+noncomputable abbrev degree {N : Usize} (self : PolyConst N) : Nat :=
+  (listToGF216Poly self.coefficients).natDegree
+
+end spqr.encoding.polynomial.PolyConst
