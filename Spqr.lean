@@ -76,6 +76,7 @@ import Spqr.Specs.Encoding.Polynomial.Poly.AddAssign
 import Spqr.Specs.Encoding.Polynomial.Poly.Clone
 import Spqr.Specs.Encoding.Polynomial.Poly.ComputeAt
 import Spqr.Specs.Encoding.Polynomial.Poly.Deserialize
+import Spqr.Specs.Encoding.Polynomial.Poly.LagrangeInterpolate
 import Spqr.Specs.Encoding.Polynomial.Poly.LagrangeInterpolateComplete
 import Spqr.Specs.Encoding.Polynomial.Poly.LagrangeInterpolatePrepare
 import Spqr.Specs.Encoding.Polynomial.Poly.LagrangeInterpolatePt
