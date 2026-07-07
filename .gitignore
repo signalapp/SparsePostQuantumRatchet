@@ -19,3 +19,6 @@ dist/
 
 # MacOS
 .DS_Store
+
+# verification status report
+status.json

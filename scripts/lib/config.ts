@@ -36,6 +36,9 @@ export interface AeneasConfig {
     dir: string;
     name: string;
   };
+  llbc_tweaks: {
+    substitutions: Substitution[];
+  };
   tweaks: {
     files: string[];
     substitutions: Substitution[];
@@ -97,6 +100,8 @@ export function loadConfig(root?: string): { config: AeneasConfig; root: string 
   config.aeneas_args.options = config.aeneas_args.options ?? [];
   config.aeneas_args.dest = config.aeneas_args.dest ?? "output";
   config.crate.name = config.crate.name ?? config.crate.dir.replace(/-/g, "_");
+  config.llbc_tweaks = config.llbc_tweaks ?? { substitutions: [] };
+  config.llbc_tweaks.substitutions = config.llbc_tweaks.substitutions ?? [];
   config.tweaks = config.tweaks ?? { files: [], substitutions: [] };
   config.tweaks.files = config.tweaks.files ?? [];
   config.tweaks.substitutions = config.tweaks.substitutions ?? [];
