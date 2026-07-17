@@ -141,7 +141,9 @@ fn potentially_fix_state_incorrectly_encoded_by_libcrux_issue_1275(
 #[hax_lib::ensures(|result| result.len() == es.len())]
 #[hax_lib::opaque]
 fn flip_endianness_of_encapsulation_state(es: &EncapsulationState) -> EncapsulationState {
-    assert!(es.len() % 2 == 0);
+    #[allow(clippy::manual_is_multiple_of)] // Hax does not support is_multiple_of.
+    let es_len_multiple_of_2 = es.len() % 2 == 0;
+    assert!(es_len_multiple_of_2);
     assert!(es.len() > 32);
     let mut fixed_es = es.clone();
     for i in (0..fixed_es.len() - 32).step_by(2) {

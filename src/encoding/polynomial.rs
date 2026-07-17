@@ -1,6 +1,10 @@
 // Copyright 2025 Signal Messenger, LLC
 // SPDX-License-Identifier: AGPL-3.0-only
 
+#![allow(unknown_lints)]
+#![allow(clippy::manual_is_multiple_of)] // Hax does not support is_multiple_of.
+#![allow(clippy::chunks_exact_to_as_chunks)] // Hax doesn't support as_chunks yet.
+
 use sorted_vec::SortedSet;
 
 use super::{Chunk, Decoder, Encoder};

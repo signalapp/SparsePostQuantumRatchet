@@ -6,8 +6,8 @@ use std::collections::BTreeMap;
 use rand_core::{CryptoRng, OsRng};
 
 use crate::{
-    test::scka::{Scka, SckaInitializer, SckaVulnerability},
     Epoch, Error, Secret,
+    test::scka::{Scka, SckaInitializer, SckaVulnerability},
 };
 
 pub trait MessagingScka {
@@ -173,10 +173,10 @@ impl<SCKA: Scka + SckaInitializer + Clone> MessagingScka for GenericMessagingSck
 impl<SCKA: Scka + SckaVulnerability> MessagingCkaVulnerability for GenericMessagingScka<SCKA> {
     fn vulnerable_epochs(&self) -> Vec<Epoch> {
         let mut result = self.scka.vulnerable_epochs();
-        for (ep, _) in self.send_outputs.iter() {
+        for ep in self.send_outputs.keys() {
             result.push(*ep);
         }
-        for (ep, _) in self.recv_outputs.iter() {
+        for ep in self.recv_outputs.keys() {
             result.push(*ep);
         }
         result

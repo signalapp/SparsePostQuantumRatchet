@@ -10,7 +10,7 @@ pub struct RoundRobinEncoder {
 
 impl RoundRobinEncoder {
     fn num_chunks(&self) -> usize {
-        self.data.len() / 32 + if self.data.len() % 32 != 0 { 1 } else { 0 }
+        self.data.len().div_ceil(32)
     }
 
     fn chunk_at(&self, idx: u16) -> Chunk {
@@ -55,7 +55,7 @@ impl RoundRobinDecoder {
 
 impl Decoder for RoundRobinDecoder {
     fn new(len_bytes: usize) -> Result<Self, super::EncodingError> {
-        let len_chunks = (len_bytes / 32) + if len_bytes % 32 != 0 { 1 } else { 0 };
+        let len_chunks = len_bytes.div_ceil(32);
         let chunks = vec![None; len_chunks];
         Ok(Self {
             chunks,
