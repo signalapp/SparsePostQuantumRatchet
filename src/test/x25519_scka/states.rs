@@ -3,12 +3,12 @@
 
 #![allow(clippy::comparison_chain)]
 #![cfg(test)]
-use crate::Epoch;
 use crate::test::scka::{
     ReceiveOutput, Scka, SckaInitializer, SckaMessage, SckaVulnerability, SendOutput,
 };
+use crate::Epoch;
 use curve25519_dalek::{
-    RistrettoPoint, ristretto::CompressedRistretto, scalar::Scalar, traits::Identity,
+    ristretto::CompressedRistretto, scalar::Scalar, traits::Identity, RistrettoPoint,
 };
 use rand_core::CryptoRng;
 use sha2::Digest;
@@ -352,10 +352,10 @@ impl SckaVulnerability for States {
 #[cfg(test)]
 mod test {
 
-    use crate::Error;
     use crate::test::messaging_scka::GenericMessagingScka;
     use crate::test::x25519_scka::states;
     use crate::test::{onlineoffline::OnlineOfflineMessagingBehavior, orchestrator};
+    use crate::Error;
     use rand::TryRngCore;
 
     use rand_core::OsRng;

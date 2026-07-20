@@ -120,7 +120,7 @@ impl Poly {
         working.lagrange_interpolate_complete(pts, 0);
         // Note that `working` is `x * <the polynomial we need>`.
         out.coefficients
-            .extend_from_slice(&working.coefficients[1..]);
+            .extend_from_slice(&working.coefficients.as_slice()[1..]);
 
         let _w_l = working.coefficients.len();
         for i in 1..pts.len() {
@@ -150,8 +150,9 @@ impl Poly {
         // a 1 in the *highest* field rather than the lowest. This lets us avoid sliding
         // coefficients as we go, but it also means we have to track the offset of which
         // coefficients have been initialized manually.
-        let mut p = Self::zero(pts.len() + 1);
-        p.coefficients.resize(pts.len() + 1, GF16::ZERO);
+        let mut p = Self {
+            coefficients: vec![GF16::ZERO; pts.len() + 1],
+        };
         let offset = pts.len();
         p.coefficients[offset] = GF16::ONE;
 
@@ -235,7 +236,8 @@ impl Poly {
     fn lagrange_interpolate_pt(pts: &[Pt], i: usize) -> Self {
         let mut result = Self::lagrange_interpolate_prepare(pts);
         result.lagrange_interpolate_complete(pts, i);
-        result.coefficients.remove(0);
+        // hax 0.3.7's Vec::remove model has no postcondition.
+        result.coefficients = result.coefficients.as_slice()[1..].to_vec();
         result
     }
 
@@ -344,9 +346,19 @@ impl Poly {
         if serialized.is_empty() || serialized.len() % 2 == 1 {
             return Err(PolynomialError::SerializationInvalid);
         }
-        let mut coefficients = Vec::<GF16>::with_capacity(serialized.len() / 2);
-        for coeff in serialized.chunks_exact(2) {
-            coefficients.push(GF16::new(u16::from_be_bytes(coeff.try_into().unwrap())));
+        let serialized_len = serialized.len();
+        let mut coefficients = Vec::<GF16>::with_capacity(serialized_len / 2);
+        let mut i = 0;
+        while i < serialized_len {
+            hax_lib::loop_invariant!(
+                i <= serialized_len && i % 2 == 0 && coefficients.len() == i / 2
+            );
+            hax_lib::loop_decreases!(serialized_len - i);
+            coefficients.push(GF16::new(u16::from_be_bytes([
+                serialized[i],
+                serialized[i + 1],
+            ])));
+            i += 2;
         }
         hax_lib::assume!(coefficients.len() <= MAX_INTERMEDIATE_POLYNOMIAL_DEGREE_V1 + 1);
         Ok(Self { coefficients })
@@ -462,8 +474,17 @@ impl<const N: usize> PolyConst<N> {
 }
 
 // For Protocol V1 N <= 36
+#[hax_lib::requires(N <= MAX_STORED_POLYNOMIAL_DEGREE_V1 + 1)]
 fn const_polys_to_polys<const N: usize>(cps: &[PolyConst<N>; N]) -> Vec<Poly> {
-    cps.iter().map(|x| x.to_poly()).collect::<Vec<_>>()
+    let mut polys = Vec::with_capacity(N);
+    let mut i = 0;
+    while i < N {
+        hax_lib::loop_invariant!(i <= N && polys.len() == i);
+        hax_lib::loop_decreases!(N - i);
+        polys.push(cps[i].to_poly());
+        i += 1;
+    }
+    polys
 }
 
 const fn lagrange_polys_for_complete_points<const N: usize>() -> [PolyConst<N>; N] {
@@ -561,9 +582,12 @@ impl PolyEncoder {
                     out.pts.push(v);
                 }
             }
-            EncoderState::Polys(ref polys) => {
-                for poly in polys.iter() {
-                    out.polys.push(poly.serialize());
+            EncoderState::Polys(ref polys) =>
+            {
+                #[allow(clippy::needless_range_loop)]
+                for i in 0..polys.len() {
+                    hax_lib::loop_invariant!(|i: usize| out.polys.len() == i);
+                    out.polys.push(polys[i].serialize());
                 }
             }
         };
@@ -591,8 +615,13 @@ impl PolyEncoder {
                     return Err(PolynomialError::SerializationInvalid);
                 }
                 let mut v = Vec::<GF16>::with_capacity(pts.len());
-                for pt in pts.chunks_exact(2) {
-                    v.push(GF16::new(u16::from_be_bytes(pt.try_into().unwrap())));
+                let pts_len = pts.len();
+                let mut j = 0;
+                while j < pts_len {
+                    hax_lib::loop_invariant!(j <= pts_len && j % 2 == 0 && v.len() == j / 2);
+                    hax_lib::loop_decreases!(pts_len - j);
+                    v.push(GF16::new(u16::from_be_bytes([pts[j], pts[j + 1]])));
+                    j += 2;
                 }
                 hax_lib::assume!(v.len() <= MAX_INTERMEDIATE_POLYNOMIAL_DEGREE_V1);
                 out[i] = Point { value: v };
@@ -696,7 +725,10 @@ impl PolyEncoder {
         }
         Chunk {
             index: idx,
-            data: (&out[..]).try_into().expect("should be exactly 32 bytes"),
+            data: out
+                .as_slice()
+                .try_into()
+                .expect("should be exactly 32 bytes"),
         }
     }
 
@@ -788,7 +820,10 @@ impl PolyDecoder {
             is_complete: self.is_complete,
             pts: Vec::with_capacity(self.pts.len()),
         };
-        for pts in self.pts.iter() {
+        #[allow(clippy::needless_range_loop)]
+        for i in 0..self.pts.len() {
+            hax_lib::loop_invariant!(|i: usize| out.pts.len() == i);
+            let pts = &self.pts[i];
             hax_lib::assume!(pts.len() <= 2 * MAX_STORED_POLYNOMIAL_DEGREE_V1 + 1);
             let mut v = Vec::<u8>::with_capacity(4 * pts.len());
             for i in 0..pts.len() {
@@ -891,11 +926,12 @@ impl Decoder for PolyDecoder {
         let mut points_vecs = Vec::with_capacity(self.pts.len());
         let mut ret_none = false;
         for i in 0..(self.pts.len()) {
+            hax_lib::loop_invariant!(|i: usize| points_vecs.len() <= i);
             let pts = &self.pts[i];
             if pts.len() < self.necessary_points(i) {
                 ret_none = true;
             } else {
-                points_vecs.push(&pts[..self.necessary_points(i)]);
+                points_vecs.push(&pts.as_slice()[..self.necessary_points(i)]);
             }
         }
         if ret_none {

@@ -179,7 +179,7 @@ impl TryFrom<u8> for Version {
         match value {
             0 => Ok(Version::V0),
             1 => Ok(Version::V1),
-            _ => Err("Expected 0 or 1".to_owned()),
+            _ => Err(format!("Expected 0 or 1, got {value}")),
         }
     }
 }

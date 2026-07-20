@@ -591,8 +591,8 @@ impl GF16 {
 #[cfg(test)]
 mod test {
     use super::*;
-    use galois_field_2pm::GaloisField;
     use galois_field_2pm::gf2::GFu16;
+    use galois_field_2pm::GaloisField;
     use rand::RngCore;
 
     // https://web.eecs.utk.edu/~jplank/plank/papers/CS-07-593/primitive-polynomial-table.txt

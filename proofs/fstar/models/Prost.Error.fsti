@@ -12,7 +12,7 @@ type t_Inner = {
 /// `DecodeError` indicates that the input buffer does not contain a valid
 /// Protobuf message. The error details should be considered 'best effort': in
 /// general it is not possible to exactly pinpoint why data is malformed.
-type t_DecodeError = { f_inner:Alloc.Boxed.t_Box t_Inner Alloc.Alloc.t_Global }
+type t_DecodeError = { f_inner:Alloc.Boxed.t_Box t_Inner }
 
 let impl_6: Core_models.Clone.t_Clone t_DecodeError = { f_clone = (fun x -> x); f_clone_pre = (fun _ -> True); f_clone_post = (fun _ _ -> True) }
 

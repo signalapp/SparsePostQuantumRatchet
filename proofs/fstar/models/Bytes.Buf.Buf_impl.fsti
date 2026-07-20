@@ -245,7 +245,7 @@ class t_Buf (v_T: Type0) = {
 }
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_1 (#v_T: Type0) {| i0: t_Buf v_T |} : t_Buf (Alloc.Boxed.t_Box v_T Alloc.Alloc.t_Global)
+val impl_1 (#v_T: Type0) {| i0: t_Buf v_T |} : t_Buf (Alloc.Boxed.t_Box v_T)
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
 val impl_2:t_Buf (t_Slice u8)

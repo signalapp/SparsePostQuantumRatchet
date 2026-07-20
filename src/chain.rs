@@ -196,7 +196,7 @@ impl KeyHistory {
         let want = at.to_be_bytes();
         for i in (0..self.data.len()).step_by(Self::KEY_SIZE) {
             if self.data[i..i + 4] == want {
-                let out = self.data[i + 4..i + Self::KEY_SIZE].to_vec();
+                let out = self.data.as_slice()[i + 4..i + Self::KEY_SIZE].to_vec();
                 self.remove(i, params);
                 return Ok(out);
             }
@@ -209,6 +209,7 @@ impl KeyHistory {
 
 #[hax_lib::attributes]
 impl ChainEpochDirection {
+    #[hax_lib::requires(k.len() == 32)]
     fn new(k: &[u8]) -> Self {
         Self {
             ctr: 0,
@@ -217,16 +218,16 @@ impl ChainEpochDirection {
         }
     }
 
-    #[hax_lib::requires(self.next.len() > 0 && self.ctr < u32::MAX)]
+    #[hax_lib::requires(self.next.len() == 32 && self.ctr < u32::MAX)]
     fn next_key(&mut self) -> (u32, Vec<u8>) {
         let (idx, key) = Self::next_key_internal(&mut self.next, &mut self.ctr);
         (idx, key.to_vec())
     }
 
-    #[hax_lib::requires(next.len() > 0 && *ctr < u32::MAX)]
+    #[hax_lib::requires(next.len() == 32 && *ctr < u32::MAX)]
     #[hax_lib::ensures(|_| *future(ctr) == ctr + 1)]
     fn next_key_internal(next: &mut [u8], ctr: &mut u32) -> (u32, [u8; 32]) {
-        assert!(!next.is_empty());
+        assert_eq!(next.len(), 32);
         *ctr += 1;
         let mut genr8r = [0u8; 64];
         kdf::hkdf_to_slice(
@@ -270,7 +271,7 @@ impl ChainEpochDirection {
         while at > self.ctr + 1 {
             hax_lib::loop_invariant!(self.ctr < u32::MAX);
             hax_lib::loop_decreases!(u32::MAX - self.ctr);
-            hax_lib::assume!(self.next.len() > 0);
+            hax_lib::assume!(self.next.len() == 32);
             let k = Self::next_key_internal(&mut self.next, &mut self.ctr);
             hax_lib::assume!(
                 params.max_ooo_keys_or_default() < 390451572 && self.ctr <= u32::MAX - 390451572
@@ -288,7 +289,7 @@ impl ChainEpochDirection {
         // want to throw away.
         self.prev.gc(self.ctr, params);
 
-        hax_lib::assume!(self.next.len() > 0);
+        hax_lib::assume!(self.next.len() == 32);
 
         Ok(Self::next_key_internal(&mut self.next, &mut self.ctr)
             .1
@@ -304,6 +305,9 @@ impl ChainEpochDirection {
     }
 
     fn from_pb(pb: pqrpb::chain::epoch::EpochDirection) -> Result<Self, Error> {
+        if !pb.next.is_empty() && pb.next.len() != 32 {
+            return Err(Error::StateDecode);
+        }
         Ok(Self {
             ctr: pb.ctr,
             next: pb.next,
@@ -334,14 +338,16 @@ impl Chain {
             b"Signal PQ Ratchet V1 Chain  Start",
             &mut genr8r,
         );
+        let mut links = VecDeque::new();
+        links.push_back(ChainEpoch {
+            send: Self::ced_for_direction(&genr8r, &dir),
+            recv: Self::ced_for_direction(&genr8r, &dir.switch()),
+        });
         Ok(Self {
             dir,
             current_epoch: 0,
             send_epoch: 0,
-            links: VecDeque::from([ChainEpoch {
-                send: Self::ced_for_direction(&genr8r, &dir),
-                recv: Self::ced_for_direction(&genr8r, &dir.switch()),
-            }]),
+            links,
             next_root: genr8r[0..32].to_vec(),
             params,
         })
@@ -400,7 +406,7 @@ impl Chain {
         }
         hax_lib::assume!(
             epoch_index < self.links.len()
-                && self.links[epoch_index].send.next.len() > 0
+                && self.links[epoch_index].send.next.len() == 32
                 && self.links[epoch_index].send.ctr < u32::MAX
         );
         Ok(self.links[epoch_index].send.next_key())
@@ -457,8 +463,8 @@ mod test {
     use super::*;
     use crate::{Direction, EpochSecret, Error};
     use proptest::prelude::*;
-    use rand::TryRngCore;
     use rand::seq::SliceRandom;
+    use rand::TryRngCore;
 
     #[test]
     fn directions_match() {
@@ -484,6 +490,18 @@ mod test {
         let sk3 = a2b.send_key(1).unwrap();
         assert_eq!(sk3.0, 10);
         assert_eq!(sk3.1, b2a.recv_key(1, 10).unwrap());
+    }
+
+    #[test]
+    fn rejects_malformed_next_key_in_serialized_state() {
+        let malformed = pqrpb::chain::epoch::EpochDirection {
+            next: vec![0; 31],
+            ..Default::default()
+        };
+        assert!(matches!(
+            ChainEpochDirection::from_pb(malformed),
+            Err(Error::StateDecode)
+        ));
     }
 
     #[test]

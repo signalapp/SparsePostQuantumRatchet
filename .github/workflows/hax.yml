@@ -14,7 +14,7 @@ jobs:
         uses: hacspec/hax-actions@main
         with:
           fstar: v2025.10.06
-          hax_reference: hax-lib-v0.3.6 
+          hax_reference: hax-lib-v0.3.7
 
       - run: sudo apt-get install protobuf-compiler
 
@@ -24,4 +24,3 @@ jobs:
           ./hax.py extract
       - name: 🏃 Type-check extracted F*
         run: ./hax.py prove
-

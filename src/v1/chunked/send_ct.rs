@@ -90,8 +90,11 @@ impl NoHeaderReceived {
             mut receiving_hdr,
         } = self;
         receiving_hdr.add_chunk(chunk);
-        if let Some(mut hdr) = receiving_hdr.decoded_message() {
-            let mac: authenticator::Mac = hdr.split_off(incremental_mlkem768::HEADER_SIZE);
+        if let Some(hdr) = receiving_hdr.decoded_message() {
+            // hax 0.3.7 does not model Vec::split_off.
+            let mac: authenticator::Mac =
+                hdr.as_slice()[incremental_mlkem768::HEADER_SIZE..].to_vec();
+            let hdr = hdr.as_slice()[..incremental_mlkem768::HEADER_SIZE].to_vec();
             let receiving_ek =
                 polynomial::PolyDecoder::new(incremental_mlkem768::ENCAPSULATION_KEY_SIZE);
             Ok(NoHeaderReceivedRecvChunk::Done(HeaderReceived {

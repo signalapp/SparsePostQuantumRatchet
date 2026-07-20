@@ -6,8 +6,8 @@ use std::collections::BTreeMap;
 use rand_core::{CryptoRng, OsRng};
 
 use crate::{
-    Epoch, Error, Secret,
     test::scka::{Scka, SckaInitializer, SckaVulnerability},
+    Epoch, Error, Secret,
 };
 
 pub trait MessagingScka {

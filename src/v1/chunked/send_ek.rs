@@ -203,8 +203,11 @@ impl EkSentCt1Received {
             mut receiving_ct2,
         } = self;
         receiving_ct2.add_chunk(chunk);
-        if let Some(mut ct2) = receiving_ct2.decoded_message() {
-            let mac: authenticator::Mac = ct2.split_off(incremental_mlkem768::CIPHERTEXT2_SIZE);
+        if let Some(ct2) = receiving_ct2.decoded_message() {
+            // hax 0.3.7 does not model Vec::split_off.
+            let mac: authenticator::Mac =
+                ct2.as_slice()[incremental_mlkem768::CIPHERTEXT2_SIZE..].to_vec();
+            let ct2 = ct2.as_slice()[..incremental_mlkem768::CIPHERTEXT2_SIZE].to_vec();
             let (uc, sec) = uc.recv_ct2(ct2, mac)?;
             let decoder = polynomial::PolyDecoder::new(
                 incremental_mlkem768::HEADER_SIZE + authenticator::Authenticator::MACSIZE,

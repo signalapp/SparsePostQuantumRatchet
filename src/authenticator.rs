@@ -49,8 +49,8 @@ impl Authenticator {
         ]
         .concat();
         let kdf_out = kdf::hkdf_to_vec(&[0u8; 32], &ikm, &info, 64);
-        self.root_key = kdf_out[..32].to_vec();
-        self.mac_key = kdf_out[32..].to_vec();
+        self.root_key = kdf_out.as_slice()[..32].to_vec();
+        self.mac_key = kdf_out.as_slice()[32..].to_vec();
     }
 
     #[hax_lib::requires(expected_mac.len() == Authenticator::MACSIZE)]

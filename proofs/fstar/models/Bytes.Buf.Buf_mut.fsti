@@ -165,7 +165,7 @@ const _: () = ();
 
 [@@ FStar.Tactics.Typeclasses.tcinstance]
 val impl_1 (#v_T: Type0) {| i0: t_BufMut v_T |}
-    : t_BufMut (Alloc.Boxed.t_Box v_T Alloc.Alloc.t_Global)
+    : t_BufMut (Alloc.Boxed.t_Box v_T)
 
 (* item error backend: (DirectAndMut) The mutation of this [1m&mut[0m is not allowed here.
 Last available AST for this item:

@@ -115,7 +115,7 @@ impl TryFrom<u8> for MessageType {
             4 => Ok(MessageType::Ct1Ack),
             5 => Ok(MessageType::Ct1),
             6 => Ok(MessageType::Ct2),
-            _ => Err("Expected a number between 0 and 6".to_owned()),
+            _ => Err(format!("Expected a number between 0 and 6, got {value}")),
         }
     }
 }
@@ -138,6 +138,7 @@ const MAX_VARINT_BYTES_LEN: usize = 10;
 
 fn encode_varint(mut a: u64, into: &mut SerializedMessage) {
     for _i in 0..MAX_VARINT_BYTES_LEN {
+        hax_lib::assume!(into.len() < usize::MAX);
         let byte = (a & 0x7F) as u8;
         if a < 0x80 {
             into.push(byte);
@@ -198,7 +199,9 @@ fn decode_chunk(from: &SerializedMessage, at: &mut usize) -> Result<Chunk, Error
     }
     Ok(Chunk {
         index: index as u16,
-        data: from[start..*at].try_into().expect("correct size"),
+        data: from.as_slice()[start..*at]
+            .try_into()
+            .expect("correct size"),
     })
 }
 
@@ -224,6 +227,7 @@ impl Message {
         into.push(Version::V1.into());
         encode_varint(self.epoch, &mut into);
         encode_varint(index as u64, &mut into);
+        hax_lib::assume!(into.len() < usize::MAX);
         into.push(MessageType::from_payload(&self.payload).into());
         encode_chunk(
             match &self.payload {

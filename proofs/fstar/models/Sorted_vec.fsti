@@ -356,11 +356,11 @@ val impl_4 (#v_T: Type0) {| i1: Core_models.Cmp.t_Ord v_T |}
 let impl_5 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core_models.Cmp.t_Ord v_T)
     : Core_models.Ops.Deref.t_Deref (t_SortedVec v_T) =
   {
-    f_Target = Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global;(* 
+    f_Target = Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global;
     f_deref_pre = (fun (self: t_SortedVec v_T) -> true);
     f_deref_post
     =
-    (fun (self: t_SortedVec v_T) (out: Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global) -> true); *)
+    (fun (self: t_SortedVec v_T) (out: Alloc.Vec.t_Vec v_T Alloc.Alloc.t_Global) -> true);
     f_deref = fun (self: t_SortedVec v_T) -> self.f_vec
   }
 
@@ -566,8 +566,8 @@ let impl_13 (#v_T: Type0) (#[FStar.Tactics.Typeclasses.tcresolve ()] i1: Core_mo
     : Core_models.Ops.Deref.t_Deref (t_SortedSet v_T) =
   {
     f_Target = t_SortedVec v_T;
-    (* f_deref_pre = (fun (self: t_SortedSet v_T) -> true);
-    f_deref_post = (fun (self: t_SortedSet v_T) (out: t_SortedVec v_T) -> true); *)
+    f_deref_pre = (fun (self: t_SortedSet v_T) -> true);
+    f_deref_post = (fun (self: t_SortedSet v_T) (out: t_SortedVec v_T) -> true);
     f_deref = fun (self: t_SortedSet v_T) -> self.f_set
   }
 

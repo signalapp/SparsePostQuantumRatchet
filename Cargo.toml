@@ -1,6 +1,6 @@
 [package]
 name = "spqr"
-version = "1.5.2"
+version = "1.5.3"
 edition = "2021"
 license = "AGPL-3.0-only"
 rust-version = "1.88.0"
@@ -10,10 +10,10 @@ rust-version = "1.88.0"
 [dependencies]
 curve25519-dalek = { version = "5.0.0", features = ["rand_core"] }
 displaydoc = "0.2"
-hax-lib = "0.3.6"
+hax-lib = "0.3.7"
 hkdf = "0.13"
-libcrux-hmac = "0.0.7"
-libcrux-ml-kem = { version = "0.0.9", default-features = false, features = ["incremental", "mlkem768"] }
+libcrux-hmac = "0.0.8"
+libcrux-ml-kem = { version = "0.0.10", default-features = false, features = ["incremental", "mlkem768"] }
 log = "0.4.21"
 num_enum = "0.7.3"
 prost = "0.14.1"
