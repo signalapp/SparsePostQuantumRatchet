@@ -96,7 +96,13 @@ import Spqr.Specs.Encoding.Polynomial.PolyConst.ZEROS
 import Spqr.Specs.Encoding.Polynomial.PolyEncoder.IntoPb
 import Spqr.Specs.Encoding.Polynomial.Pt.Deserialize
 import Spqr.Specs.Encoding.Polynomial.Pt.Serialize
+import Spqr.Specs.IncrementalMlkem768.CoreSpec
+import Spqr.Specs.IncrementalMlkem768.Correctness
 import Spqr.Specs.IncrementalMlkem768.Generate
+import Spqr.Specs.IncrementalMlkem768.Instance
+import Spqr.Specs.IncrementalMlkem768.Marshalling
+import Spqr.Specs.IncrementalMlkem768.SeedRng
+import Spqr.Specs.IncrementalMlkem768.WrapperSpecs
 import Spqr.Specs.Util.Compare
 import Spqr.Specs.Util.Inz
 import Spqr.Specs.Util.IsNonZero

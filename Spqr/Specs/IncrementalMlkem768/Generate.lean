@@ -46,17 +46,23 @@ three outputs come, byte-for-byte, from `kp`'s one serialized buffer `kp.value`
 * `ek`  = the sub-range `kp.value[enc .. 2·enc]`    (length `1152`);
 * `hdr` = the header sub-range `kp.value[2·enc .. 2·enc + 64]` (length `64`).
 
-TODO: the *cryptographic* content of `kp.value` is left to future work; the size-only externals
-(`from_seed`/`encaps`/`decaps`) cannot yet state:
+The cryptographic connection is now delivered under explicit assumptions:
 
-1. **Round-trip correctness.** `decaps(dk, encaps(ek)) = ss`, up to ML-KEM's negligible
-   (~2⁻¹³⁸) failure probability.
-2. **Distributional faithfulness.** `(ek, dk)` is identically distributed to ML-KEM-768 KeyGen on
-   a uniform seed — the bridge that transfers security to these keys.
-3. **Security (game-based, given 2).** The KEM is IND-CCA2; `ek`/`hdr` are pseudorandom (MLWE
-   hides `t̂`, safe to transmit); the secret complement `dk \ (ek‖hdr)` stays computationally
-   hidden.  Note secrecy is not byte-disjointness (the bytes overlap) but that the complement
-   slices stay hidden. -/
+1. **Exact model-value correspondence.**
+   `Spqr.IncrementalMlkem768.generate_correct_spec` in `WrapperSpecs.lean` shows that the
+   extracted wrapper returns the byte image of model `keygenInternal`.
+2. **Distributional round-trip correctness.**
+   `Spqr.IncrementalMlkem768.spqr_incrementalCorrectExp_failure_le_mlkem768` in
+   `Correctness.lean` samples the model seed distribution, drives the extracted stack with
+   those bytes, and bounds failure by 2^(−164.8) plus `εSample`, the ML-KEM-768 rate from
+   [FIPS 203, Table 1](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf).  It assumes
+   the `CoreSpec` contract on the opaque libcrux core, the FIPS 203 noise model, and the named
+   sampling-tail hypothesis.
+
+TODO: game-based security remains future work.  In particular, proving IND-CCA2,
+pseudorandomness of `ek`/`hdr` (MLWE hides `t̂`), and secrecy of the complement
+`dk \ (ek‖hdr)` requires a separate security argument.  Secrecy is not byte-disjointness—the
+bytes overlap—but computational hiding of the complement slices. -/
 theorem generate_spec {R : Type} (rngInst : rand.rng.Rng R)
     (cryptoInst : rand_core.CryptoRng R) (rng : R)
     (h_fill : ∀ (r : R) (s : Slice Std.U8),

@@ -1,6 +1,6 @@
 name = "Spqr"
 version = "0.1.0"
-defaultTargets = ["Spqr", "SrcTranslated"]
+defaultTargets = ["Spqr", "SrcTranslated", "SpqrToVCVio"]
 
 [leanOptions]
 autoImplicit = false
@@ -53,3 +53,10 @@ name = "Tests"
 # Throwaway artifact; remove once the real PoC specs land under Spqr/Specs/IncrementalMlkem768/.
 [[lean_lib]]
 name = "Probe"
+
+# Staging area for upstream-destined VCV-io material (secure-messaging's ToVCVio convention).
+# A2: local Lake lib name is workspace-unique — SM's path-dep already owns a `ToVCVio` lib and
+# Lake module names are globally unique per workspace. The upstream Lean namespace MLKEM.Concrete
+# is unchanged. e2e-poc-incr-mlkem n1 (A1/R13; A2 rename).
+[[lean_lib]]
+name = "SpqrToVCVio"

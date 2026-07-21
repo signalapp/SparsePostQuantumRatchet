@@ -1598,13 +1598,19 @@ axiom libcrux_ml_kem.mlkem768.incremental.encapsulate2
 
 /-- [libcrux_ml_kem::mlkem768::incremental::{libcrux_ml_kem::mlkem768::incremental::KeyPairCompressedBytes}::from_seed]:
     Source: '/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libcrux-ml-kem-0.0.7/src/mlkem.rs', lines 240:12-240:80
-    Name pattern: [libcrux_ml_kem::mlkem768::incremental::{libcrux_ml_kem::mlkem768::incremental::KeyPairCompressedBytes}::from_seed] -/
+    Name pattern: [libcrux_ml_kem::mlkem768::incremental::{libcrux_ml_kem::mlkem768::incremental::KeyPairCompressedBytes}::from_seed]
+
+    Opaque libcrux core: ML-KEM-768 key generation from a 64-byte seed.  Previously modelled by
+    the stub `ok default`; a stub would make any contract equating `from_seed` with model key
+    generation unsatisfiable, so it is now an opaque axiom with the identical signature.  Its
+    cryptographic content is the assumed-contract field `CoreSpec.from_seed_eq_keygenInternal`
+    in `Spqr/Specs/IncrementalMlkem768/CoreSpec.lean`; the `@[step]` axiom below keeps the
+    length fact the byte-layout specs rely on. -/
 @[rust_fun
   "libcrux_ml_kem::mlkem768::incremental::{libcrux_ml_kem::mlkem768::incremental::KeyPairCompressedBytes}::from_seed"]
-def libcrux_ml_kem.mlkem768.incremental.KeyPairCompressedBytes.from_seed
-  (_seed : Array Std.U8 64#usize) : Result
-    libcrux_ml_kem.mlkem768.incremental.KeyPairCompressedBytes :=
-  ok default
+axiom libcrux_ml_kem.mlkem768.incremental.KeyPairCompressedBytes.from_seed
+  (seed : Array Std.U8 64#usize) : Result
+    libcrux_ml_kem.mlkem768.incremental.KeyPairCompressedBytes
 
 -- TODO: add cryptographic properties of from_seed_spec
 @[step]
