@@ -356,7 +356,9 @@ impl Chain {
     pub fn add_epoch(&mut self, epoch_secret: EpochSecret) {
         // This assume could be turned into a precondition but it uses private fields
         hax_lib::assume!(
-            self.current_epoch < u64::MAX && epoch_secret.epoch == self.current_epoch + 1
+            self.current_epoch < u64::MAX
+                && epoch_secret.epoch == self.current_epoch + 1
+                && self.links.len() < usize::MAX
         );
         assert!(epoch_secret.epoch == self.current_epoch + 1);
         let mut genr8r = [0u8; 96];

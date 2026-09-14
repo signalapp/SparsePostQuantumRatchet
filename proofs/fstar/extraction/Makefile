@@ -129,6 +129,8 @@ endif
 ROOTS ?= $(wildcard *.fst *fsti)
 ADMIT_MODULES ?=
 
+$(CACHE_DIR)/Spqr.Encoding.Bundle.fst.checked: private OTHERFLAGS += --z3rlimit_factor 4
+
 ADMIT_MODULE_FLAGS ?= --admit_smt_queries true
 
 # Can be useful for debugging purposes
