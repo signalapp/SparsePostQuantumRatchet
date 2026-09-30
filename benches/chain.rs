@@ -21,7 +21,8 @@ mod tests {
             c.add_epoch(EpochSecret {
                 epoch: e,
                 secret: vec![1],
-            });
+            })
+            .unwrap();
             black_box(());
         });
     }

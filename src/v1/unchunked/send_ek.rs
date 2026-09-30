@@ -158,10 +158,10 @@ impl EkSentCt1Received {
         auth.update(epoch, &ss);
         ct1.extend_from_slice(&ct2);
         auth.verify_ct(epoch, &ct1, &mac)?;
-        hax_lib::assume!(epoch < u64::MAX);
+        let next_epoch = epoch.checked_add(1).ok_or(Error::EpochOutOfRange(epoch))?;
         Ok((
             send_ct::NoHeaderReceived {
-                epoch: epoch + 1,
+                epoch: next_epoch,
                 auth,
             },
             EpochSecret {

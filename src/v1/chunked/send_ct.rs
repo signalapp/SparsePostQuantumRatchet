@@ -120,6 +120,7 @@ impl NoHeaderReceived {
 // the first CT0 chunk.  Thus, send_ct1_chunk is the only state transition
 // we need to implement here.
 impl HeaderReceived {
+    #[hax_lib::fstar::options("--split_queries always")]
     pub fn send_ct1_chunk<R: Rng + CryptoRng>(
         self,
         rng: &mut R,
@@ -165,6 +166,7 @@ fn send_ct2_encoder(ct2: &[u8], mac: &[u8]) -> polynomial::PolyEncoder {
 #[hax_lib::attributes]
 impl Ct1Sampled {
     #[hax_lib::requires(epoch == self.uc.epoch)]
+    #[hax_lib::fstar::options("--split_queries always")]
     pub fn recv_ek_chunk(
         self,
         epoch: Epoch,
@@ -256,6 +258,7 @@ pub enum Ct1AcknowledgedRecvChunk {
 #[hax_lib::attributes]
 impl Ct1Acknowledged {
     #[hax_lib::requires(epoch ==self.uc.epoch)]
+    #[hax_lib::fstar::options("--split_queries always")]
     pub fn recv_ek_chunk(
         self,
         epoch: Epoch,

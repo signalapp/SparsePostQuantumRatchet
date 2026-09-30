@@ -8,7 +8,7 @@ rust-version = "1.88.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hax-lib = "0.3.7"
+hax-lib = { git = "https://github.com/cryspen/hax", rev = "a3a68b75ffbfb3b0cc72d789aa41f79e021288ff" }
 hkdf = "0.13"
 libcrux-hmac = "0.0.8"
 libcrux-ml-kem = { version = "0.0.10", default-features = false, features = ["incremental", "mlkem768"] }

@@ -6,15 +6,24 @@ on:
 jobs:
   fstar-type-checking:
     runs-on: "ubuntu-latest"
+    env:
+      HAX_REV: a3a68b75ffbfb3b0cc72d789aa41f79e021288ff
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check hax-lib matches the engine
+        run: |
+          grep -q "rev = \"${HAX_REV}\"" Cargo.toml
+          grep -q "cryspen/hax?rev=${HAX_REV}#${HAX_REV}" Cargo.lock
+          if grep 'cryspen/hax' Cargo.lock | grep -v "rev=${HAX_REV}#"; then exit 1; fi
+
       - name: ⤵ Install and configure hax
-        uses: hacspec/hax-actions@main
+        uses: hacspec/hax-actions@1f01b89579f425ad7c1e66aebbd5df7e688cb576
         with:
-          fstar: v2025.10.06
-          hax_reference: hax-lib-v0.3.7
+          fstar: v2026.03.24
+          hax_repository: github:cryspen/hax
+          hax_reference: ${{ env.HAX_REV }}
 
       - run: sudo apt-get install protobuf-compiler
 
@@ -22,5 +31,20 @@ jobs:
         run: |
           rm -f proofs/fstar/extraction/*.fst*
           ./hax.py extract
+      - name: Check the assumed surface
+        run: |
+          cd proofs/fstar
+          for f in extraction/Spqr.*.fst; do
+            case "$f" in *.Proto.*) continue ;; esac
+            m=$(basename "$f" .fst)
+            awk -v m="$m" 'prev == "assume" && $1 == "val" { sub(/:$/, "", $2); print m, $2 } { prev = $0 }' "$f"
+            grep -o 'Hax_lib.v_assume' "$f" | sed "s/^/$m /" || true
+          done > /tmp/assumed.txt
+          grep -H '^assume val' models/*.fst* specs/*.fst* \
+            | sed -E 's#^[a-z]+/([^:]+)\.fsti?:assume val ([^ ]+).*#\1 \2#' >> /tmp/assumed.txt || true
+          LC_ALL=C sort /tmp/assumed.txt | diff assumed.txt -
       - name: 🏃 Type-check extracted F*
-        run: ./hax.py prove
+        run: |
+          set -o pipefail
+          ./hax.py prove 2>&1 | tee /tmp/prove.log
+          if grep -a 'Query-stats.*failed' /tmp/prove.log; then exit 1; fi
