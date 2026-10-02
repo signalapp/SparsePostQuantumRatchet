@@ -3,38 +3,27 @@ module Libcrux_hmac
 open Core_models
 open FStar.Mul
 
-/// The HMAC algorithm defining the used hash function.
+/// `libcrux-hmac` 0.0.8.
+/// <https://docs.rs/libcrux-hmac/0.0.8/libcrux_hmac/>
+///
+/// `authenticator.rs` calls `hmac` with `Algorithm::Sha256`.
+
+/// The hash function an HMAC is taken over.
+/// <https://docs.rs/libcrux-hmac/0.0.8/libcrux_hmac/enum.Algorithm.html>
+///
+/// Concrete, because `hmac`'s tag-length postcondition matches on the variants.
 type t_Algorithm =
-  | Algorithm_Sha1 : t_Algorithm
   | Algorithm_Sha256 : t_Algorithm
   | Algorithm_Sha384 : t_Algorithm
   | Algorithm_Sha512 : t_Algorithm
 
-val t_Algorithm_cast_to_repr (x: t_Algorithm)
-    : Prims.Pure isize Prims.l_True (fun _ -> Prims.l_True)
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_1:Core_models.Clone.t_Clone t_Algorithm
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl:Core_models.Marker.t_Copy t_Algorithm
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_2:Core_models.Fmt.t_Debug t_Algorithm
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_3:Core_models.Marker.t_StructuralPartialEq t_Algorithm
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_4:Core_models.Cmp.t_PartialEq t_Algorithm t_Algorithm
-
-/// Get the tag size for a given algorithm.
-val tag_size (alg: t_Algorithm) : Prims.Pure usize Prims.l_True (fun _ -> Prims.l_True)
-
-/// Compute the HMAC value with the given `alg` and `key` on `data` with an
-/// output tag length of `tag_length`.
-/// Returns a vector of length `tag_length`.
-/// Panics if either `key` or `data` are longer than `u32::MAX`.
+/// Compute an HMAC tag, truncated to `tag_length` if that is shorter than the
+/// hash output.
+/// <https://docs.rs/libcrux-hmac/0.0.8/libcrux_hmac/fn.hmac.html>
+///
+/// The postcondition covers the returned length only; nothing is stated about
+/// the tag's value. The crate panics if `key` or `data` exceed `u32::MAX`,
+/// which is not modelled as a precondition.
 val hmac (alg: t_Algorithm) (key data: t_Slice u8) (tag_length: Core_models.Option.t_Option usize)
     : Prims.Pure (Alloc.Vec.t_Vec u8 Alloc.Alloc.t_Global)
       Prims.l_True
@@ -43,7 +32,6 @@ val hmac (alg: t_Algorithm) (key data: t_Slice u8) (tag_length: Core_models.Opti
           let result:Alloc.Vec.t_Vec u8 Alloc.Alloc.t_Global = result in
           let native_tag_length:usize =
             match alg <: t_Algorithm with
-            | Algorithm_Sha1  -> mk_usize 20
             | Algorithm_Sha256  -> mk_usize 32
             | Algorithm_Sha384  -> mk_usize 48
             | Algorithm_Sha512  -> mk_usize 64
@@ -65,32 +53,3 @@ val hmac (alg: t_Algorithm) (key data: t_Slice u8) (tag_length: Core_models.Opti
           | Core_models.Option.Option_Some x -> x
           | Core_models.Option.Option_None  ->
             (Alloc.Vec.impl_1__len #u8 #Alloc.Alloc.t_Global result <: usize) =. native_tag_length)
-
-(* item error backend: (DirectAndMut) The mutation of this [1m&mut[0m is not allowed here.
-Last available AST for this item:
-
-#[_hax::json("\"Erased\"")]
-#[inline(always)]
-#[no_std()]
-#[feature(register_tool)]
-#[register_tool(_hax)]
-fn wrap_bufalloc<const N: int, F>(f: F) -> alloc::vec::t_Vec<int, alloc::alloc::t_Global>
-where
-    _: core_models::ops::function::t_Fn<F, tuple1<&mut [int; N]>>,
-    F: core_models::ops::function::t_FnOnce<f_Output = tuple0>,
-{
-    rust_primitives::hax::dropped_body
-}
-
-
-Last AST:
-/** print_rust: pitem: not implemented  (item: { Concrete_ident.T.def_id =
-  { Concrete_ident.Imported.krate = "libcrux_hmac";
-    path =
-    [{ Concrete_ident.Imported.data =
-       (Concrete_ident.Imported.ValueNs "wrap_bufalloc"); disambiguator = 0 }
-      ]
-    };
-  kind = Concrete_ident.Kind.Value }) */
-const _: () = ();
- *)

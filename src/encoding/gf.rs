@@ -124,12 +124,13 @@ impl ops::Sub<&GF16> for GF16 {
 
 #[hax_lib::attributes]
 impl ops::MulAssign<&GF16> for GF16 {
+    #[hax_lib::ensures(|result| fstar!(r#"
+        to_gf self_e_future ==
+        Spec.GF16.gf16_mul (to_gf self_) (to_gf other)
+    "#))]
     fn mul_assign(&mut self, other: &Self) {
-        #[cfg(all(
-            not(hax),
-            any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
-        ))]
-        if check_accelerated::TOKEN.get() {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
+        if use_accelerated() {
             self.value = accelerated::mul(self.value, other.value);
             return;
         }
@@ -139,6 +140,10 @@ impl ops::MulAssign<&GF16> for GF16 {
 
 #[hax_lib::attributes]
 impl ops::MulAssign for GF16 {
+    #[hax_lib::ensures(|result| fstar!(r#"
+        to_gf self_e_future ==
+        Spec.GF16.gf16_mul (to_gf self_) (to_gf other)
+    "#))]
     fn mul_assign(&mut self, other: Self) {
         self.mul_assign(&other);
     }
@@ -147,6 +152,10 @@ impl ops::MulAssign for GF16 {
 #[hax_lib::attributes]
 impl ops::Mul for GF16 {
     type Output = Self;
+    #[hax_lib::ensures(|result| fstar!(r#"
+        to_gf result ==
+        Spec.GF16.gf16_mul (to_gf self_) (to_gf other)
+    "#))]
     fn mul(self, other: Self) -> Self {
         let mut out = self;
         out *= &other;
@@ -157,6 +166,10 @@ impl ops::Mul for GF16 {
 #[hax_lib::attributes]
 impl ops::Mul<&GF16> for GF16 {
     type Output = Self;
+    #[hax_lib::ensures(|result| fstar!(r#"
+        to_gf result ==
+        Spec.GF16.gf16_mul (to_gf self_) (to_gf other)
+    "#))]
     fn mul(self, other: &Self) -> Self {
         let mut out = self;
         out *= other;
@@ -167,6 +180,9 @@ impl ops::Mul<&GF16> for GF16 {
 #[hax_lib::attributes]
 impl ops::DivAssign<&GF16> for GF16 {
     #[allow(clippy::suspicious_op_assign_impl)]
+    #[hax_lib::ensures(|_| fstar!(r#"
+        to_gf self_e_future == Spec.GF16.gf16_div (to_gf self_) (to_gf other)
+    "#))]
     fn div_assign(&mut self, other: &Self) {
         *self = self.div_impl(other);
     }
@@ -174,6 +190,9 @@ impl ops::DivAssign<&GF16> for GF16 {
 
 #[hax_lib::attributes]
 impl ops::DivAssign for GF16 {
+    #[hax_lib::ensures(|_| fstar!(r#"
+        to_gf self_e_future == Spec.GF16.gf16_div (to_gf self_) (to_gf other)
+    "#))]
     fn div_assign(&mut self, other: Self) {
         *self = self.div_impl(&other);
     }
@@ -182,6 +201,9 @@ impl ops::DivAssign for GF16 {
 #[hax_lib::attributes]
 impl ops::Div for GF16 {
     type Output = Self;
+    #[hax_lib::ensures(|result| fstar!(r#"
+        to_gf result == Spec.GF16.gf16_div (to_gf self_) (to_gf other)
+    "#))]
     fn div(self, other: Self) -> Self {
         self.div_impl(&other)
     }
@@ -190,6 +212,9 @@ impl ops::Div for GF16 {
 #[hax_lib::attributes]
 impl ops::Div<&GF16> for GF16 {
     type Output = Self;
+    #[hax_lib::ensures(|result| fstar!(r#"
+        to_gf result == Spec.GF16.gf16_div (to_gf self_) (to_gf other)
+    "#))]
     fn div(self, other: &Self) -> Self {
         self.div_impl(other)
     }
@@ -197,28 +222,54 @@ impl ops::Div<&GF16> for GF16 {
 
 #[inline]
 #[hax_lib::requires(into.len() <= usize::MAX - 2)]
-#[hax_lib::ensures(|_| future(into).len() == into.len())]
+#[hax_lib::ensures(|_| fstar!(r#"
+    Seq.length into_future == Seq.length $into /\
+    (forall (j: nat). j < Seq.length $into ==>
+      to_gf (Seq.index into_future j) ==
+      Spec.GF16.gf16_mul (to_gf $a) (to_gf (Seq.index $into j)))
+"#))]
 pub fn parallel_mult(a: GF16, into: &mut [GF16]) {
     let mut i: usize = 0;
     #[cfg(hax)]
     let l = into.len();
+    #[cfg(hax)]
+    let into0 = into.to_vec();
+    hax_lib::fstar!("Seq.append_empty_l $into");
     while i + 2 <= into.len() {
         hax_lib::loop_decreases!(l - i);
-        hax_lib::loop_invariant!(into.len() == l && i <= l);
+        hax_lib::loop_invariant!(fstar!(r#"
+            Core_models.Slice.impl__len #t_GF16 into == l /\ v i <= v l /\
+            (forall (j: usize). v j < v i ==>
+              to_gf (into.[ j ] <: t_GF16) ==
+              Spec.GF16.gf16_mul (to_gf a) (to_gf (Seq.index into0._0 (v j)))) /\
+            (forall (j: usize). v j >= v i /\ v j < v l ==>
+              into.[ j ] == Seq.index into0._0 (v j))
+        "#));
         (into[i].value, into[i + 1].value) = mul2_u16(a.value, into[i].value, into[i + 1].value);
         i += 2;
     }
     if i < into.len() {
         into[i] *= a;
     }
+    hax_lib::fstar!(
+        r#"
+        introduce forall (j: nat). j < v l ==>
+          to_gf (Seq.index into j) ==
+          Spec.GF16.gf16_mul (to_gf a) (to_gf (Seq.index into0._0 j))
+        with introduce _ ==> _ with _. (
+          Spec.GF16.lemma_gf16_mul_comm (to_gf a) (to_gf (Seq.index into0._0 j));
+          assert (Seq.index into j == into.[ mk_usize j ]))
+    "#
+    );
 }
 
+#[hax_lib::ensures(|result| fstar!(r#"
+    let open Spec.GF16 in
+    to_bv result._1 == gf16_mul (to_bv a) (to_bv b1) /\
+    to_bv result._2 == gf16_mul (to_bv a) (to_bv b2)"#))]
 fn mul2_u16(a: u16, b1: u16, b2: u16) -> (u16, u16) {
-    #[cfg(all(
-        not(hax),
-        any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
-    ))]
-    if check_accelerated::TOKEN.get() {
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
+    if use_accelerated() {
         return accelerated::mul2(a, b1, b2);
     }
     (unaccelerated::mul(a, b1), unaccelerated::mul(a, b2))
@@ -231,12 +282,22 @@ mod accelerated {
     #[cfg(target_arch = "x86_64")]
     use core::arch::x86_64 as arch;
 
+    #[hax_lib::requires(super::use_accelerated())]
+    #[hax_lib::ensures(|result| fstar!(r#"
+        let open Spec.GF16 in
+        to_bv result == gf16_mul (to_bv a) (to_bv b)"#))]
     pub fn mul(a: u16, b: u16) -> u16 {
         mul2(a, b, 0).0
     }
 
+    #[hax_lib::requires(super::use_accelerated())]
     #[inline]
     #[target_feature(enable = "pclmulqdq")]
+    #[hax_lib::opaque]
+    #[hax_lib::ensures(|result| fstar!(r#"
+        let open Spec.GF16 in
+        to_bv result._1 == poly_mul (to_bv a) (to_bv b1) /\
+        to_bv result._2 == poly_mul (to_bv a) (to_bv b2)"#))]
     unsafe fn mul2_unreduced(a: u16, b1: u16, b2: u16) -> (u32, u32) {
         let a = arch::_mm_set_epi64x(0, a as i64);
         let b = arch::_mm_set_epi64x(0, ((b2 as i64) << 32) | (b1 as i64));
@@ -253,6 +314,11 @@ mod accelerated {
         (b1out, b2out)
     }
 
+    #[hax_lib::requires(super::use_accelerated())]
+    #[hax_lib::ensures(|result| fstar!(r#"
+        let open Spec.GF16 in
+        to_bv result._1 == gf16_mul (to_bv a) (to_bv b1) /\
+        to_bv result._2 == gf16_mul (to_bv a) (to_bv b2)"#))]
     pub fn mul2(a: u16, b1: u16, b2: u16) -> (u16, u16) {
         let unreduced_products = unsafe { mul2_unreduced(a, b1, b2) };
         (
@@ -266,21 +332,37 @@ mod accelerated {
 mod accelerated {
     use core::arch::aarch64;
 
+    #[hax_lib::requires(super::use_accelerated())]
+    #[hax_lib::ensures(|result| fstar!(r#"
+        let open Spec.GF16 in
+        to_bv result == gf16_mul (to_bv a) (to_bv b)"#))]
     pub fn mul(a: u16, b: u16) -> u16 {
         mul2(a, b, 0).0
     }
 
+    #[hax_lib::requires(super::use_accelerated())]
     #[inline]
     #[target_feature(enable = "neon,aes")]
-    unsafe fn mul2_unreduced(a: u16, b1: u16, b2: u16) -> u128 {
-        aarch64::vmull_p64(a as u64, ((b1 as u64) << 32) | (b2 as u64))
+    #[hax_lib::opaque]
+    #[hax_lib::ensures(|result| fstar!(r#"
+        let open Spec.GF16 in
+        to_bv result._1 == poly_mul (to_bv a) (to_bv b1) /\
+        to_bv result._2 == poly_mul (to_bv a) (to_bv b2)"#))]
+    unsafe fn mul2_unreduced(a: u16, b1: u16, b2: u16) -> (u32, u32) {
+        let clmul = aarch64::vmull_p64(a as u64, ((b1 as u64) << 32) | (b2 as u64));
+        ((clmul >> 32) as u32, clmul as u32)
     }
 
+    #[hax_lib::requires(super::use_accelerated())]
+    #[hax_lib::ensures(|result| fstar!(r#"
+        let open Spec.GF16 in
+        to_bv result._1 == gf16_mul (to_bv a) (to_bv b1) /\
+        to_bv result._2 == gf16_mul (to_bv a) (to_bv b2)"#))]
     pub fn mul2(a: u16, b1: u16, b2: u16) -> (u16, u16) {
-        let unreduced_product = unsafe { mul2_unreduced(a, b1, b2) };
+        let unreduced_products = unsafe { mul2_unreduced(a, b1, b2) };
         (
-            super::reduce::poly_reduce((unreduced_product >> 32) as u32),
-            super::reduce::poly_reduce(unreduced_product as u32),
+            super::reduce::poly_reduce(unreduced_products.0),
+            super::reduce::poly_reduce(unreduced_products.1),
         )
     }
 }
@@ -290,6 +372,9 @@ mod accelerated {
 mod accelerated {
     use core::arch::arm;
 
+    #[hax_lib::ensures(|result| fstar!(r#"
+        let open Spec.GF16 in
+        to_bv result == gf16_mul (to_bv a) (to_bv b)"#))]
     pub fn mul(a: u16, b: u16) -> u16 {
         mul2(a, b, 0).0
     }
@@ -356,10 +441,8 @@ mod accelerated {
 }
 */
 
-#[cfg(all(
-    not(hax),
-    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
-))]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
+#[hax_lib::exclude]
 mod check_accelerated {
     #[cfg(target_arch = "aarch64")]
     cpufeatures::new!(use_accelerated, "aes"); // `aes` implies PMULL
@@ -370,6 +453,12 @@ mod check_accelerated {
 
     pub(crate) static TOKEN: LazyLock<use_accelerated::InitToken> =
         LazyLock::new(use_accelerated::init);
+}
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
+#[hax_lib::opaque]
+fn use_accelerated() -> bool {
+    check_accelerated::TOKEN.get()
 }
 
 mod unaccelerated {
@@ -482,40 +571,92 @@ mod reduce {
     ///   REDUCE_BYTES[D] -> ef
     /// Since we're mapping every byte to a u16, we take up 512B of space
     /// to do this, and our reduction is just a couple of pipelined shifts/XORs.
-    #[hax_lib::fstar::verification_status(panic_free)]
     #[hax_lib::ensures(|result| fstar!(r#"
         Spec.GF16.(to_bv result == poly_reduce #gf16 (to_bv v))
         "#))]
     pub const fn poly_reduce(v: u32) -> u16 {
         let mut v = v;
+        hax_lib::fstar!(
+            r#"
+            Spec.GF16.lemma_poly_reduce_bv (Spec.GF16.to_bv $v);
+            Spec.GF16.top_byte_index_lemma $v
+        "#
+        );
         let i1 = (v >> 24) as usize;
+        hax_lib::fstar!(
+            r#"
+            Spec.GF16.up_cast_shift_left_lemma (v_REDUCE_BYTES.[ $i1 ] <: u16) (mk_i32 8);
+            Spec.GF16.xor_is_gf_add_lemma $v
+              ((cast (v_REDUCE_BYTES.[ $i1 ] <: u16) <: u32) <<! mk_i32 8 <: u32)
+        "#
+        );
         v ^= (REDUCE_BYTES[i1] as u32) << 8;
+        hax_lib::fstar!("Spec.GF16.mid_byte_index_lemma $v");
         let shifted_v = (v >> 16) as usize;
         let i2 = shifted_v & 0xFF;
         hax_lib::fstar!("logand_lemma $shifted_v (mk_usize 255)");
+        hax_lib::fstar!(
+            r#"
+            Spec.GF16.up_cast_lemma #U16 #U32 (v_REDUCE_BYTES.[ $i2 ] <: u16);
+            Spec.GF16.xor_is_gf_add_lemma $v (cast (v_REDUCE_BYTES.[ $i2 ] <: u16) <: u32)
+        "#
+        );
         v ^= REDUCE_BYTES[i2] as u32;
+        hax_lib::fstar!("Spec.GF16.cast_truncate_lemma #U32 #U16 $v");
         v as u16
     }
 
     /// Compute the u16 reduction associated with u8 `a`.  See the comment
     /// in poly_reduce for more details.
+    #[hax_lib::ensures(|result| fstar!(r#"
+        Spec.GF16.(bv_take (to_bv result) 16 == red_byte (to_bv a))
+        "#))]
     const fn reduce_from_byte(mut a: u8) -> u32 {
+        #[cfg(hax)]
+        let a_init = a;
         let mut out = 0u32;
         let mut i: u32 = 8;
+        hax_lib::fstar!(
+            r#"
+            Spec.GF16.lemma_take_u32_zero ();
+            Spec.GF16.(lemma_add_zero (red_byte (to_bv $a_init)))
+        "#
+        );
         while i > 0 {
-            hax_lib::loop_invariant!(i <= 8);
+            hax_lib::loop_invariant!(fstar!(
+                r#"
+                v i <= 8 /\
+                (forall (j: nat). j >= v i /\ j < 8 ==> Spec.GF16.((to_bv a).[j] == false)) /\
+                Spec.GF16.(gf_add (red_byte (to_bv a)) (bv_take (to_bv out) 16) ==
+                           red_byte (to_bv a_init))
+                "#
+            ));
             hax_lib::loop_decreases!(i);
             i -= 1;
+            hax_lib::fstar!("Spec.GF16.lemma_bit_test $a $i");
             if (1 << i) & a != 0 {
+                hax_lib::fstar!("Spec.GF16.lemma_reduce_step_int $a $out $i");
                 out ^= POLY << i;
                 a ^= ((POLY << i) >> 16) as u8;
             }
         }
+        hax_lib::fstar!(
+            r#"
+            Spec.GF16.(bv_eq_intro (to_bv $a) (zero #8));
+            Spec.GF16.lemma_red_byte_zero ();
+            Spec.GF16.(lemma_add_zero (bv_take (to_bv $out) 16))
+        "#
+        );
         out
     }
 
     /// Compute the u16 reductions for all bytes.  See the comment in
     /// poly_reduce for more details.
+    #[hax_lib::ensures(|result| fstar!(r#"
+        forall (j: usize). v j < 256 ==>
+          Spec.GF16.to_bv (result.[ j ] <: u16) ==
+          Spec.GF16.red_byte (Spec.GF16.to_bv (cast (j <: usize) <: u8))
+        "#))]
     const fn reduce_bytes() -> [u16; 256] {
         let mut out = [0u16; 256];
         let mut i = 0;
@@ -531,12 +672,23 @@ mod reduce {
             out[i] = reduce_from_byte(i as u8) as u16;
             i += 1;
         }
+        hax_lib::fstar!(
+            r#"
+            introduce forall (j: usize). v j < 256 ==>
+              Spec.GF16.to_bv (out.[ j ] <: u16) ==
+              Spec.GF16.red_byte (Spec.GF16.to_bv (cast (j <: usize) <: u8))
+            with introduce _ ==> _
+            with _. Spec.GF16.cast_truncate_lemma #U32 #U16
+                      (reduce_from_byte (cast (j <: usize) <: u8))
+        "#
+        );
         out
     }
 
     const REDUCE_BYTES: [u16; 256] = reduce_bytes();
 }
 
+#[hax_lib::attributes]
 impl GF16 {
     pub const ZERO: Self = Self { value: 0 };
     pub const ONE: Self = Self { value: 1 };
@@ -545,17 +697,31 @@ impl GF16 {
         Self { value }
     }
 
+    #[hax_lib::ensures(|result| fstar!(r#"
+        to_gf result == Spec.GF16.gf16_div (to_gf self) (to_gf other)
+    "#))]
     fn div_impl(&self, other: &Self) -> Self {
         // Within GF(p^n), inv(a) == a^(p^n-2).  We're GF(2^16) == GF(65536),
         // so we can compute GF(65534).
         let mut square = *other * *other;
         let mut out = *self;
+        hax_lib::fstar!("Spec.GF16.lemma_gf16_div_init (to_gf self) (to_gf other)");
         for _i in 1..16 {
+            hax_lib::loop_invariant!(|i: i32| fstar!(r#"
+                to_gf square == Spec.GF16.gf16_pow (to_gf other) (pow2 (v i)) /\
+                to_gf out ==
+                Spec.GF16.gf16_mul (to_gf self) (Spec.GF16.gf16_pow (to_gf other) (pow2 (v i) - 2))
+            "#));
+            hax_lib::fstar!("Spec.GF16.lemma_gf16_div_step (to_gf self) (to_gf other) (v ${_i})");
             (square.value, out.value) = mul2_u16(square.value, square.value, out.value);
         }
+        hax_lib::fstar!("Spec.GF16.lemma_gf16_div_final (to_gf self) (to_gf other)");
         out
     }
 
+    #[hax_lib::ensures(|result| fstar!(r#"
+        to_gf result == Spec.GF16.gf16_mul (to_gf self) (to_gf other)
+    "#))]
     pub const fn const_mul(&self, other: &Self) -> Self {
         Self {
             value: unaccelerated::mul(self.value, other.value),
@@ -568,22 +734,38 @@ impl GF16 {
         }
     }
 
+    #[hax_lib::ensures(|result| fstar!(r#"
+        to_gf result == Spec.GF16.gf16_div (to_gf self) (to_gf other)
+    "#))]
     pub const fn const_div(&self, other: &Self) -> Self {
         // Within GF(p^n), inv(a) == a^(p^n-2).  We're GF(2^16) == GF(65536),
         // so we can compute GF(65534).
         let mut square = *other;
         let mut out = *self;
+        hax_lib::fstar!("Spec.GF16.lemma_gf16_div_init (to_gf self) (to_gf other)");
         {
             // const for loop
             let mut i: usize = 1;
             while i < 16 {
-                hax_lib::loop_invariant!(i <= 16);
+                hax_lib::loop_invariant!(fstar!(r#"
+                    v i >= 1 /\ v i <= 16 /\
+                    to_gf square == Spec.GF16.gf16_pow (to_gf other) (pow2 (v i - 1)) /\
+                    to_gf out ==
+                    Spec.GF16.gf16_mul (to_gf self) (Spec.GF16.gf16_pow (to_gf other) (pow2 (v i) - 2))
+                "#));
                 hax_lib::loop_decreases!(16 - i);
+                hax_lib::fstar!(
+                    r#"
+                    Spec.GF16.lemma_gf16_pow2_square (to_gf other) (v i - 1);
+                    Spec.GF16.lemma_gf16_div_step (to_gf self) (to_gf other) (v i)
+                "#
+                );
                 square = square.const_mul(&square);
                 out = out.const_mul(&square);
                 i += 1;
             }
         }
+        hax_lib::fstar!("Spec.GF16.lemma_gf16_div_final (to_gf self) (to_gf other)");
         out
     }
 }
@@ -620,6 +802,69 @@ mod test {
             let b = (ExternalGF16::new(x) * ExternalGF16::new(y)).value;
             println!("{x:04x} * {y:04x} = {b:04x}");
             assert_eq!(a, b);
+        }
+    }
+
+    /// Checks the trusted `poly_mul` postcondition of `mul2_unreduced`.
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
+    #[test]
+    fn accelerated_matches_unaccelerated() {
+        assert!(use_accelerated(), "no accelerated GF16 path on this CPU");
+        let mut rng = rand::rng();
+        let mut probes: Vec<u16> = vec![
+            0, 1, 2, 3, 0x000f, 0x0100, 0x1000, 0x4000, 0x7fff, 0x8000, 0xfffe, 0xffff,
+        ];
+        for _i in 0..8 {
+            probes.push(rng.next_u32() as u16);
+        }
+
+        // Every b against each probe: exercises every reduction table entry.
+        for &a in probes.iter() {
+            for b in 0..=u16::MAX {
+                assert_eq!(
+                    accelerated::mul(a, b),
+                    unaccelerated::mul(a, b),
+                    "mul a={a:#06x} b={b:#06x}"
+                );
+            }
+        }
+
+        // mul2 packs both lanes into one intrinsic call, so check the lanes
+        // separately rather than trusting mul to have covered them.
+        for &a in probes.iter() {
+            for &b1 in probes.iter() {
+                for &b2 in probes.iter() {
+                    assert_eq!(
+                        accelerated::mul2(a, b1, b2),
+                        (unaccelerated::mul(a, b1), unaccelerated::mul(a, b2)),
+                        "mul2 a={a:#06x} b1={b1:#06x} b2={b2:#06x}"
+                    );
+                }
+            }
+        }
+        for _i in 0..20_000 {
+            let a = rng.next_u32() as u16;
+            let b1 = rng.next_u32() as u16;
+            let b2 = rng.next_u32() as u16;
+            assert_eq!(
+                accelerated::mul2(a, b1, b2),
+                (unaccelerated::mul(a, b1), unaccelerated::mul(a, b2)),
+                "mul2 a={a:#06x} b1={b1:#06x} b2={b2:#06x}"
+            );
+        }
+    }
+
+    /// Checks `Spec.GF16.lemma_gf16_fermat`: a^(2^16 - 1) == 1 for every a != 0.
+    #[test]
+    fn gf16_fermat() {
+        for a in 1..=u16::MAX {
+            let mut square = GF16::new(a);
+            let mut acc = GF16::ONE;
+            for _ in 0..16 {
+                acc *= square;
+                square *= square;
+            }
+            assert_eq!(acc, GF16::ONE, "a={a:#06x}");
         }
     }
 

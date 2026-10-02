@@ -4,7 +4,11 @@ on: [push]
 jobs:
   test:
     name: cargo test
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -27,7 +31,7 @@ jobs:
       - run: sudo apt-get install protobuf-compiler
       - run: cargo +1.88.0 build
   crosspoly_i586:
-    name: cross test polynomial i586
+    name: cross test encoding i586
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,9 +41,9 @@ jobs:
       - run: wget https://github.com/cross-rs/cross/releases/download/v0.2.5/cross-x86_64-unknown-linux-gnu.tar.gz
       - run: tar xvzf cross-x86_64-unknown-linux-gnu.tar.gz
       - run: chmod u+x cross
-      - run: ./cross test --target i586-unknown-linux-gnu polynomial
+      - run: ./cross test --target i586-unknown-linux-gnu encoding
   crosspoly_i686:
-    name: cross test polynomial i686
+    name: cross test encoding i686
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,9 +53,9 @@ jobs:
       - run: wget https://github.com/cross-rs/cross/releases/download/v0.2.5/cross-x86_64-unknown-linux-gnu.tar.gz
       - run: tar xvzf cross-x86_64-unknown-linux-gnu.tar.gz
       - run: chmod u+x cross
-      - run: ./cross test --target i686-unknown-linux-gnu polynomial
+      - run: ./cross test --target i686-unknown-linux-gnu encoding
   crosspoly_aarch64:
-    name: cross test polynomial aarch64
+    name: cross test encoding aarch64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,4 +65,4 @@ jobs:
       - run: wget https://github.com/cross-rs/cross/releases/download/v0.2.5/cross-x86_64-unknown-linux-gnu.tar.gz
       - run: tar xvzf cross-x86_64-unknown-linux-gnu.tar.gz
       - run: chmod u+x cross
-      - run: ./cross test --target aarch64-unknown-linux-gnu polynomial
+      - run: ./cross test --target aarch64-unknown-linux-gnu encoding

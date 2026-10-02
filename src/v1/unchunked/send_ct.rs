@@ -62,7 +62,8 @@ pub struct Ct1Sent {
     auth: authenticator::Authenticator,
     #[hax_lib::refine(hdr.len() == 64)]
     hdr: incremental_mlkem768::Header,
-    #[hax_lib::refine(es.len() == 2080)]
+    #[hax_lib::refine(es.len() == 2080
+        && incremental_mlkem768::encapsulation_state_is_usable(&es))]
     es: incremental_mlkem768::EncapsulationState,
     #[hax_lib::refine(ct1.len() == 960)]
     ct1: incremental_mlkem768::Ciphertext1,
@@ -73,7 +74,8 @@ pub struct Ct1Sent {
 pub struct Ct1SentEkReceived {
     pub epoch: Epoch,
     auth: authenticator::Authenticator,
-    #[hax_lib::refine(es.len() == 2080)]
+    #[hax_lib::refine(es.len() == 2080
+        && incremental_mlkem768::encapsulation_state_is_usable(&es))]
     es: incremental_mlkem768::EncapsulationState,
     #[hax_lib::refine(ek.len() == 1152)]
     ek: incremental_mlkem768::EncapsulationKey,

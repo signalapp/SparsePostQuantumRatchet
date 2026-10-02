@@ -44,6 +44,8 @@ class extractAction(argparse.Action):
             "-i",
             include_str,
             "fstar",
+            "--z3rlimit",
+            "300",
             "--interfaces",
             interface_include,
         ]
@@ -53,7 +55,41 @@ class extractAction(argparse.Action):
             cwd=".",
             env=hax_env,
         )
+        patch_extraction()
         return None
+
+
+def patch_extraction():
+    """Post-extraction fixups for bugs the F* sources and models cannot avoid.
+
+    Keep every patch idempotent and assert that it applied, so a toolchain
+    upgrade that changes the output fails loudly here instead of silently
+    rotting.
+    """
+    spqr = os.path.join("proofs", "fstar", "extraction", "Spqr.fst")
+    if not os.path.exists(spqr):
+        # Partial extraction (e.g. `--encoding`) does not produce it.
+        return
+
+    # FIXME(FStarLang/FStar#4533): F* resolves `t_Error` in the selective
+    # include `include Spqr.Bundle {t_Error as t_Error}` to the record of the
+    # class `Core_models.Error.t_Error` and fails with
+    #   Definition Spqr.Bundle._super_i0 cannot be found.
+    # An abbreviation sidesteps the lookup; the enum's constructors are
+    # re-exported on their own `include` lines.
+    bad = "include Spqr.Bundle {t_Error as t_Error}"
+    good = "unfold let t_Error = Spqr.Bundle.t_Error"
+    with open(spqr) as f:
+        src = f.read()
+    if bad in src:
+        with open(spqr, "w") as f:
+            f.write(src.replace(bad, good, 1))
+        print("patched: Spqr.fst t_Error re-export (_super_i0)")
+    elif good not in src:
+        raise Exception(
+            "Spqr.fst has neither the buggy `{}` nor the patched `{}`. "
+            "Check whether hax changed its output.".format(bad, good)
+        )
 
 
 class proveAction(argparse.Action):

@@ -34,7 +34,7 @@ pub fn dr_send<SCKA: Scka, R: CryptoRng>(
         symratchet.add_epoch(EpochSecret {
             epoch,
             secret: key.to_vec(),
-        });
+        })?;
     }
     let (index, msg_key) = symratchet.send_key(so.sending_epoch)?;
 
@@ -69,7 +69,7 @@ pub fn dr_recv<SCKA: Scka>(
         symratchet.add_epoch(EpochSecret {
             epoch,
             secret: key.to_vec(),
-        });
+        })?;
     }
 
     let msg_key = symratchet.recv_key(msg.epoch(), index)?;

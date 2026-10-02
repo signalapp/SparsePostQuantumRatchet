@@ -132,20 +132,21 @@ impl MessageType {
     }
 }
 
+#[hax_lib::requires(into.len() <= usize::MAX - crate::MAX_VARINT_BYTES_LEN - 32)]
+#[hax_lib::ensures(|_| into.len() <= future(into).len()
+    && (into.len() == 0 || future(into)[0] == into[0]))]
 fn encode_chunk(c: &Chunk, into: &mut SerializedMessage) {
     encode_varint(c.index as u64, into);
-    hax_lib::assume!(into.len() < usize::MAX - 32);
     into.extend_from_slice(&c.data[..]);
 }
 
 fn decode_chunk(from: &[u8], at: &mut usize) -> Result<Chunk, Error> {
     let index = decode_varint(from, at)?;
     let start = *at;
-    hax_lib::assume!(*at < usize::MAX - 32);
-    *at += 32;
-    if *at > from.len() || index > 65535 {
+    if from.len() - start < 32 || index > 65535 {
         return Err(Error::MsgDecode);
     }
+    *at = start + 32;
     Ok(Chunk {
         index: index as u16,
         data: from[start..*at].try_into().expect("correct size"),
@@ -174,7 +175,6 @@ impl Message {
         into.push(Version::V1.into());
         encode_varint(self.epoch, &mut into);
         encode_varint(index as u64, &mut into);
-        hax_lib::assume!(into.len() < usize::MAX);
         into.push(MessageType::from_payload(&self.payload).into());
         encode_chunk(
             match &self.payload {
@@ -184,19 +184,15 @@ impl Message {
                 MessagePayload::Ct1(ref chunk) => chunk,
                 MessagePayload::Ct2(ref chunk) => chunk,
                 _ => {
-                    // This assumption could be proven with post-conditions on encode_varint
-                    hax_lib::assume!(into.len() > 0 && into[0] == Version::V1.into());
                     return into;
                 }
             },
             &mut into,
         );
-        // This assumption could be proven with post-conditions on encode_varint and encode_chunk
-        hax_lib::assume!(into.len() > 0 && into[0] == Version::V1.into());
         into
     }
 
-    #[hax_lib::ensures(|res| if let Ok((msg, _index, at)) = res { msg.epoch > 0 && at <= from.len() } else { true })]
+    #[hax_lib::ensures(|res| if let Ok(msg) = res { msg.epoch == epoch } else { true })]
     pub fn deserialize(epoch: Epoch, from: &[u8]) -> Result<Self, Error> {
         if from.is_empty() {
             return Err(Error::MsgDecode);

@@ -260,7 +260,14 @@ pub fn current_version(state: &SerializedState) -> Result<CurrentVersion, Error>
     })
 }
 
-#[hax_lib::fstar::verification_status(lax)]
+#[hax_lib::ensures(|res| fstar!(r#"
+    match res with
+    | Core_models.Result.Result_Ok r ->
+      (match r.f_key with
+       | Core_models.Option.Option_Some k ->
+         b2t (Alloc.Vec.impl_1__len k >. mk_usize 0)
+       | _ -> True)
+    | _ -> True"#))]
 pub fn send<R: Rng + CryptoRng>(state: &SerializedState, rng: &mut R) -> Result<Send, Error> {
     let state_pb = decode_state(state)?;
     match state_pb.inner {
@@ -288,15 +295,20 @@ pub fn send<R: Rng + CryptoRng>(state: &SerializedState, rng: &mut R) -> Result<
             };
             let (index, msg_key, chain_pb) = match chain {
                 None => {
-                    hax_lib::assume!(key.is_none());
-                    assert!(key.is_none());
+                    if key.is_some() {
+                        return Err(Error::ChainNotAvailable);
+                    }
                     (0, vec![], None)
                 }
                 Some(mut chain) => {
                     if let Some(epoch_secret) = key {
-                        chain.add_epoch(epoch_secret);
+                        chain.add_epoch(epoch_secret)?;
                     }
-                    let (index, msg_key) = chain.send_key(msg.epoch - 1)?;
+                    // A well-formed v1 state has epoch >= 1 (the initial epoch is 1);
+                    // epoch 0 only arises from a malformed decoded state, so reject it
+                    // rather than underflowing.
+                    let msg_key_epoch = msg.epoch.checked_sub(1).ok_or(Error::StateDecode)?;
+                    let (index, msg_key) = chain.send_key(msg_key_epoch)?;
                     (index, msg_key, Some(chain.into_pb()))
                 }
             };
@@ -313,14 +325,22 @@ pub fn send<R: Rng + CryptoRng>(state: &SerializedState, rng: &mut R) -> Result<
                 }
                 .encode_to_vec(),
                 msg,
-                // hax does not like `filter`
-                key: if msg_key.is_empty() {
-                    None
-                } else {
-                    Some(msg_key)
-                },
+                key: message_key(msg_key),
             })
         }
+    }
+}
+
+#[hax_lib::ensures(|res| match res {
+    Some(k) => k.len() > 0,
+    None => true,
+})]
+fn message_key(k: Vec<u8>) -> MessageKey {
+    // hax does not like `filter`
+    if k.is_empty() {
+        None
+    } else {
+        Some(k)
     }
 }
 
@@ -352,6 +372,7 @@ fn chain_from(
     }
 }
 
+#[hax_lib::fstar::options("--split_queries always")]
 pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Error> {
     let msg = msg_preamble(msg)?;
 
@@ -362,7 +383,7 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
     // version supported by both sides.
     let prenegotiated_state_pb = decode_state(state)?;
 
-    let current_version = state_version(&prenegotiated_state_pb) as u8;
+    let current_version: u8 = state_version(&prenegotiated_state_pb).into();
     let (min_version, version_still_negotiating) = match prenegotiated_state_pb.version_negotiation
     {
         Some(ref vn) => (vn.min_version as u8, true),
@@ -403,7 +424,7 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
                 prenegotiated_state_pb.chain,
                 prenegotiated_state_pb.version_negotiation.as_ref(),
             )?;
-            let key = Some(chain.recv_key(ZERO_EPOCH, msg.index)?);
+            let key = message_key(chain.recv_key(ZERO_EPOCH, msg.index)?);
 
             return Ok(Recv {
                 key,
@@ -462,7 +483,7 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
             let msg_key_epoch = msg.epoch - 1;
             let mut chain = chain_from(state_pb.chain, state_pb.version_negotiation.as_ref())?;
             if let Some(epoch_secret) = key {
-                chain.add_epoch(epoch_secret);
+                chain.add_epoch(epoch_secret)?;
             }
             let msg_key = chain.recv_key(msg_key_epoch, msg.index)?;
 
@@ -474,12 +495,7 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
                     chain: Some(chain.into_pb()),
                 }
                 .encode_to_vec(),
-                // hax does not like `filter`
-                key: if msg_key.is_empty() {
-                    None
-                } else {
-                    Some(msg_key)
-                },
+                key: message_key(msg_key),
             })
         }
     }
@@ -506,9 +522,19 @@ fn decode_state(s: &SerializedState) -> Result<pqrpb::PqRatchetState, Error> {
 
 const MAX_VARINT_BYTES_LEN: usize = 10;
 
+#[hax_lib::requires(into.len() <= usize::MAX - MAX_VARINT_BYTES_LEN)]
+#[hax_lib::ensures(|_| into.len() <= future(into).len()
+    && future(into).len() <= into.len() + MAX_VARINT_BYTES_LEN
+    && (into.len() == 0 || future(into)[0] == into[0]))]
 fn encode_varint(mut a: u64, into: &mut SerializedMessage) {
+    #[cfg(hax)]
+    let l0 = into.len();
+    #[cfg(hax)]
+    let b0 = if l0 == 0 { 0 } else { into[0] };
     for _i in 0..MAX_VARINT_BYTES_LEN {
-        hax_lib::assume!(into.len() < usize::MAX);
+        hax_lib::loop_invariant!(|i: usize| l0 <= into.len()
+            && into.len() <= l0 + i
+            && (l0 == 0 || into[0] == b0));
         let byte = (a & 0x7F) as u8;
         if a < 0x80 {
             into.push(byte);
@@ -1414,6 +1440,29 @@ mod lib_test {
             Err(Error::MinimumVersion)
         );
 
+        Ok(())
+    }
+
+    #[test]
+    fn newer_version_with_zero_index_gives_no_key() -> Result<(), Error> {
+        let mut rng = OsRng.unwrap_err();
+        let alex = initial_state(Params {
+            version: Version::V1,
+            min_version: Version::V0,
+            direction: Direction::A2B,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let blake = initial_state(Params {
+            version: Version::V1,
+            min_version: Version::V0,
+            direction: Direction::B2A,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let Send { msg: mut m, .. } = send(&alex, &mut rng)?;
+        m[0] = 2;
+        assert_eq!(recv(&blake, &m)?.key, None);
         Ok(())
     }
 }
