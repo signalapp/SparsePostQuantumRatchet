@@ -516,7 +516,7 @@ impl States {
                     if msg.epoch == state.epoch() + 1 {
                         #[cfg(not(hax))]
                         log::info!(
-                            "spqr v1.send_ct.recv epoch {}->{}: Ct2Sampled -> KeysSampled",
+                            "spqr v1.send_ct.recv epoch {}->{}: Ct2Sampled -> KeysUnsampled",
                             msg.epoch - 1,
                             msg.epoch
                         );

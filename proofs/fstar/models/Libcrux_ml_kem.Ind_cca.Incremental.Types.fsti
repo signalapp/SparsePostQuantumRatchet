@@ -1,347 +1,50 @@
 module Libcrux_ml_kem.Ind_cca.Incremental.Types
-#set-options "--fuel 0 --ifuel 1 --z3rlimit 80"
+#set-options "--fuel 0 --ifuel 1 --z3rlimit 15"
 open Core_models
 open FStar.Mul
 
-let _ =
-  (* This module has implicit dependencies, here we make them explicit. *)
-  (* The implicit dependencies arise from typeclasses instances. *)
-  let open Libcrux_ml_kem.Ind_cpa.Unpacked in
-  let open Libcrux_ml_kem.Vector.Traits in
-  ()
+/// Model of `libcrux_ml_kem::ind_cca::incremental::types` (libcrux-ml-kem 0.0.10).
+/// <https://docs.rs/libcrux-ml-kem/0.0.10/libcrux_ml_kem/mlkem768/incremental/>
+///
+/// Covers exactly the three types the extraction names. libcrux's own module
+/// also carries `PublicKey1`, `PublicKey2`, `EncapsState`, `KeyPair` and their
+/// `TryFrom`/`Debug`/`Clone` instances; SPQR reaches none of them -- it works in
+/// raw byte slices and only materialises ciphertext values at the
+/// `encapsulate`/`decapsulate` boundary.
 
-/// Errors
-type t_Error =
-  | Error_InvalidInputLength : t_Error
-  | Error_InvalidOutputLength : t_Error
-  | Error_InvalidPublicKey : t_Error
-  | Error_InsufficientRandomness : t_Error
+/// `Error`
+/// <https://docs.rs/libcrux-ml-kem/0.0.10/libcrux_ml_kem/mlkem768/incremental/enum.Error.html>
+///
+/// Opaque. libcrux distinguishes `InvalidInputLength`, `InvalidOutputLength`,
+/// `InvalidPublicKey` and `InsufficientRandomness`, but SPQR never inspects
+/// which one it got: `incremental_mlkem768.rs` either propagates a failure as
+/// `Error::BadHeader` or is on a path where the contracts below rule failure
+/// out. Keeping it opaque records that the discrimination is unused.
+val t_Error: Type0
 
-val t_Error_cast_to_repr (x: t_Error) : Prims.Pure isize Prims.l_True (fun _ -> Prims.l_True)
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_15:Core_models.Fmt.t_Debug t_Error
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_16:Core_models.Clone.t_Clone t_Error
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_17:Core_models.Marker.t_Copy t_Error
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_18:Core_models.Marker.t_StructuralPartialEq t_Error
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_19:Core_models.Cmp.t_PartialEq t_Error t_Error
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_20:Core_models.Cmp.t_Eq t_Error
-
-/// Incremental trait for unpacked key pairs.
-class t_IncrementalKeyPair (v_Self: Type0) = {
-  f_pk1_bytes_pre:v_Self -> t_Slice u8 -> Type0;
-  f_pk1_bytes_post:v_Self -> t_Slice u8 -> (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
-    -> Type0;
-  f_pk1_bytes:x0: v_Self -> x1: t_Slice u8
-    -> Prims.Pure (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
-        (f_pk1_bytes_pre x0 x1)
-        (fun result -> f_pk1_bytes_post x0 x1 result);
-  f_pk2_bytes_pre:v_Self -> t_Slice u8 -> Type0;
-  f_pk2_bytes_post:v_Self -> t_Slice u8 -> t_Slice u8 -> Type0;
-  f_pk2_bytes:x0: v_Self -> x1: t_Slice u8
-    -> Prims.Pure (t_Slice u8) (f_pk2_bytes_pre x0 x1) (fun result -> f_pk2_bytes_post x0 x1 result)
-}
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl
-      (v_K: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : t_IncrementalKeyPair (Libcrux_ml_kem.Ind_cca.Unpacked.t_MlKemKeyPairUnpacked v_K v_Vector)
-
-/// The incremental public key that allows generating [`Ciphertext1`].
-type t_PublicKey1 = {
-  f_seed:t_Array u8 (mk_usize 32);
-  f_hash:t_Array u8 (mk_usize 32)
-}
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_21:Core_models.Default.t_Default t_PublicKey1
-
-/// Get the size of the first public key in bytes.
-val impl_PublicKey1__len: Prims.unit -> Prims.Pure usize Prims.l_True (fun _ -> Prims.l_True)
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_2: Core_models.Convert.t_TryFrom t_PublicKey1 (t_Slice u8) =
-  {
-    f_Error = t_Error;
-    f_try_from_pre = (fun (value: t_Slice u8) -> true);
-    f_try_from_post
-    =
-    (fun (value: t_Slice u8) (out: Core_models.Result.t_Result t_PublicKey1 t_Error) -> true);
-    f_try_from
-    =
-    fun (value: t_Slice u8) ->
-      if (Core_models.Slice.impl__len #u8 value <: usize) <. mk_usize 64
-      then
-        Core_models.Result.Result_Err (Error_InvalidInputLength <: t_Error)
-        <:
-        Core_models.Result.t_Result t_PublicKey1 t_Error
-      else
-        let seed:t_Array u8 (mk_usize 32) = Rust_primitives.Hax.repeat (mk_u8 0) (mk_usize 32) in
-        let seed:t_Array u8 (mk_usize 32) =
-          Core_models.Slice.impl__copy_from_slice #u8
-            seed
-            (value.[ { Core_models.Ops.Range.f_start = mk_usize 0; Core_models.Ops.Range.f_end = mk_usize 32 }
-                <:
-                Core_models.Ops.Range.t_Range usize ]
-              <:
-              t_Slice u8)
-        in
-        let hash:t_Array u8 (mk_usize 32) = Rust_primitives.Hax.repeat (mk_u8 0) (mk_usize 32) in
-        let hash:t_Array u8 (mk_usize 32) =
-          Core_models.Slice.impl__copy_from_slice #u8
-            hash
-            (value.[ { Core_models.Ops.Range.f_start = mk_usize 32; Core_models.Ops.Range.f_end = mk_usize 64 }
-                <:
-                Core_models.Ops.Range.t_Range usize ]
-              <:
-              t_Slice u8)
-        in
-        Core_models.Result.Result_Ok ({ f_seed = seed; f_hash = hash } <: t_PublicKey1)
-        <:
-        Core_models.Result.t_Result t_PublicKey1 t_Error
-  }
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_3:Core_models.Convert.t_From t_PublicKey1 (t_Array u8 (mk_usize 64))
-
-/// The incremental public key that allows generating [`Ciphertext2`].
-/// This public key is serialized to safe bytes on the wire.
-type t_PublicKey2 (v_LEN: usize) = { f_tt_as_ntt:t_Array u8 v_LEN }
-
-/// Get the size of the second public key in bytes.
-val impl_4__len: v_LEN: usize -> Prims.unit -> Prims.Pure usize Prims.l_True (fun _ -> Prims.l_True)
-
-/// Deserialize the public key.
-val impl_4__deserialize
-      (v_LEN v_K: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-      (self: t_PublicKey2 v_LEN)
-    : Prims.Pure (t_Array (Libcrux_ml_kem.Polynomial.t_PolynomialRingElement v_Vector) v_K)
-      Prims.l_True
-      (fun _ -> Prims.l_True)
-
-/// The partial ciphertext c1 - first part.
+/// `Ciphertext1<LEN>` -- the first part of an incremental ciphertext.
+///
+/// NOT opaque, deliberately. libcrux declares it as a newtype over
+/// `[u8; LEN]`, and SPQR depends on that layout in both directions: it projects
+/// `.value` to get the bytes out (`encaps1`, `encaps2`) and constructs one from
+/// bytes on the way in (`decaps`). Making the type abstract would need `value`
+/// and a constructor exposed as functions with an axiom saying they are
+/// inverse, which is the same assumption written less directly. The assumption
+/// being made is that `Ciphertext1`'s public field stays a plain `[u8; LEN]`.
 type t_Ciphertext1 (v_LEN: usize) = { f_value:t_Array u8 v_LEN }
 
-/// The size of the ciphertext.
-val impl_5__len: v_LEN: usize -> Prims.unit -> Prims.Pure usize Prims.l_True 
-  (ensures fun res -> let res:usize = res in res =. v_LEN)
+/// `Ciphertext1::len()`
+///
+/// Returns the const generic. Justified by the declaration: the value is an
+/// array of exactly `LEN` bytes, so its length is `LEN` and cannot depend on
+/// anything else.
+val impl_5__len: v_LEN: usize -> Prims.unit
+  -> Prims.Pure usize Prims.l_True (ensures fun res -> res =. v_LEN)
 
-/// The partial ciphertext c2 - second part.
+/// `Ciphertext2<LEN>` -- the second part of an incremental ciphertext.
+/// Same newtype-layout assumption as [`t_Ciphertext1`].
 type t_Ciphertext2 (v_LEN: usize) = { f_value:t_Array u8 v_LEN }
 
-/// The size of the ciphertext.
-val impl_6__len: v_LEN: usize -> Prims.unit -> Prims.Pure usize Prims.l_True 
-  (ensures fun res -> let res:usize = res in res =. v_LEN)
-
-/// The incremental state for encapsulate.
-type t_EncapsState
-  (v_K: usize) (v_Vector: Type0) {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-  = {
-  f_r_as_ntt:t_Array (Libcrux_ml_kem.Polynomial.t_PolynomialRingElement v_Vector) v_K;
-  f_error2:Libcrux_ml_kem.Polynomial.t_PolynomialRingElement v_Vector;
-  f_randomness:t_Array u8 (mk_usize 32)
-}
-
-/// Get the number of bytes, required for the state.
-val impl_7__num_bytes:
-    v_K: usize ->
-    #v_Vector: Type0 ->
-    {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |} ->
-    Prims.unit
-  -> Prims.Pure usize Prims.l_True (fun _ -> Prims.l_True)
-
-/// Get the state as bytes
-val impl_7__to_bytes
-      (v_K: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-      (self: t_EncapsState v_K v_Vector)
-      (state: t_Slice u8)
-    : Prims.Pure (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
-      Prims.l_True
-      (fun _ -> Prims.l_True)
-
-/// Build a state from bytes
-val impl_7__try_from_bytes
-      (v_K: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-      (bytes: t_Slice u8)
-    : Prims.Pure (Core_models.Result.t_Result (t_EncapsState v_K v_Vector) t_Error)
-      Prims.l_True
-      (fun _ -> Prims.l_True)
-
-/// Build a state from bytes
-val impl_7__from_bytes
-      (v_K: usize)
-      (#v_Vector: Type0)
-      (v_STATE_LEN: usize)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-      (bytes: t_Array u8 v_STATE_LEN)
-    : Prims.Pure (t_EncapsState v_K v_Vector) Prims.l_True (fun _ -> Prims.l_True)
-
-/// Convert [`MlKemPublicKeyUnpacked`] to a [`PublicKey1`]
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_8
-      (v_K: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : Core_models.Convert.t_From t_PublicKey1
-      (Libcrux_ml_kem.Ind_cca.Unpacked.t_MlKemPublicKeyUnpacked v_K v_Vector)
-
-/// Convert [`MlKemPublicKeyUnpacked`] to a [`PublicKey2`].
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_9
-      (v_K v_LEN: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : Core_models.Convert.t_From (t_PublicKey2 v_LEN)
-      (Libcrux_ml_kem.Ind_cca.Unpacked.t_MlKemPublicKeyUnpacked v_K v_Vector)
-
-/// Convert a byte slice `&[u8]` to a [`PublicKey2`].
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-let impl_10 (v_LEN: usize) : Core_models.Convert.t_TryFrom (t_PublicKey2 v_LEN) (t_Slice u8) =
-  {
-    f_Error = t_Error;
-    f_try_from_pre = (fun (value: t_Slice u8) -> true);
-    f_try_from_post
-    =
-    (fun (value: t_Slice u8) (out: Core_models.Result.t_Result (t_PublicKey2 v_LEN) t_Error) -> true);
-    f_try_from
-    =
-    fun (value: t_Slice u8) ->
-      if (Core_models.Slice.impl__len #u8 value <: usize) <. v_LEN
-      then
-        Core_models.Result.Result_Err (Error_InvalidInputLength <: t_Error)
-        <:
-        Core_models.Result.t_Result (t_PublicKey2 v_LEN) t_Error
-      else
-        let tt_as_ntt:t_Array u8 v_LEN = Rust_primitives.Hax.repeat (mk_u8 0) v_LEN in
-        let tt_as_ntt:t_Array u8 v_LEN =
-          Core_models.Slice.impl__copy_from_slice #u8
-            tt_as_ntt
-            (value.[ { Core_models.Ops.Range.f_start = mk_usize 0; Core_models.Ops.Range.f_end = v_LEN }
-                <:
-                Core_models.Ops.Range.t_Range usize ]
-              <:
-              t_Slice u8)
-        in
-        Core_models.Result.Result_Ok ({ f_tt_as_ntt = tt_as_ntt } <: t_PublicKey2 v_LEN)
-        <:
-        Core_models.Result.t_Result (t_PublicKey2 v_LEN) t_Error
-  }
-
-/// Convert bytes `&[u8; LEN]` to a [`PublicKey2`].
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_11 (v_LEN: usize) : Core_models.Convert.t_From (t_PublicKey2 v_LEN) (t_Array u8 v_LEN)
-
-type t_KeyPair
-  (v_K: usize) (v_PK2_LEN: usize) (v_Vector: Type0)
-  {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-  = {
-  f_pk1:t_PublicKey1;
-  f_pk2:t_PublicKey2 v_PK2_LEN;
-  f_sk:Libcrux_ml_kem.Ind_cca.Unpacked.t_MlKemPrivateKeyUnpacked v_K v_Vector;
-  f_matrix:t_Array (t_Array (Libcrux_ml_kem.Polynomial.t_PolynomialRingElement v_Vector) v_K) v_K
-}
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_12
-      (v_K v_PK2_LEN: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : Core_models.Convert.t_From (t_KeyPair v_K v_PK2_LEN v_Vector)
-      (Libcrux_ml_kem.Ind_cca.Unpacked.t_MlKemKeyPairUnpacked v_K v_Vector)
-
-[@@ FStar.Tactics.Typeclasses.tcinstance]
-val impl_13
-      (v_K v_PK2_LEN: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-    : Core_models.Convert.t_From (Libcrux_ml_kem.Ind_cca.Unpacked.t_MlKemKeyPairUnpacked v_K v_Vector)
-      (t_KeyPair v_K v_PK2_LEN v_Vector)
-
-/// Write `value` into `out` at `offset`.
-val write (out value: t_Slice u8) (offset: usize)
-    : Prims.Pure (t_Slice u8 & usize) Prims.l_True (fun _ -> Prims.l_True)
-
-/// Get [`PublicKey1`] as bytes.
-val impl_14__pk1_bytes
-      (v_K v_PK2_LEN: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-      (self: t_KeyPair v_K v_PK2_LEN v_Vector)
-      (pk1: t_Slice u8)
-    : Prims.Pure (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
-      Prims.l_True
-      (fun _ -> Prims.l_True)
-
-/// Get [`PublicKey2`] as bytes.
-val impl_14__pk2_bytes
-      (v_K v_PK2_LEN: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-      (self: t_KeyPair v_K v_PK2_LEN v_Vector)
-      (pk2: t_Slice u8)
-    : Prims.Pure (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
-      Prims.l_True
-      (fun _ -> Prims.l_True)
-
-/// The byte size of this key pair.
-val impl_14__num_bytes:
-    v_K: usize ->
-    v_PK2_LEN: usize ->
-    #v_Vector: Type0 ->
-    {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |} ->
-    Prims.unit
-  -> Prims.Pure usize Prims.l_True (fun _ -> Prims.l_True)
-
-/// Write this key pair into the `key` bytes.
-/// `key` must be at least of length `num_bytes()`
-val impl_14__to_bytes
-      (v_K v_PK2_LEN: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-      (self: t_KeyPair v_K v_PK2_LEN v_Vector)
-      (key: t_Slice u8)
-    : Prims.Pure (t_Slice u8 & Core_models.Result.t_Result Prims.unit t_Error)
-      Prims.l_True
-      (fun _ -> Prims.l_True)
-
-/// Write this key pair into the `key` bytes.
-/// This is the compressed private key.
-/// `key` must be at least of length secret key size
-/// Layout: dk | ek | H(ek) | z
-val impl_14__to_bytes_compressed
-      (v_K v_PK2_LEN: usize)
-      (#v_Vector: Type0)
-      (v_KEY_SIZE v_VEC_SIZE: usize)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-      (self: t_KeyPair v_K v_PK2_LEN v_Vector)
-      (key: t_Array u8 v_KEY_SIZE)
-    : Prims.Pure (t_Array u8 v_KEY_SIZE) Prims.l_True (fun _ -> Prims.l_True)
-
-/// Read a key pair from the `key` bytes.
-/// `key` must be at least of length `num_bytes()`
-val impl_14__from_bytes
-      (v_K v_PK2_LEN: usize)
-      (#v_Vector: Type0)
-      {| i1: Libcrux_ml_kem.Vector.Traits.t_Operations v_Vector |}
-      (key: t_Slice u8)
-    : Prims.Pure (Core_models.Result.t_Result (t_KeyPair v_K v_PK2_LEN v_Vector) t_Error)
-      Prims.l_True
-      (fun _ -> Prims.l_True)
+/// `Ciphertext2::len()`. See [`impl_5__len`].
+val impl_6__len: v_LEN: usize -> Prims.unit
+  -> Prims.Pure usize Prims.l_True (ensures fun res -> res =. v_LEN)

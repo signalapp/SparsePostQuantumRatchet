@@ -9,8 +9,6 @@
 #  3. the extracted Cargo crate to have "hax-lib" as a dependency:
 #     `hax-lib = { version = "0.1.0-pre.1", git = "https://github.com/hacspec/hax"}`
 #
-# Optionally, you can set `HACL_HOME`.
-#
 # ROOTS contains all the top-level F* files you wish to verify
 # The default target `verify` verified ROOTS and its dependencies
 # To lax-check instead, set `OTHERFLAGS="--lax"` on the command-line
@@ -34,7 +32,6 @@
 PATH_TO_CHILD_MAKEFILE := "$(abspath $(firstword $(MAKEFILE_LIST)))"
 PATH_TO_TEMPLATE_MAKEFILE := "$(abspath $(lastword $(MAKEFILE_LIST)))"
 
-HACL_HOME      ?= $(HOME)/.hax/hacl_home
 # Expand variable FSTAR_BIN_DETECT now, so that we don't run this over and over
 
 FSTAR_BIN_DETECT := $(if $(shell command -v fstar.exe), fstar.exe, $(FSTAR_HOME)/bin/fstar.exe)
@@ -86,7 +83,14 @@ FINDLIBS_OUTPUT := $(shell \
 
 
 FSTAR_INCLUDE_DIRS_EXTRA ?=
-FSTAR_INCLUDE_DIRS = $(HACL_HOME)/lib $(FSTAR_INCLUDE_DIRS_EXTRA) $(FINDLIBS_OUTPUT) ../models
+FSTAR_INCLUDE_DIRS = $(FSTAR_INCLUDE_DIRS_EXTRA) $(FINDLIBS_OUTPUT) ../models ../specs
+
+# ../models and ../specs may replace a proof-libs module only if it is listed here.
+MODEL_OVERRIDES = Rand_core.fsti Rand.Rng.fsti
+SHADOWED := $(filter-out $(MODEL_OVERRIDES),$(filter $(notdir $(wildcard ../models/*.fst* ../specs/*.fst*)),$(notdir $(foreach d,$(FINDLIBS_OUTPUT),$(wildcard $(d)/*.fst*)))))
+ifneq (,$(SHADOWED))
+$(error ../models or ../specs shadows proof-libs modules: $(SHADOWED))
+endif
 
 # Make sure FSTAR_INCLUDE_DIRS has the `proof-libs`, print hints and
 # an error message otherwise
@@ -113,29 +117,11 @@ all-keep-going:
 	$(Q)rm -f .depend
 	$(Q)$(MAKE) -f $(PATH_TO_CHILD_MAKEFILE) --keep-going .depend hax.fst.config.json verify
 
-# If $HACL_HOME doesn't exist, clone it
-${HACL_HOME}:
-	$(Q)mkdir -p "${HACL_HOME}"
-	$(info Cloning Hacl* in ${HACL_HOME}...)
-	git clone --depth 1 https://github.com/hacl-star/hacl-star.git "${HACL_HOME}"
-	$(info Cloning Hacl* in ${HACL_HOME}... done!)
-
-# If no any F* file is detected, we run hax
-ifeq "$(wildcard *.fst *fsti)" ""
-$(shell cargo hax into fstar)
-endif
-
 # By default, we process all the files in the current directory
 ROOTS ?= $(wildcard *.fst *fsti)
 ADMIT_MODULES ?=
 
 ADMIT_MODULE_FLAGS ?= --admit_smt_queries true
-
-# Can be useful for debugging purposes
-FINDLIBS.sh:
-	$(Q)echo '${FINDLIBS}' > FINDLIBS.sh
-include-dirs:
-	$(Q)bash -c '${FINDLIBS}'
 
 FSTAR_FLAGS = \
   --warn_error -321-331-241-274-239-271 \
@@ -146,7 +132,7 @@ FSTAR_FLAGS = \
 
 FSTAR := $(FSTAR_BIN) $(FSTAR_FLAGS)
 
-.depend: $(HINT_DIR) $(CACHE_DIR) $(ROOTS) $(HACL_HOME)
+.depend: $(HINT_DIR) $(CACHE_DIR) $(ROOTS)
 	@$(FSTAR) --dep full $(ROOTS) --extract '* -Prims -LowStar -FStar' > $@
 
 include .depend
@@ -171,7 +157,6 @@ target "vscode" 'Generates a `hax.fst.config.json` file'
 target "${ANSI_COLOR_TONE}<MyModule.fst>${ANSI_COLOR_BLUE}-in   " 'Useful for Emacs, outputs the F* prefix command to be used'
 target "" ""
 target "clean" 'Cleanup the target'
-target "include-dirs" 'List the F* include directories'
 target "" ""
 target "describe" 'List the F* root modules, and describe the environment.'
 echo ""
@@ -191,7 +176,6 @@ describe:
 	  printf "${ANSI_COLOR_GRAY}$$(dirname -- "$$root")/${ANSI_COLOR_RESET}%s${ANSI_COLOR_GRAY}.${ANSI_COLOR_TONE}%s${ANSI_COLOR_RESET}%b\n" "$$noext" "$$ext" $$([[ "${ADMIT_MODULES}" =~ (^| )$$root($$| ) ]] && echo '${ANSI_COLOR_RED}\t[ADMITTED]${ANSI_COLOR_RESET}'); \
 	done
 	@printf '\n${ANSI_COLOR_BBLUE}Environment:${ANSI_COLOR_RESET}\n'
-	@printf ' - ${ANSI_COLOR_BLUE}HACL_HOME${ANSI_COLOR_RESET} = %s\n' '${HACL_HOME}'
 	@printf ' - ${ANSI_COLOR_BLUE}FSTAR_BIN${ANSI_COLOR_RESET} = %s\n' '${FSTAR_BIN}'
 	@printf ' - ${ANSI_COLOR_BLUE}GIT_ROOT_DIR${ANSI_COLOR_RESET} = %s\n' '${GIT_ROOT_DIR}'
 	@printf ' - ${ANSI_COLOR_BLUE}CACHE_DIR${ANSI_COLOR_RESET} = %s\n' '${CACHE_DIR}'
@@ -204,7 +188,7 @@ h: ;@bash -c "$$HELPMESSAGE"
 
 HEADER = $(Q)printf '${ANSI_COLOR_BBLUE}[CHECK] %s ${ANSI_COLOR_RESET}\n' "$(basename $(notdir $@))"
 
-run/%: | .depend $(HINT_DIR) $(CACHE_DIR) $(HACL_HOME)
+run/%: | .depend $(HINT_DIR) $(CACHE_DIR)
 	${HEADER}
 	$(Q)$(FSTAR) $(OTHERFLAGS) $(@:run/%=%)
 
@@ -219,7 +203,7 @@ $(ADMIT_CHECKED):
 	}
 	$(Q)printf "\n\n"
 
-$(CACHE_DIR)/%.checked: | .depend $(HINT_DIR) $(CACHE_DIR) $(HACL_HOME)
+$(CACHE_DIR)/%.checked: | .depend $(HINT_DIR) $(CACHE_DIR)
 	${HEADER}
 	$(Q)$(FSTAR) $(OTHERFLAGS) $< $(ENABLE_HINTS) --hint_file $(HINT_DIR)/$(notdir $*).hints || { \
 	  echo "" ; \
