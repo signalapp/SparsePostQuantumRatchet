@@ -52,7 +52,7 @@ impl HeaderSent {
     pub fn from_pb(pb: pqrpb::v1_state::chunked::HeaderSent) -> Result<Self, Error> {
         if let Some(d) = &pb.receiving_ct1 {
             if d.pts_needed as usize != crate::incremental_mlkem768::CIPHERTEXT1_SIZE / 2 {
-                return Err(Error::MsgDecode);
+                return Err(Error::StateDecode);
             }
         }
         Ok(Self {
@@ -98,7 +98,7 @@ impl EkSentCt1Received {
                 != (incremental_mlkem768::CIPHERTEXT2_SIZE + authenticator::Authenticator::MACSIZE)
                     / 2
             {
-                return Err(Error::MsgDecode);
+                return Err(Error::StateDecode);
             }
         }
         Ok(Self {

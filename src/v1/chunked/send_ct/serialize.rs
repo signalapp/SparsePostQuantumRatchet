@@ -22,7 +22,7 @@ impl NoHeaderReceived {
                     + crate::authenticator::Authenticator::MACSIZE)
                     / 2) as u32
             {
-                return Err(Error::MsgDecode);
+                return Err(Error::StateDecode);
             }
         }
         Ok(Self {
@@ -46,7 +46,7 @@ impl HeaderReceived {
     pub fn from_pb(pb: pqrpb::v1_state::chunked::HeaderReceived) -> Result<Self, Error> {
         if let Some(d) = &pb.receiving_ek {
             if d.pts_needed as usize != crate::incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2 {
-                return Err(Error::MsgDecode);
+                return Err(Error::StateDecode);
             }
         }
         Ok(Self {
@@ -71,7 +71,7 @@ impl Ct1Sampled {
     pub fn from_pb(pb: pqrpb::v1_state::chunked::Ct1Sampled) -> Result<Self, Error> {
         if let Some(d) = &pb.receiving_ek {
             if d.pts_needed as usize != crate::incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2 {
-                return Err(Error::MsgDecode);
+                return Err(Error::StateDecode);
             }
         }
         Ok(Self {
@@ -118,7 +118,7 @@ impl Ct1Acknowledged {
     pub fn from_pb(pb: pqrpb::v1_state::chunked::Ct1Acknowledged) -> Result<Self, Error> {
         if let Some(d) = &pb.receiving_ek {
             if d.pts_needed as usize != crate::incremental_mlkem768::ENCAPSULATION_KEY_SIZE / 2 {
-                return Err(Error::MsgDecode);
+                return Err(Error::StateDecode);
             }
         }
         Ok(Self {

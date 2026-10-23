@@ -56,7 +56,11 @@ impl Ct1Sent {
     }
 
     pub fn from_pb(pb: pqrpb::v1_state::unchunked::Ct1Sent) -> Result<Self, Error> {
-        if pb.hdr.len() == 64 && pb.es.len() == 2080 && pb.ct1.len() == 960 {
+        if pb.hdr.len() == 64
+            && pb.es.len() == 2080
+            && pb.ct1.len() == 960
+            && incremental_mlkem768::encapsulation_state_is_usable(&pb.es)
+        {
             Ok(Self {
                 epoch: pb.epoch,
                 auth: Authenticator::from_pb(pb.auth.as_ref().ok_or(Error::StateDecode)?),
@@ -82,7 +86,11 @@ impl Ct1SentEkReceived {
     }
 
     pub fn from_pb(pb: pqrpb::v1_state::unchunked::Ct1SentEkReceived) -> Result<Self, Error> {
-        if pb.es.len() == 2080 && pb.ct1.len() == 960 && pb.ek.len() == 1152 {
+        if pb.es.len() == 2080
+            && pb.ct1.len() == 960
+            && pb.ek.len() == 1152
+            && incremental_mlkem768::encapsulation_state_is_usable(&pb.es)
+        {
             Ok(Self {
                 epoch: pb.epoch,
                 auth: Authenticator::from_pb(pb.auth.as_ref().ok_or(Error::StateDecode)?),
