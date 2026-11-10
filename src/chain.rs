@@ -345,6 +345,10 @@ impl ChainEpochDirection {
     fn clear_next(&mut self) {
         self.next.clear();
     }
+
+    fn ctr(&self) -> u32 {
+        self.ctr
+    }
 }
 
 #[hax_lib::attributes]
@@ -452,10 +456,21 @@ impl Chain {
     }
 
     pub fn recv_key(&mut self, epoch: Epoch, index: u32) -> Result<Vec<u8>, Error> {
-        if epoch == 0 && index == 0 {
-            return Ok(vec![]);
-        }
+        // We get the epoch first, since we don't want to return an empty key if
+        // epoch 0 is no longer still in scope.
         let epoch_index = self.epoch_idx(epoch)?;
+        if epoch == 0 && index == 0 {
+            let mut total_keys: u32 = 0;
+            #[allow(clippy::needless_range_loop)]
+            for i in 0..self.links.len() {
+                total_keys = total_keys.saturating_add(self.links[i].recv.ctr());
+            }
+            return if total_keys >= self.params.max_ooo_keys_or_default() {
+                Err(Error::KeyTrimmed(0))
+            } else {
+                Ok(vec![])
+            };
+        }
         self.links[epoch_index].recv.key(index, &self.params)
     }
 
@@ -509,8 +524,8 @@ mod test {
     use super::*;
     use crate::{Direction, EpochSecret, Error};
     use proptest::prelude::*;
-    use rand::seq::SliceRandom;
     use rand::TryRngCore;
+    use rand::seq::SliceRandom;
 
     #[test]
     fn directions_match() {
@@ -870,5 +885,79 @@ mod test {
         };
         let mut c = Chain::from_pb(pb).expect("state should decode");
         assert!(c.recv_key(0, 100).is_ok());
+    }
+
+    #[test]
+    fn epoch0_index0_not_accessible_after_epoch0_dropped() {
+        let mut chain = Chain::new(b"1", Direction::A2B, ChainParams::default().into_pb()).unwrap();
+        // While epoch 0 is in scope, (0, 0) yields an empty (v0) key, repeatedly.
+        assert_eq!(chain.recv_key(0, 0).unwrap(), Vec::<u8>::new());
+        assert_eq!(chain.recv_key(0, 0).unwrap(), Vec::<u8>::new());
+
+        for epoch in 1..=2 {
+            chain
+                .add_epoch(EpochSecret {
+                    epoch,
+                    secret: vec![epoch as u8],
+                })
+                .unwrap();
+        }
+        // Adding epochs alone doesn't drop epoch 0; only advancing the send epoch does.
+        assert_eq!(chain.recv_key(0, 0).unwrap(), Vec::<u8>::new());
+
+        // Sending in epoch 1 keeps epoch 0 (one epoch prior to send epoch is kept).
+        chain.send_key(1).unwrap();
+        assert_eq!(chain.recv_key(0, 0).unwrap(), Vec::<u8>::new());
+
+        // Sending in epoch 2 drops epoch 0.
+        chain.send_key(2).unwrap();
+        assert!(matches!(
+            chain.recv_key(0, 0),
+            Err(Error::EpochOutOfRange(0))
+        ));
+        // Real keys in epoch 0 are likewise gone.
+        assert!(matches!(
+            chain.recv_key(0, 1),
+            Err(Error::EpochOutOfRange(0))
+        ));
+        // Epoch 1 is still available.
+        assert!(!chain.recv_key(1, 1).unwrap().is_empty());
+    }
+
+    #[test]
+    fn epoch0_index0_not_accessible_after_keys_sent_in_epoch0_and_epoch1() {
+        let params = ChainParams::default().into_pb();
+        let mut chain = Chain::new(b"1", Direction::A2B, params).unwrap();
+        // While epoch 0 is in scope, (0, 0) yields an empty (v0) key, repeatedly.
+        assert_eq!(chain.recv_key(0, 0).unwrap(), Vec::<u8>::new());
+        assert_eq!(chain.recv_key(0, 0).unwrap(), Vec::<u8>::new());
+
+        for epoch in 1..=2 {
+            chain
+                .add_epoch(EpochSecret {
+                    epoch,
+                    secret: vec![epoch as u8],
+                })
+                .unwrap();
+        }
+        // Adding epochs alone doesn't drop epoch 0; only advancing the send epoch does.
+        assert_eq!(chain.recv_key(0, 0).unwrap(), Vec::<u8>::new());
+        // Roll forward epoch 0 still allows keys, because we haven't hit max_ooo.
+        assert!(
+            !chain
+                .recv_key(0, params.max_ooo_keys_or_default() / 2 + 1)
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(chain.recv_key(0, 0).unwrap(), Vec::<u8>::new());
+        // Roll forward epoch 1 by half, and now the total should exceed and we should
+        // trim the recv key 0.
+        assert!(
+            !chain
+                .recv_key(1, params.max_ooo_keys_or_default() / 2 + 1)
+                .unwrap()
+                .is_empty()
+        );
+        assert!(matches!(chain.recv_key(0, 0), Err(Error::KeyTrimmed(0))));
     }
 }
