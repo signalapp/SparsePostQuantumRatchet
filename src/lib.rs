@@ -26,12 +26,12 @@ use crate::chain::Chain;
 pub use crate::chain::ChainParams;
 use crate::proto::pq_ratchet as pqrpb;
 pub use crate::proto::pq_ratchet::{Direction, Version};
-use std::cmp::min;
 use std::cmp::Ordering;
+use std::cmp::min;
 // Re-export error types that are part of the public Error enum
 pub use crate::authenticator::Error as AuthenticatorError;
-pub use crate::encoding::polynomial::PolynomialError;
 pub use crate::encoding::EncodingError;
+pub use crate::encoding::polynomial::PolynomialError;
 pub use crate::serialize::Error as SerializationError;
 use prost::Message;
 use rand::{CryptoRng, Rng};
@@ -339,11 +339,7 @@ pub fn send<R: Rng + CryptoRng>(state: &SerializedState, rng: &mut R) -> Result<
 })]
 fn message_key(k: Vec<u8>) -> MessageKey {
     // hax does not like `filter`
-    if k.is_empty() {
-        None
-    } else {
-        Some(k)
-    }
+    if k.is_empty() { None } else { Some(k) }
 }
 
 pub struct Recv {
@@ -428,6 +424,15 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
             )?;
             let key = message_key(chain.recv_key(ZERO_EPOCH, msg.index)?);
 
+            // Since their version is greater than ours, we shouldn't allow future negotiation
+            // to drop below our current version.  Let's enforce that.
+            let version_negotiation = Some(pqrpb::pq_ratchet_state::VersionNegotiation {
+                min_version: current_version.into(),
+                ..prenegotiated_state_pb
+                    .version_negotiation
+                    .expect("already checked that it exists")
+            });
+
             return Ok(Recv {
                 key,
                 state: pqrpb::PqRatchetState {
@@ -435,7 +440,7 @@ pub fn recv(state: &SerializedState, msg: &SerializedMessage) -> Result<Recv, Er
                     // We leave `version_negotiation` in our state to tell future calls to this
                     // function that they're allowed to accept other messages from the greater
                     // version number.
-                    version_negotiation: prenegotiated_state_pb.version_negotiation,
+                    version_negotiation,
                     inner: prenegotiated_state_pb.inner,
                 }
                 .encode_to_vec(),
@@ -1517,6 +1522,35 @@ mod lib_test {
         let Send { msg: mut m, .. } = send(&alex, &mut rng)?;
         m[0] = 2;
         assert_eq!(recv(&blake, &m)?.key, None);
+        Ok(())
+    }
+
+    #[test]
+    fn disallow_downgrade_after_upgrade() -> Result<(), Error> {
+        let mut rng = OsRng.unwrap_err();
+        let alex = initial_state(Params {
+            version: Version::V1,
+            min_version: Version::V0,
+            direction: Direction::A2B,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let blake = initial_state(Params {
+            version: Version::V1,
+            min_version: Version::V0,
+            direction: Direction::B2A,
+            auth_key: &[41u8; 32],
+            chain_params: ChainParams::default(),
+        })?;
+        let Send { msg: mut m2, .. } = send(&alex, &mut rng)?;
+        m2[0] = 2;
+        let Recv { state: blake, .. } = recv(&blake, &m2)?;
+
+        assert_matches!(
+            recv(&blake, &vec![]).map(|_| ()),
+            Err(Error::MinimumVersion)
+        );
+
         Ok(())
     }
 }
