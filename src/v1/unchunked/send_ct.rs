@@ -130,19 +130,10 @@ impl HeaderReceived {
         self,
         rng: &mut R,
     ) -> (Ct1Sent, incremental_mlkem768::Ciphertext1, EpochSecret) {
-        let Self {
-            epoch,
-            mut auth,
-            hdr,
-        } = self;
+        let Self { epoch, auth, hdr } = self;
         let (ct1, es, secret) = incremental_mlkem768::encaps1(&hdr, rng);
-        let info = [
-            b"Signal_PQCKA_V1_MLKEM768:SCKA Key",
-            epoch.to_be_bytes().as_slice(),
-        ]
-        .concat();
-        let secret = kdf::hkdf_to_vec(&[0u8; 32], &secret, &info, 32);
-        auth.update(epoch, &secret);
+        let secret = kdf::derive_scka_secret(&secret, epoch);
+        let auth = auth.update(epoch, &secret);
         (
             Ct1Sent {
                 epoch,

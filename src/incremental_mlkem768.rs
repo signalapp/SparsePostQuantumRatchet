@@ -25,11 +25,21 @@ pub struct Keys {
     pub hdr: Header,
 }
 
+#[cfg_attr(
+    hax_backend_proverif,
+    hax_lib::proverif::replace_body("ek_matches(ek, hdr)")
+)]
 pub fn ek_matches_header(ek: &EncapsulationKey, hdr: &Header) -> bool {
     incremental::validate_pk_bytes(hdr, ek).is_ok()
 }
 
 /// Generate a new keypair and associated header.
+#[cfg_attr(
+    hax_backend_proverif,
+    hax_lib::proverif::replace_body(
+        "new spqr_dk: bitstring; spqr__incremental_mlkem768__Keys__Keys(dk2enckey(spqr_dk), spqr_dk, dk2seed(spqr_dk))"
+    )
+)]
 #[hax_lib::ensures(|result| result.hdr.len() == HEADER_SIZE && result.ek.len() == ENCAPSULATION_KEY_SIZE && result.dk.len() == 2400)]
 pub fn generate<R: Rng + CryptoRng>(rng: &mut R) -> Keys {
     let mut randomness = [0u8; libcrux_ml_kem::KEY_GENERATION_SEED_SIZE];
@@ -43,6 +53,12 @@ pub fn generate<R: Rng + CryptoRng>(rng: &mut R) -> Keys {
 }
 
 /// Encapsulate with header to get initial ciphertext.
+#[cfg_attr(
+    hax_backend_proverif,
+    hax_lib::proverif::replace_body(
+        "new spqr_r: bitstring; new spqr_ss: bitstring; rust_primitives__hax__Tuple3__Tuple3(pkenc1(spqr_r, hdr, spqr_ss), spqr_es(spqr_r), spqr_ss)"
+    )
+)]
 #[hax_lib::requires(hdr.len() == 64)]
 #[hax_lib::ensures(|(ct1,es,ss)| ct1.len() == 960 && es.len() == 2080 && ss.len() == 32
     && encapsulation_state_is_usable(&es))]
@@ -65,6 +81,10 @@ pub fn encaps1<R: Rng + CryptoRng>(
 }
 
 /// Encapsulate with header and EK.
+#[cfg_attr(
+    hax_backend_proverif,
+    hax_lib::proverif::replace_body("let spqr_es(spqr_r) = es in pkenc2(spqr_r, ek) else bitstring_err()")
+)]
 #[hax_lib::requires(es.len() == 2080 && ek.len() == 1152
     && encapsulation_state_is_usable(es))]
 #[hax_lib::ensures(|result| result.len() == 128)]
@@ -215,6 +235,10 @@ fn flip_endianness_of_encapsulation_state(es: &EncapsulationState) -> Encapsulat
 }
 
 /// Decapsulate ciphertext to get shared secret.
+#[cfg_attr(
+    hax_backend_proverif,
+    hax_lib::proverif::replace_body("pkdec(dk, ct1, ct2)")
+)]
 #[hax_lib::requires(ct1.len() == 960 && ct2.len() == 128 && dk.len() == 2400)]
 #[hax_lib::ensures(|result| result.len() == 32)]
 pub fn decaps(dk: &DecapsulationKey, ct1: &Ciphertext1, ct2: &Ciphertext2) -> Secret {

@@ -1,0 +1,136 @@
+(* SPQR extracted model — aliases for the generated functions, the tables and
+   events the queries use, the end of each role's epoch and the compromise
+   processes. *)
+
+(* ===== Aliases for hax's mangled names (every type is bitstring) ===== *)
+
+letfun ek_new(k: bitstring) =
+    spqr__v1__unchunked__send_ek__Impl__new_kw(k).
+letfun ek_send_header(s: bitstring, rng: bitstring) =
+    spqr__v1__unchunked__send_ek__Impl__send_header(s, rng).
+letfun ek_send_ek(s: bitstring) =
+    spqr__v1__unchunked__send_ek__Impl_1__send_ek(s).
+letfun ek_recv_ct1(s: bitstring, ep: bitstring, ct1: bitstring) =
+    spqr__v1__unchunked__send_ek__Impl_2__recv_ct1(s, ep, ct1).
+letfun ek_recv_ct2(s: bitstring, ct2: bitstring, mac: bitstring) =
+    spqr__v1__unchunked__send_ek__Impl_3__recv_ct2(s, ct2, mac).
+
+letfun ct_new(k: bitstring) =
+    spqr__v1__unchunked__send_ct__Impl__new_kw(k).
+letfun ct_recv_header(s: bitstring, ep: bitstring, hdr: bitstring, mac: bitstring) =
+    spqr__v1__unchunked__send_ct__Impl__recv_header(s, ep, hdr, mac).
+letfun ct_send_ct1(s: bitstring, rng: bitstring) =
+    spqr__v1__unchunked__send_ct__Impl_1__send_ct1(s, rng).
+letfun ct_recv_ek(s: bitstring, ep: bitstring, ek: bitstring) =
+    spqr__v1__unchunked__send_ct__Impl_2__recv_ek(s, ep, ek).
+letfun ct_send_ct2(s: bitstring) =
+    spqr__v1__unchunked__send_ct__Impl_3__send_ct2(s).
+letfun ct_recv_next_epoch(s: bitstring, nep: bitstring) =
+    spqr__v1__unchunked__send_ct__Impl_4__recv_next_epoch(s, nep).
+
+letfun epoch_ku(s: bitstring) = spqr__v1__unchunked__send_ek__KeysUnsampled__KeysUnsampled__epoch(s).
+letfun epoch_es(s: bitstring) = spqr__v1__unchunked__send_ek__EkSent__EkSent__epoch(s).
+letfun epoch_nh(s: bitstring) = spqr__v1__unchunked__send_ct__NoHeaderReceived__NoHeaderReceived__epoch(s).
+letfun epoch_c1(s: bitstring) = spqr__v1__unchunked__send_ct__Ct1Sent__Ct1Sent__epoch(s).
+letfun epoch_c2(s: bitstring) = spqr__v1__unchunked__send_ct__Ct2Sent__Ct2Sent__epoch(s).
+
+letfun auth_hs(s: bitstring) = spqr__v1__unchunked__send_ek__HeaderSent__HeaderSent__auth(s).
+letfun auth_nh(s: bitstring) = spqr__v1__unchunked__send_ct__NoHeaderReceived__NoHeaderReceived__auth(s).
+letfun auth_c1(s: bitstring) = spqr__v1__unchunked__send_ct__Ct1Sent__Ct1Sent__auth(s).
+
+letfun dk_hs(s: bitstring) = spqr__v1__unchunked__send_ek__HeaderSent__HeaderSent__dk(s).
+letfun es_c1(s: bitstring) = spqr__v1__unchunked__send_ct__Ct1Sent__Ct1Sent__es(s).
+
+letfun epochsecret_secret(es: bitstring) = spqr__EpochSecret__EpochSecret__secret_kw(es).
+letfun epoch_succ(e: bitstring) = rust_primitives__hax__machine_int__add(e, nat_1).
+
+free tag_hdr: bitstring.
+free tag_ek: bitstring.
+free tag_ct1: bitstring.
+free tag_ct2: bitstring.
+free no_secret: bitstring [private].
+
+type principal.
+type session_id.
+free A: principal.
+free B: principal.
+
+(* Hand-off state tables: hold only the small (epoch, authenticator) states. *)
+table AStates(session_id, principal, principal, bitstring).            (* requestor, peer; KeysUnsampled *)
+table BStates(session_id, principal, principal, bitstring, bitstring). (* responder, peer; NoHeaderReceived *)
+
+(* Compromise tables, filled as the roles reach each state: the secret a state
+   holds (the decapsulation key of an EK-sender state, the encapsulation
+   randomness of a CT-sender state) and the authenticators a party holds at an
+   epoch. Entries are never removed, so a state can be compromised at any time
+   after it was reached. *)
+free st_HeaderSent: bitstring.
+free st_EkSent: bitstring.
+free st_EkSentCt1Received: bitstring.
+free st_Ct1Sent: bitstring.
+free st_Ct1SentEkReceived: bitstring.
+table StateKeys(principal, principal, session_id, nat, bitstring, bitstring). (* x, peer, sid, ep, state, secret *)
+table StateAuth(principal, principal, session_id, nat, bitstring).            (* x, peer, sid, ep, authenticator *)
+
+event EKSenderStarted(session_id, principal, principal, nat).
+event CTSenderStarted(session_id, principal, principal, nat).
+(* x sent the header hdr to y *)
+event EKSenderSentHeader(session_id, principal, principal, nat, bitstring).
+(* x emitted key k for the header hdr received from y *)
+event CTSenderEmittedKeyForHeader(session_id, principal, principal, nat, bitstring, bitstring).
+event EKSenderEmittedKey(session_id, principal, principal, nat, bitstring).
+event CTSenderEmittedKey(session_id, principal, principal, nat, bitstring).
+(* The CT sender sent ct2: both parties hold the epoch's key. *)
+event CTSenderCompleted(session_id, principal, principal, nat, bitstring).
+
+event CompromisedKeysHeaderSent(principal, principal, session_id, nat).
+event CompromisedKeysEkSent(principal, principal, session_id, nat).
+event CompromisedKeysEkSentCt1Received(principal, principal, session_id, nat).
+event CompromisedKeysCt1Sent(principal, principal, session_id, nat).
+event CompromisedKeysCt1SentEkReceived(principal, principal, session_id, nat).
+event CompromisedAuth(principal, principal, session_id, nat).
+
+(* Transcripts: what the requestor sent (header, header MAC, ek) and what the
+   responder sent (ct1, ct2, ct MAC) at an epoch, and what each accepted. *)
+table SentA(session_id, principal, principal, nat, bitstring, bitstring, bitstring).
+table SentB(session_id, principal, principal, nat, bitstring, bitstring, bitstring).
+event SentHdrEk(session_id, principal, principal, nat, bitstring, bitstring, bitstring).
+event AcceptedHdrEk(session_id, principal, principal, nat, bitstring, bitstring, bitstring).
+event SentCt(session_id, principal, principal, nat, bitstring, bitstring, bitstring).
+event AcceptedCt(session_id, principal, principal, nat, bitstring, bitstring, bitstring).
+(* Emitted by `accept_injection.pvl` only: the receiver accepted a transcript
+   its peer did not send at this epoch. *)
+event Injected(session_id, principal, principal, nat).
+
+(* `max_epoch()` (the epoch bound) is defined in `nepochs.pvl`, loaded before
+   this file. Epochs are 1-based, as in the Rust source (`epoch: 1` at init) and
+   the ML-KEM Braid spec (Section 2.6); the guard `ep < max_epoch()` runs epochs
+   1..max_epoch(). *)
+
+let RequestorDone(sid: session_id, a: principal, b: principal, cep: nat, ka: bitstring, st4: bitstring) =
+    event EKSenderEmittedKey(sid, a, b, cep, ka);
+    if cep < max_epoch() then insert BStates(sid, a, b, st4, no_secret).
+
+let ResponderDone(sid: session_id, b: principal, a: principal, ep: nat, kb: bitstring, st4: bitstring,
+                  ct2: bitstring, cmac: bitstring) =
+    event CTSenderCompleted(sid, b, a, ep, kb);
+    out(c, (tag_ct2, ct2, cmac));
+    let st5 = ct_recv_next_epoch(st4, epoch_succ(epoch_c2(st4))) in
+    if ep < max_epoch() then insert AStates(sid, b, a, st5).
+
+(* ===================== Compromise =====================
+   CompromiseKeys(x, y, ep) reveals the secret of one state x reached with peer
+   y at epoch ep; CompromiseAuth(x, y, ep) reveals one authenticator x held with
+   peer y at epoch ep. Each call compromises once. *)
+let CompromiseKeys(x: principal, y: principal, ep: nat) =
+    get StateKeys(=x, =y, sid, =ep, st, s) in
+    if st = st_HeaderSent then (event CompromisedKeysHeaderSent(x, y, sid, ep); out(c, s))
+    else if st = st_EkSent then (event CompromisedKeysEkSent(x, y, sid, ep); out(c, s))
+    else if st = st_EkSentCt1Received then (event CompromisedKeysEkSentCt1Received(x, y, sid, ep); out(c, s))
+    else if st = st_Ct1Sent then (event CompromisedKeysCt1Sent(x, y, sid, ep); out(c, s))
+    else (event CompromisedKeysCt1SentEkReceived(x, y, sid, ep); out(c, s)).
+
+let CompromiseAuth(x: principal, y: principal, ep: nat) =
+    get StateAuth(=x, =y, sid, =ep, au) in
+    event CompromisedAuth(x, y, sid, ep);
+    out(c, au).

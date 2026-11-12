@@ -7,14 +7,13 @@ jobs:
   fstar-type-checking:
     runs-on: "ubuntu-latest"
     env:
-      HAX_VERSION: 0.4.2
+      HAX_VERSION: 0.5.0
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Check hax-lib matches the engine
         run: |
-          grep -q "^hax-lib = \"${HAX_VERSION}\"" Cargo.toml
           cargo tree --locked -i hax-lib@${HAX_VERSION} --depth 0
 
       # The hax install below builds hax and F* with nix and does not fit in the
@@ -28,7 +27,7 @@ jobs:
         uses: hacspec/hax-actions@1f01b89579f425ad7c1e66aebbd5df7e688cb576
         with:
           fstar: v2026.03.24
-          hax_repository: github:cryspen/hax
+          hax_repository: github:pereq-dev/hax
           hax_reference: cargo-hax-v${{ env.HAX_VERSION }}
 
       - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
@@ -48,7 +47,7 @@ jobs:
   fstar-gf16-aarch64:
     runs-on: "ubuntu-24.04-arm"
     env:
-      HAX_VERSION: 0.4.2
+      HAX_VERSION: 0.5.0
 
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +56,7 @@ jobs:
         uses: hacspec/hax-actions@1f01b89579f425ad7c1e66aebbd5df7e688cb576
         with:
           fstar: v2026.03.24
-          hax_repository: github:cryspen/hax
+          hax_repository: github:pereq-dev/hax
           hax_reference: cargo-hax-v${{ env.HAX_VERSION }}
 
       - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler

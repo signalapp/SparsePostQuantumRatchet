@@ -150,19 +150,14 @@ impl EkSentCt1Received {
     ) -> Result<(send_ct::NoHeaderReceived, EpochSecret), Error> {
         let Self {
             epoch,
-            mut auth,
+            auth,
             dk,
             mut ct1,
         } = self;
         let ss = incremental_mlkem768::decaps(&dk, &ct1, &ct2);
-        let info = [
-            b"Signal_PQCKA_V1_MLKEM768:SCKA Key",
-            epoch.to_be_bytes().as_slice(),
-        ]
-        .concat();
-        let ss = kdf::hkdf_to_vec(&[0u8; 32], &ss, &info, 32);
+        let ss = kdf::derive_scka_secret(&ss, epoch);
 
-        auth.update(epoch, &ss);
+        let auth = auth.update(epoch, &ss);
         ct1.extend_from_slice(&ct2);
         auth.verify_ct(epoch, &ct1, &mac)?;
         let next_epoch = epoch.checked_add(1).ok_or(Error::EpochOverflow)?;

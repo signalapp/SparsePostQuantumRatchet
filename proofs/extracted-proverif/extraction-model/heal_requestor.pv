@@ -1,0 +1,46 @@
+(* SPQR extracted model — the epoch-2 requestor's authenticator is compromised.
+   Uses `accept_injection.pvl`: `Injected(sid, x, y, ep)` means x accepted, at
+   epoch ep, a transcript its peer y did not send. Expect true:
+   - the EK sender's key, and the CT sender's key once its epoch completes, are
+     known to the attacker only if that party accepted an injected transcript
+     at that epoch;
+   - key agreement and secrecy (as in conf.pv) hold. *)
+
+(* Saturation control (sound: nounif only guides ProVerif's resolution order,
+   never the verdict): deprioritize the attacker building symbolic ML-KEM,
+   authenticator, MAC and derived-secret terms. *)
+nounif spqr_r: bitstring, hdr: bitstring, ss: bitstring;
+    attacker(pkenc1(spqr_r, hdr, ss)) / 30000.
+nounif spqr_r: bitstring, ek: bitstring;
+    attacker(pkenc2(spqr_r, ek)) / 30000.
+nounif dk: bitstring; attacker(dk2enckey(dk)) / 30000.
+nounif dk: bitstring; attacker(dk2seed(dk)) / 30000.
+nounif a: bitstring, e: bitstring, k: bitstring; attacker(auth_update(a, e, k)) / 30000.
+nounif rk: bitstring, e: bitstring; attacker(auth_new(rk, e)) / 30000.
+nounif a: bitstring, e: bitstring, ct: bitstring; attacker(mac_ct_f(a, e, ct)) / 30000.
+nounif a: bitstring, e: bitstring, h: bitstring; attacker(mac_hdr_f(a, e, h)) / 30000.
+nounif ss: bitstring, e: bitstring; attacker(derive_scka_secret_f(ss, e)) / 30000.
+
+query i: time, j: time, sid: session_id, ep, ep': nat, x, y: principal, sk: bitstring;
+    event(EKSenderEmittedKey(sid, x, y, ep, sk)) && attacker(sk) ==> event(Injected(sid, x, y, ep));
+    event(CTSenderCompleted(sid, x, y, ep, sk)) && attacker(sk) ==> event(Injected(sid, x, y, ep));
+    event(EKSenderEmittedKey(sid, x, y, ep, sk))@i ==> event(CTSenderEmittedKey(sid, y, x, ep, sk))
+        || (ep' <= ep && event(CompromisedAuth(x, y, sid, ep'))@j && j < i)
+        || (ep' <= ep && event(CompromisedAuth(y, x, sid, ep'))@j && j < i);
+    event(CTSenderEmittedKey(sid, x, y, ep, sk))@i && attacker(sk) ==>
+        event(CompromisedKeysHeaderSent(y, x, sid, ep))
+        || event(CompromisedKeysEkSent(y, x, sid, ep))
+        || event(CompromisedKeysEkSentCt1Received(y, x, sid, ep))
+        || event(CompromisedKeysCt1Sent(x, y, sid, ep))
+        || event(CompromisedKeysCt1SentEkReceived(x, y, sid, ep))
+        || (ep' <= ep && event(CompromisedAuth(x, y, sid, ep'))@j && j < i)
+        || (ep' <= ep && event(CompromisedAuth(y, x, sid, ep'))@j && j < i).
+
+process SystemAuthRequestor()
+
+(* EXPECTPV
+RESULT event(EKSenderEmittedKey(sid_6,x_26,y_2,ep_10,sk)) && attacker(sk) ==> event(Injected(sid_6,x_26,y_2,ep_10)) is true.
+RESULT event(CTSenderCompleted(sid_6,x_26,y_2,ep_10,sk)) && attacker(sk) ==> event(Injected(sid_6,x_26,y_2,ep_10)) is true.
+RESULT event(EKSenderEmittedKey(sid_6,x_26,y_2,ep_10,sk))@i ==> event(CTSenderEmittedKey(sid_6,y_2,x_26,ep_10,sk)) || (ep_10 ≥ ep' && event(CompromisedAuth(x_26,y_2,sid_6,ep'))@j && i > j) || (ep_10 ≥ ep' && event(CompromisedAuth(y_2,x_26,sid_6,ep'))@j && i > j) is true.
+RESULT event(CTSenderEmittedKey(sid_6,x_26,y_2,ep_10,sk))@i && attacker(sk) ==> event(CompromisedKeysHeaderSent(y_2,x_26,sid_6,ep_10)) || event(CompromisedKeysEkSent(y_2,x_26,sid_6,ep_10)) || event(CompromisedKeysEkSentCt1Received(y_2,x_26,sid_6,ep_10)) || event(CompromisedKeysCt1Sent(x_26,y_2,sid_6,ep_10)) || event(CompromisedKeysCt1SentEkReceived(x_26,y_2,sid_6,ep_10)) || (ep_10 ≥ ep' && event(CompromisedAuth(x_26,y_2,sid_6,ep'))@j && i > j) || (ep_10 ≥ ep' && event(CompromisedAuth(y_2,x_26,sid_6,ep'))@j && i > j) is true.
+END *)

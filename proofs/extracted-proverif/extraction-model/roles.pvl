@@ -1,0 +1,101 @@
+(* SPQR extracted model — the two roles and the compromise scenarios.
+   Loaded after `model.pvl` and a completion check (`accept.pvl` or
+   `accept_injection.pvl`). *)
+
+(* ===================== Requestor: one full epoch as EK sender ===================== *)
+let Requestor() =
+    get AStates(sid, a, b, st0) in                  (* KeysUnsampled(ep, auth) *)
+    let ep = nat2native(epoch_ku(st0)) in
+    event EKSenderStarted(sid, a, b, ep);
+    new rng: bitstring;
+    let rust_primitives__hax__Tuple2__Tuple2(rng1, t1) = ek_send_header(st0, rng) in
+    let rust_primitives__hax__Tuple3__Tuple3(st1, hdr, hmac) = t1 in   (* HeaderSent: auth, dk *)
+    let dk = dk_hs(st1) in
+    insert StateAuth(a, b, sid, ep, auth_hs(st1));
+    insert StateKeys(a, b, sid, ep, st_HeaderSent, dk);
+    let rust_primitives__hax__Tuple2__Tuple2(st2, ek) = ek_send_ek(st1) in   (* EkSent *)
+    insert SentA(sid, a, b, ep, hdr, hmac, ek);
+    event SentHdrEk(sid, a, b, ep, hdr, hmac, ek);
+    event EKSenderSentHeader(sid, a, b, ep, hdr);
+    out(c, (tag_hdr, hdr, hmac));
+    insert StateKeys(a, b, sid, ep, st_EkSent, dk);
+    out(c, (tag_ek, ek));
+    in(c, (=tag_ct1, ct1: bitstring));
+    let st3 = ek_recv_ct1(st2, epoch_es(st2), ct1) in                        (* EkSentCt1Received *)
+    insert StateKeys(a, b, sid, ep, st_EkSentCt1Received, dk);
+    in(c, (=tag_ct2, ct2: bitstring, mac: bitstring));
+    let rust_primitives__hax__Tuple2__Tuple2(st4, esec) = ek_recv_ct2(st3, ct2, mac) in
+    let spqr__EpochSecret__EpochSecret(eep, ka) = esec in
+    let cep = nat2native(eep) in
+    RequestorAccept(sid, a, b, ep, cep, ka, st4, ct1, ct2, mac).
+
+(* ===================== Responder: one full epoch as CT sender ===================== *)
+let Responder() =
+    get BStates(sid, b, a, st0, sec0) in            (* NoHeaderReceived(ep, auth) *)
+    let ep = nat2native(epoch_nh(st0)) in
+    insert StateAuth(b, a, sid, ep, auth_nh(st0));  (* pre-update authenticator *)
+    in(c, (=tag_hdr, hdr: bitstring, mac: bitstring));
+    let st1 = ct_recv_header(st0, epoch_nh(st0), hdr, mac) in                (* HeaderReceived *)
+    event CTSenderStarted(sid, b, a, ep);
+    new rng: bitstring;
+    let rust_primitives__hax__Tuple2__Tuple2(rng1, t1) = ct_send_ct1(st1, rng) in
+    let rust_primitives__hax__Tuple3__Tuple3(st2, ct1, esec) = t1 in         (* Ct1Sent: es, auth(post) *)
+    let kb = epochsecret_secret(esec) in
+    let spqr_es(r) = es_c1(st2) in
+    event CTSenderEmittedKeyForHeader(sid, b, a, ep, hdr, kb);
+    event CTSenderEmittedKey(sid, b, a, ep, kb);
+    insert StateAuth(b, a, sid, ep, auth_c1(st2));  (* post-update authenticator *)
+    insert StateKeys(b, a, sid, ep, st_Ct1Sent, r);
+    out(c, (tag_ct1, ct1));
+    in(c, (=tag_ek, ek: bitstring));
+    let st3 = ct_recv_ek(st2, epoch_c1(st2), ek) in                          (* Ct1SentEkReceived *)
+    insert StateKeys(b, a, sid, ep, st_Ct1SentEkReceived, r);
+    let rust_primitives__hax__Tuple3__Tuple3(st4, ct2, cmac) = ct_send_ct2(st3) in
+    insert SentB(sid, b, a, ep, ct1, ct2, cmac);
+    event SentCt(sid, b, a, ep, ct1, ct2, cmac);
+    ResponderAccept(sid, b, a, ep, kb, st4, hdr, mac, ek, ct2, cmac).
+
+(* ===================== Compromise scenarios =====================
+   One session between A and B. Roles swap each epoch:
+     epoch 1: A requestor / B responder      epoch 2: B requestor / A responder
+     epoch 3: A requestor / B responder      epoch 4: B requestor / A responder *)
+
+let Start(sid: session_id) =
+    new auth_key: bitstring;
+    insert AStates(sid, A, B, ek_new(auth_key));
+    insert BStates(sid, B, A, ct_new(auth_key), no_secret).
+
+(* The secret-bearing state of both parties at every epoch, and both
+   authenticators at epoch 3. *)
+let System() =
+    new sid: session_id;
+    ( Start(sid) | !Requestor() | !Responder()
+    | CompromiseKeys(A, B, 1) | CompromiseKeys(B, A, 1)
+    | CompromiseKeys(A, B, 2) | CompromiseKeys(B, A, 2)
+    | CompromiseKeys(A, B, 3) | CompromiseKeys(B, A, 3)
+    | CompromiseKeys(A, B, 4) | CompromiseKeys(B, A, 4)
+    | CompromiseAuth(A, B, 3) | CompromiseAuth(B, A, 3) ).
+
+(* No compromise. *)
+let SystemNoCompromise() =
+    new sid: session_id;
+    ( Start(sid) | !Requestor() | !Responder() ).
+
+(* The secret-bearing state of both parties at every epoch, no authenticator. *)
+let SystemKeys() =
+    new sid: session_id;
+    ( Start(sid) | !Requestor() | !Responder()
+    | CompromiseKeys(A, B, 1) | CompromiseKeys(B, A, 1)
+    | CompromiseKeys(A, B, 2) | CompromiseKeys(B, A, 2)
+    | CompromiseKeys(A, B, 3) | CompromiseKeys(B, A, 3)
+    | CompromiseKeys(A, B, 4) | CompromiseKeys(B, A, 4) ).
+
+(* The epoch-2 responder's authenticator only. *)
+let SystemAuthResponder() =
+    new sid: session_id;
+    ( Start(sid) | !Requestor() | !Responder() | CompromiseAuth(A, B, 2) ).
+
+(* The epoch-2 requestor's authenticator only. *)
+let SystemAuthRequestor() =
+    new sid: session_id;
+    ( Start(sid) | !Requestor() | !Responder() | CompromiseAuth(B, A, 2) ).

@@ -8,7 +8,7 @@ rust-version = "1.88.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hax-lib = "0.4.2"
+hax-lib = "0.5.0"
 hkdf = "0.13"
 libcrux-hmac = "0.0.8"
 libcrux-ml-kem = { version = "0.0.10", default-features = false, features = ["incremental", "mlkem768"] }
@@ -47,6 +47,7 @@ cpufeatures = "0.3"
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(hax)',
+    'cfg(hax_backend_proverif)',
 ] }
 
 [profile.dev]

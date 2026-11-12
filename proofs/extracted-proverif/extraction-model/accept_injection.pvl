@@ -1,0 +1,17 @@
+(* SPQR extracted model — completion of an epoch, emitting `Injected` when the
+   accepted transcript is not the one the peer sent at this epoch. ProVerif
+   over-approximates the `else` branch of `get`, so `Injected` may appear in
+   derivations where the transcript is the one the peer sent: a `false` result
+   with this file may be spurious. *)
+
+let RequestorAccept(sid: session_id, a: principal, b: principal, ep: nat, cep: nat, ka: bitstring,
+                    st4: bitstring, ct1: bitstring, ct2: bitstring, mac: bitstring) =
+    event AcceptedCt(sid, a, b, ep, ct1, ct2, mac);
+    get SentB(=sid, =b, =a, =ep, =ct1, =ct2, =mac) in RequestorDone(sid, a, b, cep, ka, st4)
+    else (event Injected(sid, a, b, ep); RequestorDone(sid, a, b, cep, ka, st4)).
+
+let ResponderAccept(sid: session_id, b: principal, a: principal, ep: nat, kb: bitstring, st4: bitstring,
+                    hdr: bitstring, mac: bitstring, ek: bitstring, ct2: bitstring, cmac: bitstring) =
+    event AcceptedHdrEk(sid, b, a, ep, hdr, mac, ek);
+    get SentA(=sid, =a, =b, =ep, =hdr, =mac, =ek) in ResponderDone(sid, b, a, ep, kb, st4, ct2, cmac)
+    else (event Injected(sid, b, a, ep); ResponderDone(sid, b, a, ep, kb, st4, ct2, cmac)).

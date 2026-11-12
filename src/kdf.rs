@@ -1,6 +1,8 @@
 // Copyright 2025 Signal Messenger, LLC
 // SPDX-License-Identifier: AGPL-3.0-only
 
+use crate::Epoch;
+
 /// HKDF-SHA256 expands to at most 255 hash lengths; `expand` fails beyond that.
 // Used in hax_lib annotations
 #[allow(dead_code)]
@@ -12,6 +14,20 @@ pub fn hkdf_to_vec(salt: &[u8], ikm: &[u8], info: &[u8], okm_len: usize) -> Vec<
     let mut out = vec![0u8; okm_len];
     hkdf_to_slice(salt, ikm, info, &mut out);
     out
+}
+
+/// Derive the epoch's SCKA secret from a KEM shared secret.
+#[cfg_attr(
+    hax_backend_proverif,
+    hax_lib::proverif::replace_body("derive_scka_secret_f(kem_ss, epoch)")
+)]
+pub fn derive_scka_secret(kem_ss: &[u8], epoch: Epoch) -> Vec<u8> {
+    let info = [
+        b"Signal_PQCKA_V1_MLKEM768:SCKA Key".as_slice(),
+        epoch.to_be_bytes().as_slice(),
+    ]
+    .concat();
+    hkdf_to_vec(&[0u8; 32], kem_ss, &info, 32)
 }
 
 #[hax_lib::opaque]

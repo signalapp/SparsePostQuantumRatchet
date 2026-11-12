@@ -102,6 +102,54 @@ class proveAction(argparse.Action):
         return None
 
 
+class extractProverifAction(argparse.Action):
+
+    def __call__(self, parser, args, values, option_string=None) -> None:
+        # The CKA state machine and its dependencies, without the items that
+        # only its contracts use.
+        roots = [
+            "v1::unchunked::send_ek::*::" + f
+            for f in ["new", "send_header", "send_ek", "recv_ct1", "recv_ct2"]
+        ] + [
+            "v1::unchunked::send_ct::*::" + f
+            for f in ["new", "recv_header", "send_ct1", "recv_ek", "send_ct2", "recv_next_epoch"]
+        ]
+        contracts_only = [
+            "incremental_mlkem768::encapsulation_state_is_usable",
+            "incremental_mlkem768::error2_coefficients_in_range",
+            "incremental_mlkem768::CIPHERTEXT2_SIZE",
+            "incremental_mlkem768::HEADER_SIZE",
+            "incremental_mlkem768::ENCAPSULATION_KEY_SIZE",
+            "authenticator::*::MACSIZE",
+        ]
+        include_str = " ".join(
+            ["-**"]
+            + ["+spqr::" + r for r in roots]
+            + ["-spqr::" + i for i in contracts_only]
+        )
+        shell(
+            [
+                "cargo",
+                "hax",
+                "into",
+                "-i",
+                include_str,
+                "--output-dir",
+                "proofs/extracted-proverif/extraction",
+                "proverif",
+            ],
+            cwd=".",
+        )
+        return None
+
+
+class proveProverifAction(argparse.Action):
+
+    def __call__(self, parser, args, values, option_string=None) -> None:
+        shell(["make", "-C", "proofs/extracted-proverif/"] + values)
+        return None
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="SPQR prove script. "
@@ -142,6 +190,24 @@ def parse_arguments():
         "prove",
         nargs="*",
         action=proveAction,
+    )
+
+    extract_pv_parser = subparsers.add_parser(
+        "extract-proverif", help="Extract the ProVerif model of the CKA."
+    )
+    extract_pv_parser.add_argument(
+        "extract-proverif", nargs="*", action=extractProverifAction
+    )
+
+    prove_pv_parser = subparsers.add_parser(
+        "prove-proverif",
+        help="""
+        Run ProVerif on the extracted model and compare the results with the
+        expected ones. Arguments are passed to make, e.g. `update`.
+        """,
+    )
+    prove_pv_parser.add_argument(
+        "prove-proverif", nargs="*", action=proveProverifAction
     )
 
     if len(sys.argv) == 1:

@@ -1,0 +1,2 @@
+(* The number of epochs the model runs. *)
+letfun max_epoch() = 4.

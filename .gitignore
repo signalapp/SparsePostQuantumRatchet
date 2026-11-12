@@ -3,3 +3,6 @@ tarpaulin-report.html
 rust-toolchain.toml
 /.fstar-cache
 proptest-regressions
+
+# Written by `hax.py extract-proverif`.
+proofs/extracted-proverif/extraction/

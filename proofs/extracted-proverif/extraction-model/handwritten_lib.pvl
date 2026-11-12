@@ -1,0 +1,66 @@
+(* SPQR extracted model — symbolic models of the primitives that the Rust source
+   abstracts with `proverif::replace_body`: incremental ML-KEM, the chaining-MAC
+   authenticator and the epoch-secret KDF. *)
+
+(* ============================================================= *)
+(* Symbolic incremental ML-KEM 768                                *)
+(*                                                                *)
+(* A decapsulation key `dk` determines the header (pk1) and the   *)
+(* encapsulation key (pk2):                                        *)
+(*    hdr = dk2seed(dk)      ek = dk2enckey(dk)                    *)
+(* Encapsulation is split: `pkenc1` uses the header and binds a    *)
+(* fresh shared secret `ss`; `pkenc2` uses the encapsulation key.  *)
+(* The encapsulation state carries the encapsulation randomness.   *)
+(* ============================================================= *)
+
+fun dk2seed(bitstring): bitstring.
+fun dk2enckey(bitstring): bitstring.
+
+(* Encapsulation state produced by `encaps1`, carrying randomness r. *)
+fun spqr_es(bitstring): bitstring [data].
+
+(* ct1 = pkenc1(r, hdr, ss);  ct2 = pkenc2(r, ek) *)
+fun pkenc1(bitstring, bitstring, bitstring): bitstring.
+fun pkenc2(bitstring, bitstring): bitstring.
+
+(* Decapsulation recovers the encapsulated secret only when ct1/ct2
+   were produced against this dk's header and encapsulation key. *)
+fun pkdec(bitstring, bitstring, bitstring): bitstring
+reduc forall dk: bitstring, ss: bitstring, r: bitstring;
+    pkdec(dk, pkenc1(r, dk2seed(dk), ss), pkenc2(r, dk2enckey(dk))) = ss.
+
+(* The encapsulation randomness and ct1 give the shared secret: in ML-KEM the
+   shared secret is derived from the randomness and the header's hash of ek. *)
+fun extract_ss(bitstring, bitstring): bitstring
+reduc forall r: bitstring, hdr: bitstring, ss: bitstring;
+    extract_ss(r, pkenc1(r, hdr, ss)) = ss.
+
+(* `ek_matches_header(ek, hdr)` — true iff ek and hdr come from the
+   same keypair. Total (returns True()/False()). *)
+fun ek_matches(bitstring, bitstring): bitstring
+reduc forall dk: bitstring;
+    ek_matches(dk2enckey(dk), dk2seed(dk)) = True()
+otherwise forall ek: bitstring, hdr: bitstring;
+    ek_matches(ek, hdr) = False().
+
+(* ============================================================= *)
+(* Symbolic authenticator (transcript-binding chaining MAC)       *)
+(*                                                                *)
+(* The authenticator is a single opaque state. `auth_new` derives  *)
+(* it from the shared initial key; `auth_update` ratchets it with  *)
+(* each epoch secret; `mac_*_f` are one-way tags keyed by state.   *)
+(* ============================================================= *)
+
+fun auth_new(bitstring, bitstring): bitstring.
+fun auth_update(bitstring, bitstring, bitstring): bitstring.
+fun mac_ct_f(bitstring, bitstring, bitstring): bitstring.
+fun mac_hdr_f(bitstring, bitstring, bitstring): bitstring.
+
+(* The epoch-secret KDF (`kdf::derive_scka_secret`): a one-way function of
+   the shared secret and the epoch. *)
+fun derive_scka_secret_f(bitstring, bitstring): bitstring.
+
+(* `u64::checked_add` on epochs, which stay below `max_epoch()` and so never
+   overflow. *)
+letfun core__num__Impl_9__checked_add(a: bitstring, b: bitstring) =
+  Some(rust_primitives__hax__machine_int__add(a, b)).

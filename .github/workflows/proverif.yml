@@ -20,3 +20,36 @@ jobs:
           proverif -lib cryptolib.pvl spqr-cka.pv
           proverif -lib cryptolib.pvl spqr-dr.pv
         working-directory: ./proofs/proverif
+
+  extracted:
+    runs-on: "ubuntu-latest"
+    env:
+      HAX_REPOSITORY: pereq-dev/hax
+      HAX_REFERENCE: cargo-hax-v0.5.0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ⤵ Install and configure hax
+        uses: hacspec/hax-actions@1f01b89579f425ad7c1e66aebbd5df7e688cb576
+        with:
+          hax_repository: github:${{ env.HAX_REPOSITORY }}
+          hax_reference: ${{ env.HAX_REFERENCE }}
+
+      - name: Checkout hax's ProVerif libraries
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.HAX_REPOSITORY }}
+          ref: ${{ env.HAX_REFERENCE }}
+          path: hax
+
+      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler opam libgtk2.0-dev
+      - run: opam init
+      - run: opam install -y proverif.2.05
+
+      - name: 🏃 Extract ProVerif
+        run: ./hax.py extract-proverif
+      - name: 🏃 Run ProVerif
+        run: |
+          eval $(opam env)
+          ./hax.py prove-proverif PROVERIF_LIBS=$PWD/hax/hax-lib/proof-libs/proverif

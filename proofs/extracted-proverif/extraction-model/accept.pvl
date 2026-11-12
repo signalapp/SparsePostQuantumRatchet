@@ -1,0 +1,11 @@
+(* SPQR extracted model — completion of an epoch, without transcript tracking. *)
+
+let RequestorAccept(sid: session_id, a: principal, b: principal, ep: nat, cep: nat, ka: bitstring,
+                    st4: bitstring, ct1: bitstring, ct2: bitstring, mac: bitstring) =
+    event AcceptedCt(sid, a, b, ep, ct1, ct2, mac);
+    RequestorDone(sid, a, b, cep, ka, st4).
+
+let ResponderAccept(sid: session_id, b: principal, a: principal, ep: nat, kb: bitstring, st4: bitstring,
+                    hdr: bitstring, mac: bitstring, ek: bitstring, ct2: bitstring, cmac: bitstring) =
+    event AcceptedHdrEk(sid, b, a, ep, hdr, mac, ek);
+    ResponderDone(sid, b, a, ep, kb, st4, ct2, cmac).
