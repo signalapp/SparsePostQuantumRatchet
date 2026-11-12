@@ -1236,7 +1236,7 @@ checksum = "d372029cb5195f9ab4e4b9aef550787dce78b124fcaee8d82519925defcd6f0d"
 
 [[package]]
 name = "spqr"
-version = "1.6.0"
+version = "1.7.0"
 dependencies = [
  "cpufeatures",
  "curve25519-dalek",
